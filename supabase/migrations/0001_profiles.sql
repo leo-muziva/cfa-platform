@@ -20,16 +20,6 @@ create policy "Anyone can read active membership types"
   on public.membership_types for select
   using (is_active = true);
 
--- Only admins can write
-create policy "Admins can manage membership types"
-  on public.membership_types for all
-  using (
-    exists (
-      select 1 from public.profiles
-      where id = auth.uid() and role = 'admin'
-    )
-  );
-
 -- Seed default membership types
 insert into public.membership_types (name, monthly_fee, description) values
   ('Junior', 350.00, 'For fencers under 18 years old'),
@@ -95,6 +85,16 @@ create policy "Coaches can read fencer profiles"
       where p.id = auth.uid() and p.role = 'coach'
     )
     and role = 'fencer'
+  );
+
+-- Admins can manage membership types (defined here because it references profiles)
+create policy "Admins can manage membership types"
+  on public.membership_types for all
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
   );
 
 -- ============================================================
