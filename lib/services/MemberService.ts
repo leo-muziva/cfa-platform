@@ -2,12 +2,23 @@ import { createClient } from '@/lib/supabase/server'
 import {
   getProfileById,
   updateProfile,
-  getAllProfiles,
+  getProfilesPage,
   adminUpdateProfile,
   getMemberStatsRows,
 } from '@/lib/repositories/MemberRepository'
-import { profileUpdateSchema, adminProfileUpdateSchema } from '@/lib/validations/member.schema'
-import type { Profile, MemberStats, MemberStatsRow, Role } from '@/types/domain'
+import {
+  profileUpdateSchema,
+  adminProfileUpdateSchema,
+  memberListFiltersSchema,
+} from '@/lib/validations/member.schema'
+import type {
+  Profile,
+  MemberStats,
+  MemberStatsRow,
+  MemberListFilters,
+  Paged,
+  Role,
+} from '@/types/domain'
 
 export async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient()
@@ -49,14 +60,28 @@ export async function updateCurrentProfile(rawData: unknown): Promise<
   return { profile }
 }
 
-export async function getMembersForAdmin(): Promise<
-  { profiles: Profile[] } | { error: string }
+const MEMBERS_PAGE_SIZE = 20
+
+export async function getMembersForAdmin(rawFilters: unknown = {}): Promise<
+  { page: Paged<Profile>; filters: MemberListFilters } | { error: string }
 > {
   const guard = await requireAdmin()
   if ('error' in guard) return guard
 
-  const profiles = await getAllProfiles()
-  return { profiles }
+  // Every schema field has a catch(), so parsing raw URL params never throws.
+  const filters = memberListFiltersSchema.parse(rawFilters)
+  const { profiles, total } = await getProfilesPage(filters, MEMBERS_PAGE_SIZE)
+
+  return {
+    page: {
+      items: profiles,
+      total,
+      page: filters.page,
+      pageSize: MEMBERS_PAGE_SIZE,
+      pageCount: Math.max(1, Math.ceil(total / MEMBERS_PAGE_SIZE)),
+    },
+    filters,
+  }
 }
 
 export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<
