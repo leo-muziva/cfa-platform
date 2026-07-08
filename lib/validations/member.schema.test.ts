@@ -2,7 +2,52 @@ import { describe, it, expect } from 'vitest'
 import {
   profileUpdateSchema,
   adminProfileUpdateSchema,
+  memberListFiltersSchema,
 } from './member.schema'
+
+describe('memberListFiltersSchema', () => {
+  it('defaults to page 1 with no filters', () => {
+    expect(memberListFiltersSchema.parse({})).toEqual({ page: 1 })
+  })
+
+  it('coerces a valid page string from the URL', () => {
+    expect(memberListFiltersSchema.parse({ page: '3' }).page).toBe(3)
+  })
+
+  it.each([['abc'], ['0'], ['-2'], ['1.5']])(
+    'falls back to page 1 for invalid page %s',
+    (page) => {
+      expect(memberListFiltersSchema.parse({ page }).page).toBe(1)
+    }
+  )
+
+  it('accepts valid role and status values', () => {
+    const parsed = memberListFiltersSchema.parse({ role: 'fencer', status: 'inactive' })
+    expect(parsed.role).toBe('fencer')
+    expect(parsed.status).toBe('inactive')
+  })
+
+  it('degrades unknown role/status values to undefined instead of throwing', () => {
+    const parsed = memberListFiltersSchema.parse({ role: 'hacker', status: 'banned' })
+    expect(parsed.role).toBeUndefined()
+    expect(parsed.status).toBeUndefined()
+  })
+
+  it('treats empty-string selects ("All roles") as no filter', () => {
+    const parsed = memberListFiltersSchema.parse({ role: '', status: '', search: '' })
+    expect(parsed.role).toBeUndefined()
+    expect(parsed.status).toBeUndefined()
+    expect(parsed.search).toBeUndefined()
+  })
+
+  it('trims search input', () => {
+    expect(memberListFiltersSchema.parse({ search: '  jane  ' }).search).toBe('jane')
+  })
+
+  it('drops search terms longer than 100 characters', () => {
+    expect(memberListFiltersSchema.parse({ search: 'x'.repeat(101) }).search).toBeUndefined()
+  })
+})
 
 describe('profileUpdateSchema', () => {
   it('accepts valid full data', () => {
