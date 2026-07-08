@@ -20,6 +20,7 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -45,6 +46,9 @@ export function SignUpForm({
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
+          // Stored as raw_user_meta_data; the handle_new_user DB trigger
+          // copies full_name onto the auto-created profiles row.
+          data: { full_name: fullName.trim() },
         },
       });
       if (error) throw error;
@@ -67,11 +71,25 @@ export function SignUpForm({
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
+                <Label htmlFor="full-name">Full name</Label>
+                <Input
+                  id="full-name"
+                  type="text"
+                  placeholder="Jane Fencer"
+                  autoComplete="name"
+                  required
+                  minLength={2}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="m@example.com"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -84,6 +102,7 @@ export function SignUpForm({
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -96,6 +115,7 @@ export function SignUpForm({
                 <Input
                   id="repeat-password"
                   type="password"
+                  autoComplete="new-password"
                   required
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
