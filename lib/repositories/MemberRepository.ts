@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Profile, ProfileUpdate, AdminProfileUpdate } from '@/types/domain'
+import type { Profile, ProfileUpdate, AdminProfileUpdate, MemberStatsRow } from '@/types/domain'
 
 export async function getProfileById(id: string): Promise<Profile | null> {
   const supabase = await createClient()
@@ -35,6 +35,17 @@ export async function getAllProfiles(): Promise<Profile[]> {
 
   if (error || !data) return []
   return data as Profile[]
+}
+
+/** Lean select used for dashboard stats — avoids pulling full profiles just to count them. */
+export async function getMemberStatsRows(): Promise<MemberStatsRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role, is_active, membership_type:membership_types(name)')
+
+  if (error || !data) return []
+  return data as unknown as MemberStatsRow[]
 }
 
 export async function adminUpdateProfile(id: string, updates: AdminProfileUpdate): Promise<Profile | null> {

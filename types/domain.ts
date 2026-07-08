@@ -34,3 +34,20 @@ export interface AdminProfileUpdate extends ProfileUpdate {
   is_active?: boolean
   membership_type_id?: string | null
 }
+
+/** Minimal row shape fetched for dashboard statistics. */
+export interface MemberStatsRow {
+  role: Role
+  is_active: boolean
+  membership_type: Pick<MembershipType, 'name'> | null
+}
+
+/** Aggregated member statistics shown on the admin dashboard. */
+export interface MemberStats {
+  total: number
+  active: number
+  inactive: number
+  byRole: Record<Role, number>
+  byMembershipType: Record<string, number>
+  unassigned: number
+}
