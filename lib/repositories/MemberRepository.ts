@@ -5,6 +5,7 @@ import type {
   AdminProfileUpdate,
   MemberStatsRow,
   MemberListFilters,
+  MembershipType,
 } from '@/types/domain'
 
 export async function getProfileById(id: string): Promise<Profile | null> {
@@ -60,6 +61,18 @@ export async function getProfilesPage(
 
   if (error || !data) return { profiles: [], total: 0 }
   return { profiles: data as Profile[], total: count ?? 0 }
+}
+
+export async function getMembershipTypes(): Promise<MembershipType[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('membership_types')
+    .select('*')
+    .eq('is_active', true)
+    .order('monthly_fee', { ascending: true })
+
+  if (error || !data) return []
+  return data as MembershipType[]
 }
 
 /** Lean select used for dashboard stats — avoids pulling full profiles just to count them. */

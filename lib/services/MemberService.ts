@@ -5,6 +5,7 @@ import {
   getProfilesPage,
   adminUpdateProfile,
   getMemberStatsRows,
+  getMembershipTypes,
 } from '@/lib/repositories/MemberRepository'
 import {
   profileUpdateSchema,
@@ -16,6 +17,7 @@ import type {
   MemberStats,
   MemberStatsRow,
   MemberListFilters,
+  MembershipType,
   Paged,
   Role,
 } from '@/types/domain'
@@ -82,6 +84,20 @@ export async function getMembersForAdmin(rawFilters: unknown = {}): Promise<
     },
     filters,
   }
+}
+
+/** Everything the admin member-edit screen needs in one call. */
+export async function getMemberEditDataForAdmin(targetId: string): Promise<
+  { profile: Profile; membershipTypes: MembershipType[] } | { error: string }
+> {
+  const guard = await requireAdmin()
+  if ('error' in guard) return guard
+
+  const profile = await getProfileById(targetId)
+  if (!profile) return { error: 'Member not found' }
+
+  const membershipTypes = await getMembershipTypes()
+  return { profile, membershipTypes }
 }
 
 export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<
