@@ -1,5 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Profile, ProfileUpdate, AdminProfileUpdate, MemberStatsRow } from '@/types/domain'
+import type {
+  Profile,
+  ProfileUpdate,
+  AdminProfileUpdate,
+  MemberStatsRow,
+  MemberListFilters,
+} from '@/types/domain'
 
 export async function getProfileById(id: string): Promise<Profile | null> {
   const supabase = await createClient()
@@ -26,15 +32,34 @@ export async function updateProfile(id: string, updates: ProfileUpdate): Promise
   return data as Profile
 }
 
-export async function getAllProfiles(): Promise<Profile[]> {
+/**
+ * Filtered + paginated members query. `count: 'exact'` makes PostgREST return
+ * the total matching rows alongside the requested page in one round-trip.
+ */
+export async function getProfilesPage(
+  filters: MemberListFilters,
+  pageSize: number
+): Promise<{ profiles: Profile[]; total: number }> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  let query = supabase
     .from('profiles')
-    .select('*, membership_type:membership_types(*)')
-    .order('created_at', { ascending: false })
+    .select('*, membership_type:membership_types(*)', { count: 'exact' })
 
-  if (error || !data) return []
-  return data as Profile[]
+  if (filters.search) {
+    // Strip characters that have meaning in PostgREST's or() filter syntax.
+    const term = filters.search.replace(/[,%()]/g, ' ').trim()
+    if (term) query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`)
+  }
+  if (filters.role) query = query.eq('role', filters.role)
+  if (filters.status) query = query.eq('is_active', filters.status === 'active')
+
+  const from = (filters.page - 1) * pageSize
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, from + pageSize - 1)
+
+  if (error || !data) return { profiles: [], total: 0 }
+  return { profiles: data as Profile[], total: count ?? 0 }
 }
 
 /** Lean select used for dashboard stats — avoids pulling full profiles just to count them. */
