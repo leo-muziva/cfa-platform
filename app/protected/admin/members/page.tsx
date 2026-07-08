@@ -57,11 +57,16 @@ export default async function MembersPage({
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold">Members</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Manage all academy members ({page.total})
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Members</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Manage all academy members ({page.total})
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/protected/admin/members/new">Add member</Link>
+        </Button>
       </div>
 
       <form method="GET" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">

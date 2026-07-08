@@ -29,6 +29,14 @@ export const memberListFiltersSchema = z.object({
   page: z.coerce.number().int().min(1).default(1).catch(1),
 })
 
+export const inviteMemberSchema = z.object({
+  email: z.string().trim().email('Invalid email address').max(254),
+  full_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
+  role: z.enum(['admin', 'coach', 'fencer', 'guardian']),
+  membership_type_id: z.string().uuid().optional().nullable(),
+})
+
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>
 export type AdminProfileUpdateInput = z.infer<typeof adminProfileUpdateSchema>
 export type MemberListFiltersInput = z.infer<typeof memberListFiltersSchema>
+export type InviteMemberInput = z.infer<typeof inviteMemberSchema>

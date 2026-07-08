@@ -6,11 +6,13 @@ import {
   adminUpdateProfile,
   getMemberStatsRows,
   getMembershipTypes,
+  inviteMemberByEmail,
 } from '@/lib/repositories/MemberRepository'
 import {
   profileUpdateSchema,
   adminProfileUpdateSchema,
   memberListFiltersSchema,
+  inviteMemberSchema,
 } from '@/lib/validations/member.schema'
 import type {
   Profile,
@@ -86,6 +88,16 @@ export async function getMembersForAdmin(rawFilters: unknown = {}): Promise<
   }
 }
 
+/** Membership types for the admin invite form. */
+export async function getInviteFormDataForAdmin(): Promise<
+  { membershipTypes: MembershipType[] } | { error: string }
+> {
+  const guard = await requireAdmin()
+  if ('error' in guard) return guard
+
+  return { membershipTypes: await getMembershipTypes() }
+}
+
 /** Everything the admin member-edit screen needs in one call. */
 export async function getMemberEditDataForAdmin(targetId: string): Promise<
   { profile: Profile; membershipTypes: MembershipType[] } | { error: string }
@@ -115,6 +127,38 @@ export async function adminUpdateMember(targetId: string, rawData: unknown): Pro
   if (!profile) return { error: 'Failed to update member' }
 
   return { profile }
+}
+
+/**
+ * Invites a new member by email. The auth invite auto-creates the profile
+ * (via trigger) with the default 'fencer' role; a follow-up update applies
+ * the chosen role/membership when they differ from the defaults.
+ */
+export async function inviteMemberForAdmin(rawData: unknown): Promise<
+  { success: true } | { error: string }
+> {
+  const parsed = inviteMemberSchema.safeParse(rawData)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message }
+  }
+
+  const guard = await requireAdmin()
+  if ('error' in guard) return guard
+
+  const invited = await inviteMemberByEmail(parsed.data.email, parsed.data.full_name)
+  if ('error' in invited) return invited
+
+  if (parsed.data.role !== 'fencer' || parsed.data.membership_type_id) {
+    const updated = await adminUpdateProfile(invited.userId, {
+      role: parsed.data.role,
+      membership_type_id: parsed.data.membership_type_id ?? null,
+    })
+    if (!updated) {
+      return { error: 'Invite sent, but assigning role/membership failed — edit the member manually' }
+    }
+  }
+
+  return { success: true }
 }
 
 const ALL_ROLES: Role[] = ['admin', 'coach', 'fencer', 'guardian']
