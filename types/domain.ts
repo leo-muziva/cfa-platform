@@ -35,6 +35,23 @@ export interface AdminProfileUpdate extends ProfileUpdate {
   membership_type_id?: string | null
 }
 
+/** Parsed URL search params for the admin members list. */
+export interface MemberListFilters {
+  search?: string
+  role?: Role
+  status?: 'active' | 'inactive'
+  page: number
+}
+
+/** A single page of results plus the metadata needed to render pagination. */
+export interface Paged<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
 /** Minimal row shape fetched for dashboard statistics. */
 export interface MemberStatsRow {
   role: Role
