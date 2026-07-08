@@ -144,7 +144,14 @@ export default async function MembersPage({
                       key={profile.id}
                       className="border-b last:border-0 hover:bg-muted/30 transition-colors"
                     >
-                      <td className="py-3 px-6 font-medium">{profile.full_name ?? '—'}</td>
+                      <td className="py-3 px-6 font-medium">
+                        <Link
+                          href={`/protected/admin/members/${profile.id}`}
+                          className="hover:underline underline-offset-4"
+                        >
+                          {profile.full_name || profile.email}
+                        </Link>
+                      </td>
                       <td className="py-3 px-4 text-muted-foreground">{profile.email}</td>
                       <td className="py-3 px-4">
                         <RoleBadge role={profile.role} />
