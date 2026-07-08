@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { adminUpdateMember } from '@/lib/services/MemberService'
+import { adminUpdateMember, inviteMemberForAdmin } from '@/lib/services/MemberService'
 
 export type AdminMemberActionState = {
   error?: string
@@ -37,4 +37,25 @@ export async function adminUpdateMemberAction(
   revalidatePath('/protected/admin/members')
   revalidatePath(`/protected/admin/members/${targetId}`)
   return { success: true, message: 'Member updated successfully' }
+}
+
+export async function inviteMemberAction(
+  _prevState: AdminMemberActionState,
+  formData: FormData
+): Promise<AdminMemberActionState> {
+  const rawData = {
+    email: formData.get('email') as string,
+    full_name: formData.get('full_name') as string,
+    role: formData.get('role') as string,
+    membership_type_id: (formData.get('membership_type_id') as string) || null,
+  }
+
+  const result = await inviteMemberForAdmin(rawData)
+
+  if ('error' in result) {
+    return { error: result.error }
+  }
+
+  revalidatePath('/protected/admin/members')
+  return { success: true, message: 'Invite sent — the member will appear once they accept' }
 }
