@@ -1,0 +1,116 @@
+-- =============================================================
+-- CFA Platform — Development Seed Data
+-- =============================================================
+-- FOR LOCAL SUPABASE ONLY (supabase start + supabase db seed)
+--
+-- For hosted Supabase:
+--   1. Create accounts via Supabase Dashboard → Authentication → Users
+--   2. Run only the UPDATE statements below (lines marked [HOSTED])
+--
+-- All test account passwords: Test1234!
+-- =============================================================
+
+-- [LOCAL ONLY] Insert test users into auth.users
+-- The on_auth_user_created trigger auto-creates the profiles rows.
+insert into auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  created_at,
+  updated_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  is_super_admin,
+  confirmation_token,
+  recovery_token
+)
+values
+  (
+    '11111111-1111-1111-1111-111111111111',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'admin@cfa.test',
+    crypt('Test1234!', gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Alice Admin"}',
+    false, '', ''
+  ),
+  (
+    '22222222-2222-2222-2222-222222222222',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'coach@cfa.test',
+    crypt('Test1234!', gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Charles Coach"}',
+    false, '', ''
+  ),
+  (
+    '33333333-3333-3333-3333-333333333333',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'fencer@cfa.test',
+    crypt('Test1234!', gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Fiona Fencer"}',
+    false, '', ''
+  ),
+  (
+    '44444444-4444-4444-4444-444444444444',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'guardian@cfa.test',
+    crypt('Test1234!', gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"George Guardian"}',
+    false, '', ''
+  );
+
+-- [HOSTED + LOCAL] Set roles, names, and phone numbers on the auto-created profiles.
+-- These UUIDs must match the auth.users IDs above (local) or the real UUIDs from
+-- Supabase Dashboard (hosted).
+update public.profiles set
+  role        = 'admin',
+  full_name   = 'Alice Admin',
+  phone       = '+27 21 000 0001',
+  is_active   = true
+where id = '11111111-1111-1111-1111-111111111111';
+
+update public.profiles set
+  role        = 'coach',
+  full_name   = 'Charles Coach',
+  phone       = '+27 21 000 0002',
+  is_active   = true
+where id = '22222222-2222-2222-2222-222222222222';
+
+update public.profiles set
+  role        = 'fencer',
+  full_name   = 'Fiona Fencer',
+  phone       = '+27 21 000 0003',
+  date_of_birth = '2005-03-15',
+  is_active   = true
+where id = '33333333-3333-3333-3333-333333333333';
+
+update public.profiles set
+  role        = 'guardian',
+  full_name   = 'George Guardian',
+  phone       = '+27 21 000 0004',
+  is_active   = true
+where id = '44444444-4444-4444-4444-444444444444';
+
+-- Assign membership types to fencer (Junior) and coach (Senior)
+update public.profiles
+set membership_type_id = (select id from public.membership_types where name = 'Junior' limit 1)
+where id = '33333333-3333-3333-3333-333333333333';
+
+update public.profiles
+set membership_type_id = (select id from public.membership_types where name = 'Senior' limit 1)
+where id = '22222222-2222-2222-2222-222222222222';
