@@ -65,4 +65,536 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* The homepage navbar is a fixed floating bar: give in-page #anchor jumps
+     clearance so section headings don't land underneath it. Smooth scrolling
+     only for users who haven't opted out of motion. */
+  html {
+    scroll-padding-top: 5.5rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/*
+ * Cinematic homepage hero styles.
+ * `.liquid-glass` provides the frosted-glass surfaces; its ::before draws a
+ * glowing gradient border via a masked padding stroke (border: none on the
+ * element itself so the gradient is the only stroke).
+ * `.animate-blur-fade-up` powers staggered blur-fade-up entrances; users with
+ * reduced-motion preferences get instantly visible content (WCAG 2.1 AA).
+ */
+@layer components {
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.01);
+    background-blend-mode: luminosity;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    /* Hover/focus only animates transform, background-color and filter —
+       animating backdrop-filter itself forces expensive repaints. */
+    transition:
+      background-color 0.3s ease,
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .liquid-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.15) 20%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0.15) 80%,
+      rgba(255, 255, 255, 0.45) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: filter 0.3s ease;
+  }
+
+  /* Liquid-glass hover language: a skewed light stripe sweeps across the
+     pill (::after — ::before is taken by the gradient border), the surface
+     brightens, the pill lifts slightly and its border glow intensifies.
+     Mirrored on :focus-visible so keyboard users get the same feedback. */
+  .liquid-glass::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -85%;
+    width: 60%;
+    background: linear-gradient(
+      105deg,
+      transparent,
+      rgba(255, 255, 255, 0.28),
+      transparent
+    );
+    transform: skewX(-20deg);
+    transition: transform 0.55s ease;
+    pointer-events: none;
+  }
+
+  .liquid-glass:hover,
+  .liquid-glass:focus-visible {
+    background-color: rgba(255, 255, 255, 0.08);
+    transform: scale(1.02);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.18),
+      0 8px 32px rgba(255, 255, 255, 0.08);
+  }
+
+  .liquid-glass:hover::after,
+  .liquid-glass:focus-visible::after {
+    transform: skewX(-20deg) translateX(290%);
+  }
+
+  .liquid-glass:hover::before,
+  .liquid-glass:focus-visible::before {
+    filter: brightness(1.6);
+  }
+
+  /* Press feedback */
+  .liquid-glass:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Reduced motion: keep the non-motion feedback (brighten/glow) but drop the
+   sweep and lift so nothing moves for users who opted out. */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass,
+  .liquid-glass::before,
+  .liquid-glass::after {
+    transition: none;
+  }
+  .liquid-glass:hover,
+  .liquid-glass:focus-visible,
+  .liquid-glass:active {
+    transform: none;
+  }
+  .liquid-glass:hover::after,
+  .liquid-glass:focus-visible::after {
+    transform: skewX(-20deg);
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Glass auth kit (login / sign-up pages).
+ * Adapted from a reference "liquid glass" component: its oklch(from var(--x))
+ * relative-color syntax can't consume our HSL channel tokens, so every colour
+ * is rewritten as hsl(var(--token) / alpha). Only transform/filter/box-shadow
+ * animate — never backdrop-filter (repaint cost).
+ * --cfa-purple / --cfa-gold are the crest brand colours used by the animated
+ * auth backdrop; identical in both themes.
+ * ---------------------------------------------------------------------------
+ */
+:root {
+  --cfa-purple: 262 60% 32%;
+  --cfa-gold: 45 95% 52%;
+}
+
+/* Conic-sweep angles for the glass border shine (Chromium registers these for
+   smooth interpolation; other engines simply skip the sweep — acceptable). */
+@property --angle-1 {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -75deg;
+}
+@property --angle-2 {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -45deg;
+}
+
+/* Neutralise browser autofill styling inside glass inputs (yellow fill would
+   destroy the translucent surface). */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  background-color: transparent !important;
+  background-clip: content-box !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: hsl(var(--foreground)) !important;
+}
+
+.all-unset {
+  all: unset;
+}
+
+@keyframes cfa-float-1 {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-10px, 10px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes cfa-float-2 {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(10px, -10px); }
+  100% { transform: translate(0, 0); }
+}
+
+.glass-button-wrap {
+  --anim-time: 400ms;
+  --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --border-width: clamp(1px, 0.0625em, 4px);
+  position: relative;
+  z-index: 2;
+  transform-style: preserve-3d;
+  transition: transform var(--anim-time) var(--anim-ease);
+}
+.glass-button-wrap:has(.glass-button:active) {
+  transform: rotateX(25deg);
+}
+.glass-button-shadow {
+  --shadow-cutoff-fix: 2em;
+  position: absolute;
+  width: calc(100% + var(--shadow-cutoff-fix));
+  height: calc(100% + var(--shadow-cutoff-fix));
+  top: calc(0% - var(--shadow-cutoff-fix) / 2);
+  left: calc(0% - var(--shadow-cutoff-fix) / 2);
+  filter: blur(clamp(2px, 0.125em, 12px));
+  transition: filter var(--anim-time) var(--anim-ease);
+  pointer-events: none;
+  z-index: 0;
+}
+.glass-button-shadow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--foreground) / 0.2),
+    hsl(var(--foreground) / 0.1)
+  );
+  width: calc(100% - var(--shadow-cutoff-fix) - 0.25em);
+  height: calc(100% - var(--shadow-cutoff-fix) - 0.25em);
+  top: calc(var(--shadow-cutoff-fix) - 0.5em);
+  left: calc(var(--shadow-cutoff-fix) - 0.875em);
+  padding: 0.125em;
+  box-sizing: border-box;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  transition: all var(--anim-time) var(--anim-ease);
+  opacity: 1;
+}
+.glass-button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+  backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+  transition: all var(--anim-time) var(--anim-ease);
+  background: linear-gradient(
+    -75deg,
+    hsl(var(--background) / 0.05),
+    hsl(var(--background) / 0.2),
+    hsl(var(--background) / 0.05)
+  );
+  box-shadow:
+    inset 0 0.125em 0.125em hsl(var(--foreground) / 0.05),
+    inset 0 -0.125em 0.125em hsl(var(--background) / 0.5),
+    0 0.25em 0.125em -0.125em hsl(var(--foreground) / 0.2),
+    0 0 0.1em 0.25em inset hsl(var(--background) / 0.2),
+    0 0 0 0 hsl(var(--background));
+}
+.glass-button:hover {
+  transform: scale(0.975);
+  box-shadow:
+    inset 0 0.125em 0.125em hsl(var(--foreground) / 0.05),
+    inset 0 -0.125em 0.125em hsl(var(--background) / 0.5),
+    0 0.15em 0.05em -0.1em hsl(var(--foreground) / 0.25),
+    0 0 0.05em 0.1em inset hsl(var(--background) / 0.5),
+    0 0 0 0 hsl(var(--background));
+}
+.glass-button-text {
+  color: hsl(var(--foreground) / 0.9);
+  text-shadow: 0em 0.25em 0.05em hsl(var(--foreground) / 0.1);
+  transition: all var(--anim-time) var(--anim-ease);
+}
+.glass-button:hover .glass-button-text {
+  text-shadow: 0.025em 0.025em 0.025em hsl(var(--foreground) / 0.12);
+}
+.glass-button-text::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: calc(100% - var(--border-width));
+  height: calc(100% - var(--border-width));
+  top: calc(0% + var(--border-width) / 2);
+  left: calc(0% + var(--border-width) / 2);
+  box-sizing: border-box;
+  border-radius: 9999px;
+  overflow: clip;
+  background: linear-gradient(
+    var(--angle-2),
+    transparent 0%,
+    hsl(var(--background) / 0.5) 40% 50%,
+    transparent 55%
+  );
+  z-index: 3;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  transition:
+    background-position calc(var(--anim-time) * 1.25) var(--anim-ease),
+    --angle-2 calc(var(--anim-time) * 1.25) var(--anim-ease);
+}
+.glass-button:hover .glass-button-text::after {
+  background-position: 25% 50%;
+}
+.glass-button:active .glass-button-text::after {
+  background-position: 50% 15%;
+  --angle-2: -15deg;
+}
+.glass-button::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: 9999px;
+  width: calc(100% + var(--border-width));
+  height: calc(100% + var(--border-width));
+  top: calc(0% - var(--border-width) / 2);
+  left: calc(0% - var(--border-width) / 2);
+  padding: var(--border-width);
+  box-sizing: border-box;
+  background:
+    conic-gradient(
+      from var(--angle-1) at 50% 50%,
+      hsl(var(--foreground) / 0.5) 0%,
+      transparent 5% 40%,
+      hsl(var(--foreground) / 0.5) 50%,
+      transparent 60% 95%,
+      hsl(var(--foreground) / 0.5) 100%
+    ),
+    linear-gradient(180deg, hsl(var(--background) / 0.5), hsl(var(--background) / 0.5));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  transition:
+    all var(--anim-time) var(--anim-ease),
+    --angle-1 500ms ease;
+  box-shadow: inset 0 0 0 calc(var(--border-width) / 2) hsl(var(--background) / 0.5);
+  pointer-events: none;
+}
+.glass-button:hover::after {
+  --angle-1: -125deg;
+}
+.glass-button:active::after {
+  --angle-1: -75deg;
+}
+.glass-button-wrap:has(.glass-button:hover) .glass-button-shadow {
+  filter: blur(clamp(2px, 0.0625em, 6px));
+}
+.glass-button-wrap:has(.glass-button:hover) .glass-button-shadow::after {
+  top: calc(var(--shadow-cutoff-fix) - 0.875em);
+  opacity: 1;
+}
+.glass-button-wrap:has(.glass-button:active) .glass-button-shadow {
+  filter: blur(clamp(2px, 0.125em, 12px));
+}
+.glass-button-wrap:has(.glass-button:active) .glass-button-shadow::after {
+  top: calc(var(--shadow-cutoff-fix) - 0.5em);
+  opacity: 0.75;
+}
+.glass-button-wrap:has(.glass-button:active) .glass-button-text {
+  text-shadow: 0.025em 0.25em 0.05em hsl(var(--foreground) / 0.12);
+}
+.glass-button-wrap:has(.glass-button:active) .glass-button {
+  box-shadow:
+    inset 0 0.125em 0.125em hsl(var(--foreground) / 0.05),
+    inset 0 -0.125em 0.125em hsl(var(--background) / 0.5),
+    0 0.125em 0.125em -0.125em hsl(var(--foreground) / 0.2),
+    0 0 0.1em 0.25em inset hsl(var(--background) / 0.2),
+    0 0.225em 0.05em 0 hsl(var(--foreground) / 0.05),
+    0 0.25em 0 0 hsl(var(--background) / 0.75),
+    inset 0 0.25em 0.05em 0 hsl(var(--foreground) / 0.15);
+}
+@media (hover: none) and (pointer: coarse) {
+  .glass-button::after,
+  .glass-button:hover::after,
+  .glass-button:active::after {
+    --angle-1: -75deg;
+  }
+  .glass-button .glass-button-text::after,
+  .glass-button:active .glass-button-text::after {
+    --angle-2: -45deg;
+  }
+}
+
+.glass-input-wrap {
+  position: relative;
+  z-index: 2;
+  transform-style: preserve-3d;
+  border-radius: 9999px;
+}
+.glass-input {
+  display: flex;
+  position: relative;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+  backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+  transition: all 400ms cubic-bezier(0.25, 1, 0.5, 1);
+  background: linear-gradient(
+    -75deg,
+    hsl(var(--background) / 0.05),
+    hsl(var(--background) / 0.2),
+    hsl(var(--background) / 0.05)
+  );
+  box-shadow:
+    inset 0 0.125em 0.125em hsl(var(--foreground) / 0.05),
+    inset 0 -0.125em 0.125em hsl(var(--background) / 0.5),
+    0 0.25em 0.125em -0.125em hsl(var(--foreground) / 0.2),
+    0 0 0.1em 0.25em inset hsl(var(--background) / 0.2),
+    0 0 0 0 hsl(var(--background));
+}
+.glass-input-wrap:focus-within .glass-input {
+  box-shadow:
+    inset 0 0.125em 0.125em hsl(var(--foreground) / 0.05),
+    inset 0 -0.125em 0.125em hsl(var(--background) / 0.5),
+    0 0.15em 0.05em -0.1em hsl(var(--foreground) / 0.25),
+    0 0 0.05em 0.1em inset hsl(var(--background) / 0.5),
+    0 0 0 0 hsl(var(--background));
+}
+.glass-input::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: 9999px;
+  width: calc(100% + clamp(1px, 0.0625em, 4px));
+  height: calc(100% + clamp(1px, 0.0625em, 4px));
+  top: calc(0% - clamp(1px, 0.0625em, 4px) / 2);
+  left: calc(0% - clamp(1px, 0.0625em, 4px) / 2);
+  padding: clamp(1px, 0.0625em, 4px);
+  box-sizing: border-box;
+  background:
+    conic-gradient(
+      from var(--angle-1) at 50% 50%,
+      hsl(var(--foreground) / 0.5) 0%,
+      transparent 5% 40%,
+      hsl(var(--foreground) / 0.5) 50%,
+      transparent 60% 95%,
+      hsl(var(--foreground) / 0.5) 100%
+    ),
+    linear-gradient(180deg, hsl(var(--background) / 0.5), hsl(var(--background) / 0.5));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  transition:
+    all 400ms cubic-bezier(0.25, 1, 0.5, 1),
+    --angle-1 500ms ease;
+  box-shadow: inset 0 0 0 calc(clamp(1px, 0.0625em, 4px) / 2) hsl(var(--background) / 0.5);
+  pointer-events: none;
+}
+.glass-input-wrap:focus-within .glass-input::after {
+  --angle-1: -125deg;
+}
+.glass-input-text-area {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+.glass-input-text-area::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: calc(100% - clamp(1px, 0.0625em, 4px));
+  height: calc(100% - clamp(1px, 0.0625em, 4px));
+  top: calc(0% + clamp(1px, 0.0625em, 4px) / 2);
+  left: calc(0% + clamp(1px, 0.0625em, 4px) / 2);
+  box-sizing: border-box;
+  border-radius: 9999px;
+  overflow: clip;
+  background: linear-gradient(
+    var(--angle-2),
+    transparent 0%,
+    hsl(var(--background) / 0.5) 40% 50%,
+    transparent 55%
+  );
+  z-index: 3;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  transition:
+    background-position calc(400ms * 1.25) cubic-bezier(0.25, 1, 0.5, 1),
+    --angle-2 calc(400ms * 1.25) cubic-bezier(0.25, 1, 0.5, 1);
+}
+.glass-input-wrap:focus-within .glass-input-text-area::after {
+  background-position: 25% 50%;
+}
+
+/* Reduced motion for the auth kit: no tilt, no float, no shine travel. */
+@media (prefers-reduced-motion: reduce) {
+  .glass-button-wrap,
+  .glass-button,
+  .glass-button-text,
+  .glass-button::after,
+  .glass-button-text::after,
+  .glass-button-shadow,
+  .glass-input,
+  .glass-input::after,
+  .glass-input-text-area::after {
+    transition: none !important;
+  }
+  .glass-button-wrap:has(.glass-button:active) {
+    transform: none;
+  }
+  .glass-button:hover {
+    transform: none;
+  }
+}
+
+@keyframes blurFadeUp {
+  from {
+    opacity: 0;
+    filter: blur(20px);
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+.animate-blur-fade-up {
+  opacity: 0;
+  animation: blurFadeUp 1s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blur-fade-up {
+    animation: none;
+    opacity: 1;
+  }
 }
