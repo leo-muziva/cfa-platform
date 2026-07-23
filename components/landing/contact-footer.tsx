@@ -30,10 +30,10 @@ export function ContactFooter() {
   return (
     <section
       id="contact"
-      className="relative bg-black text-white px-4 sm:px-6 md:px-12 py-20 md:py-28"
+      className="relative bg-white text-[#25145c] px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm uppercase tracking-widest text-gray-400 mb-3">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] mb-3">
           Get in Touch
         </p>
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
@@ -65,7 +65,7 @@ export function ContactFooter() {
                     {...(row.external
                       ? { target: "_blank", rel: "noopener noreferrer" }
                       : {})}
-                    className="liquid-glass rounded-2xl p-6 flex items-center gap-4 hover:text-gray-300 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
+                    className="cfa-light-card rounded-2xl p-6 flex items-center gap-4 hover:text-[#8a6810] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]"
                   >
                     <Icon size={22} className="shrink-0" aria-hidden="true" />
                     <span>{row.label}</span>
@@ -88,17 +88,17 @@ export function ContactFooter() {
             }
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-            className="liquid-glass rounded-2xl p-6"
+            className="cfa-light-card rounded-2xl p-6"
           >
             <h3 className="text-lg font-medium mb-4">Training hours</h3>
-            <ul className="space-y-2 text-gray-400">
+            <ul className="space-y-2 text-[#625b73]">
               <li>Tue–Thu 18:30 – 21:30</li>
               <li>Sat 11:00 – 13:30</li>
             </ul>
           </motion.div>
         </div>
 
-        <div className="border-t border-white/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-2 text-sm text-gray-400">
+        <div className="border-t border-[#2d176b]/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-2 text-sm text-[#625b73]">
           <p>© 2026 Cape Fencing Academy</p>
           <p>Est. 1997 · Rondebosch, Cape Town</p>
         </div>
