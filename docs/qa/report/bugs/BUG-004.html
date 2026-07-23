@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- skill:running-bug-review-board v0.3 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BUG-004 - Payer cannot identify dependent</title>
+  <link rel="stylesheet" href="../assets.css">
+</head>
+<body>
+  <header class="masthead"><div class="masthead-inner"><h1 class="masthead-title"><a href="../index.html">CFA Quality Report</a></h1></div></header>
+  <main class="read">
+    <article>
+      <header class="article-header">
+        <p class="eyebrow"><span class="pri">P1</span><span class="sep">·</span>Phase 00<span class="sep">·</span>Resolved</p>
+        <h1 class="article-title">Payer cannot identify dependent when booking</h1>
+        <p class="article-deck">The household row was visible, but profiles RLS hid the dependent name from the payer.</p>
+      </header>
+      <aside class="article-impact"><p class="eyebrow">Impact</p><p>Multiple dependents would be indistinguishable in the payer booking selector.</p></aside>
+      <h2>Before</h2>
+      <img src="../../bug-reports/assets/BUG-004/01-payer-selector-missing-dependent.png" alt="Payer selector showing Account member">
+      <h2>Verification</h2>
+      <p>A payer-only same-household select policy exposes Fiona’s name without broadening dependent or cross-household access.</p>
+      <img src="../../bug-reports/assets/BUG-004/02-payer-selector-verified.png" alt="Payer selector showing George Guardian and Fiona Fencer">
+    </article>
+  </main>
+</body>
+</html>

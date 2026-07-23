@@ -12,17 +12,17 @@
   <main class="read">
     <article class="verdict">
       <p class="eyebrow">Phase 00 · Coordinator merge</p>
-      <h1 class="verdict-word is-no">NO</h1>
-      <p class="verdict-line">BUG-001 blocks login and 18 protected Test IDs.</p>
+      <h1 class="verdict-word">YES</h1>
+      <p class="verdict-line">All 24 planned Test IDs pass. There are no open P0 or P1 defects.</p>
     </article>
     <h2>Coverage</h2>
-    <p>24 Test IDs: 4 passed, 2 failed, 18 blocked, 0 unaccounted.</p>
-    <h2>Open P0</h2>
-    <p><a href="../bugs/BUG-001.html">BUG-001 - Login cannot reach configured Supabase host</a></p>
-    <h2>Open P1</h2>
-    <p><a href="../bugs/BUG-002.html">BUG-002 - Public footers omit required links</a></p>
-    <h2>Next action</h2>
-    <p>Correct the browser-facing Supabase URL through the normal secret-management process, restart Next.js, then re-run P0-B1.</p>
+    <p>24 Test IDs: 24 passed, 0 failed, 0 blocked, 0 unaccounted.</p>
+    <h2>Resolved</h2>
+    <p><a href="../bugs/BUG-001.html">BUG-001</a>, <a href="../bugs/BUG-002.html">BUG-002</a>, <a href="../bugs/BUG-003.html">BUG-003</a>, and <a href="../bugs/BUG-004.html">BUG-004</a> are browser verified.</p>
+    <h2>Open P2</h2>
+    <p><a href="../bugs/BUG-005.html">BUG-005 - Admin personal dashboard counts all visible households</a></p>
+    <h2>Verification</h2>
+    <p>Production build, unit tests, lint, migration reset, seed checks, responsive public routes, authentication, authorization, booking, invoicing, and receipts passed.</p>
   </main>
 </body>
 </html>

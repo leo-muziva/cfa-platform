@@ -12,7 +12,7 @@
   <main class="read has-rail">
     <article>
       <header class="article-header">
-        <p class="eyebrow"><span class="pri">P0</span><span class="sep">·</span>Phase 00<span class="sep">·</span>Open</p>
+        <p class="eyebrow"><span class="pri">P0</span><span class="sep">·</span>Phase 00<span class="sep">·</span>Resolved</p>
         <h1 class="article-title">Login cannot reach configured Supabase host</h1>
         <p class="article-deck">Valid credentials produce a DNS failure before Supabase can authenticate the user.</p>
       </header>
@@ -26,6 +26,9 @@
 TypeError: Failed to fetch
 at SupabaseAuthClient.signInWithPassword</code></pre>
       <img src="../../bug-reports/assets/BUG-001/01-login-failed.png" alt="Login error modal showing Failed to fetch">
+      <h2>Verification</h2>
+      <p>Browser login redirected to <code>/protected</code>; admin access, refresh persistence, logout, and route protection passed.</p>
+      <img src="../../bug-reports/assets/BUG-001/02-admin-dashboard-verified.png" alt="Verified CFA admin dashboard">
     </article>
   </main>
 </body>
