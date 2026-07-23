@@ -8,21 +8,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { MemberListFilters, Profile } from '@/types/domain'
 
-function RoleBadge({ role }: { role: Profile['role'] }) {
-  const variants: Record<Profile['role'], 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    admin: 'default',
-    coach: 'secondary',
-    fencer: 'outline',
-    guardian: 'outline',
-  }
-  return <Badge variant={variants[role]}>{role}</Badge>
+function AccountBadge({ profile }: { profile: Profile }) {
+  return <Badge variant={profile.staff_type === 'admin' ? 'default' : profile.is_staff ? 'secondary' : 'outline'}>
+    {profile.staff_type ?? profile.membership_status}
+  </Badge>
 }
 
 /** Builds a members-list URL that keeps the active filters but swaps the page. */
 function pageHref(filters: MemberListFilters, page: number): string {
   const params = new URLSearchParams()
   if (filters.search) params.set('search', filters.search)
-  if (filters.role) params.set('role', filters.role)
+  if (filters.membershipStatus) params.set('membershipStatus', filters.membershipStatus)
+  if (filters.staffType) params.set('staffType', filters.staffType)
   if (filters.status) params.set('status', filters.status)
   if (page > 1) params.set('page', String(page))
   const qs = params.toString()
@@ -51,7 +48,7 @@ export default async function MembersPage({
   }
 
   const { page, filters } = result
-  const hasFilters = Boolean(filters.search || filters.role || filters.status)
+  const hasFilters = Boolean(filters.search || filters.membershipStatus || filters.staffType || filters.status)
   const rangeStart = page.total === 0 ? 0 : (page.page - 1) * page.pageSize + 1
   const rangeEnd = Math.min(page.page * page.pageSize, page.total)
 
@@ -82,13 +79,9 @@ export default async function MembersPage({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="role">Role</Label>
-          <select id="role" name="role" defaultValue={filters.role ?? ''} className={selectClasses}>
-            <option value="">All roles</option>
-            <option value="admin">Admin</option>
-            <option value="coach">Coach</option>
-            <option value="fencer">Fencer</option>
-            <option value="guardian">Guardian</option>
+          <Label htmlFor="membershipStatus">Membership</Label>
+          <select id="membershipStatus" name="membershipStatus" defaultValue={filters.membershipStatus ?? ''} className={selectClasses}>
+            <option value="">All accounts</option><option value="guest">Guest</option><option value="member">Member</option>
           </select>
         </div>
         <div className="grid gap-2">
@@ -159,7 +152,7 @@ export default async function MembersPage({
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{profile.email}</td>
                       <td className="py-3 px-4">
-                        <RoleBadge role={profile.role} />
+                        <AccountBadge profile={profile} />
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
                         {profile.membership_type?.name ?? '—'}

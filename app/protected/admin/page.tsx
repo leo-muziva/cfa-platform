@@ -2,15 +2,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMemberStatsForAdmin } from '@/lib/services/MemberService'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import type { Role } from '@/types/domain'
-
-const ROLE_LABELS: Record<Role, string> = {
-  admin: 'Admins',
-  coach: 'Coaches',
-  fencer: 'Fencers',
-  guardian: 'Guardians',
-}
-
 function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
     <Card>
@@ -59,17 +50,12 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>By role</CardTitle>
+            <CardTitle>By account type</CardTitle>
             <CardDescription>Everyone registered on the platform</CardDescription>
           </CardHeader>
           <CardContent>
             <dl className="flex flex-col gap-2">
-              {(Object.keys(ROLE_LABELS) as Role[]).map((role) => (
-                <div key={role} className="flex items-center justify-between text-sm">
-                  <dt className="text-muted-foreground">{ROLE_LABELS[role]}</dt>
-                  <dd className="font-medium tabular-nums">{stats.byRole[role]}</dd>
-                </div>
-              ))}
+              {[['Guests', stats.guests], ['Members', stats.members], ['Admins', stats.admins], ['Coaches', stats.coaches]].map(([label, count]) => <div key={String(label)} className="flex items-center justify-between text-sm"><dt className="text-muted-foreground">{label}</dt><dd className="font-medium tabular-nums">{count}</dd></div>)}
             </dl>
           </CardContent>
         </Card>

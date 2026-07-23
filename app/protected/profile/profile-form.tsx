@@ -31,9 +31,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             <p className="text-sm text-muted-foreground">{profile.email}</p>
           </div>
           <div className="grid gap-1">
-            <Label>Role</Label>
+            <Label>Account status</Label>
             <div>
-              <Badge variant="secondary">{profile.role}</Badge>
+              <Badge variant="secondary">{profile.staff_type ?? profile.membership_status}</Badge>
             </div>
           </div>
           <div className="grid gap-1">
