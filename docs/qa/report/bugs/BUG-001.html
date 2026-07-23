@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- skill:running-bug-review-board v0.3 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BUG-001 - Login cannot reach Supabase</title>
+  <link rel="stylesheet" href="../assets.css">
+</head>
+<body>
+  <header class="masthead"><div class="masthead-inner"><h1 class="masthead-title"><a href="../index.html">CFA Quality Report</a></h1></div></header>
+  <main class="read has-rail">
+    <article>
+      <header class="article-header">
+        <p class="eyebrow"><span class="pri">P0</span><span class="sep">·</span>Phase 00<span class="sep">·</span>Open</p>
+        <h1 class="article-title">Login cannot reach configured Supabase host</h1>
+        <p class="article-deck">Valid credentials produce a DNS failure before Supabase can authenticate the user.</p>
+      </header>
+      <aside class="article-impact"><p class="eyebrow">Impact</p><p>No user can enter the member portal or admin dashboard.</p></aside>
+      <h2>Actual</h2><p>The login modal shows “Failed to fetch” and Chrome reports <code>net::ERR_NAME_NOT_RESOLVED</code>.</p>
+      <h2>Expected</h2><p>A valid login creates a session and redirects to <code>/protected</code>.</p>
+      <h2>Steps to reproduce</h2>
+      <ol><li>Open <code>/auth/login</code>.</li><li>Enter the seeded admin email.</li><li>Enter the seeded password and select Log in.</li><li>Observe the error modal.</li></ol>
+      <h2>Evidence</h2>
+      <pre><code>Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+TypeError: Failed to fetch
+at SupabaseAuthClient.signInWithPassword</code></pre>
+      <img src="../../bug-reports/assets/BUG-001/01-login-failed.png" alt="Login error modal showing Failed to fetch">
+    </article>
+  </main>
+</body>
+</html>
