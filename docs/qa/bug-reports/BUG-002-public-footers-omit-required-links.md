@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Priority | P1 |
-| Status | open |
+| Status | resolved |
 | Phase | 00 |
 | Test ID | P0-A5 |
 | Reported | 2026-07-23 |
@@ -69,3 +69,15 @@ destination set without changing the protected hero or login designs.
 ## Triage log
 
 - 2026-07-23: Filed as P1 with direct-route workaround.
+- 2026-07-23: Resolved. Required legal, email, map, and Facebook
+  destinations passed live-browser checks in both footer layouts at
+  mobile, tablet, and desktop widths.
+
+## Verification
+
+![Verified mobile footer](assets/BUG-002/02-mobile-footer-verified.png)
+
+- Reproduction before: each footer layout omitted required destinations.
+- Verification after: both layouts contain the centralized verified
+  destinations, remain keyboard reachable, and have no horizontal
+  overflow.
