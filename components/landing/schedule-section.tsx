@@ -22,10 +22,10 @@ export function ScheduleSection() {
   return (
     <section
       id="schedule"
-      className="relative bg-black text-white px-4 sm:px-6 md:px-12 py-20 md:py-28"
+      className="relative bg-[#fffaf0] text-[#25145c] px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm uppercase tracking-widest text-gray-400 mb-3">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] mb-3">
           Train With Us
         </p>
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
@@ -48,18 +48,18 @@ export function ScheduleSection() {
               }
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
-              className="liquid-glass rounded-2xl p-6"
+              className="cfa-light-card rounded-2xl p-6"
             >
-              <Clock size={24} className="mb-4" aria-hidden="true" />
+              <Clock size={24} className="mb-4 text-[#2d176b]" aria-hidden="true" />
               <h3 className="text-xl font-medium mb-1">{session.days}</h3>
-              <p className="text-gray-400 mb-3">{session.time}</p>
-              <p className="text-gray-400">{session.description}</p>
+              <p className="text-[#8a6810] mb-3">{session.time}</p>
+              <p className="text-[#625b73]">{session.description}</p>
             </motion.div>
           ))}
         </div>
 
         {/* TODO: schedule + drop-in fee conflict across old-site pages — confirm with sponsor (SPONSOR-QUESTIONS #11) */}
-        <p className="text-gray-400 text-sm mt-8">
+        <p className="text-[#625b73] text-sm mt-8">
           Visiting fencers welcome — R120 drop-in.
         </p>
       </div>

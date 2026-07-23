@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { adminUpdateMemberAction } from '@/app/actions/admin-members'
-import type { Profile, MembershipType, Role } from '@/types/domain'
+import type { Profile, MembershipType } from '@/types/domain'
 import {
   Card,
   CardContent,
@@ -13,13 +13,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-
-const ROLES: { value: Role; label: string }[] = [
-  { value: 'fencer', label: 'Fencer' },
-  { value: 'guardian', label: 'Guardian' },
-  { value: 'coach', label: 'Coach' },
-  { value: 'admin', label: 'Admin' },
-]
 
 const selectClasses =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -81,13 +74,10 @@ export function MemberEditForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <select id="role" name="role" defaultValue={profile.role} className={selectClasses}>
-                {ROLES.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
+              <Label htmlFor="membership_status">Membership status</Label>
+              <select id="membership_status" name="membership_status" defaultValue={profile.membership_status} className={selectClasses}>
+                <option value="guest">Guest</option>
+                <option value="member">Member</option>
               </select>
             </div>
             <div className="grid gap-2">
@@ -101,11 +91,16 @@ export function MemberEditForm({
                 <option value="">No membership</option>
                 {membershipTypes.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.name} — R{type.monthly_fee}/month
+                    {type.name} — R{type.price}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex items-center gap-2 py-1"><input id="is_staff" name="is_staff" type="checkbox" defaultChecked={profile.is_staff} className="h-4 w-4 rounded border-input accent-primary"/><Label htmlFor="is_staff">Staff account</Label></div>
+            <div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue={profile.staff_type ?? ''} className={selectClasses}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div>
           </div>
 
           <div className="flex items-center gap-2 py-1">

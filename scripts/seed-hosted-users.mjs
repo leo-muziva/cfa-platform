@@ -3,8 +3,8 @@
  *
  * Local Supabase can insert straight into auth.users (see supabase/seed.sql),
  * but hosted projects must go through the Auth Admin API. This script creates
- * the users (auto-confirmed) and applies the same roles/phones/memberships as
- * the SQL seed. Safe to re-run: existing users are updated, not duplicated.
+ * the users (auto-confirmed) and applies the current identity/profile fields.
+ * Safe to re-run: existing users are updated, not duplicated.
  *
  * Usage:  node scripts/seed-hosted-users.mjs
  * Needs:  NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY in .env.local
@@ -29,22 +29,16 @@ const admin = createClient(url, secretKey, {
 const TEST_PASSWORD = 'Test1234!'
 
 const USERS = [
-  { email: 'admin@cfa.test', full_name: 'Alice Admin', role: 'admin', phone: '+27 21 000 0001' },
-  { email: 'coach@cfa.test', full_name: 'Charles Coach', role: 'coach', phone: '+27 21 000 0002', membership: 'Senior' },
-  { email: 'fencer@cfa.test', full_name: 'Fiona Fencer', role: 'fencer', phone: '+27 21 000 0003', date_of_birth: '2005-03-15', membership: 'Junior' },
-  { email: 'guardian@cfa.test', full_name: 'George Guardian', role: 'guardian', phone: '+27 21 000 0004' },
+  { email: 'admin@cfa.test', full_name: 'Alice Admin', role: 'admin', phone: '+27 21 000 0001', is_staff: true, staff_type: 'admin' },
+  { email: 'coach@cfa.test', full_name: 'Charles Coach', role: 'coach', phone: '+27 21 000 0002', is_staff: true, staff_type: 'coach' },
+  { email: 'fencer@cfa.test', full_name: 'Fiona Fencer', role: 'fencer', phone: '+27 21 000 0003', date_of_birth: '2005-03-15', is_staff: false, staff_type: null },
+  { email: 'guardian@cfa.test', full_name: 'George Guardian', role: 'guardian', phone: '+27 21 000 0004', is_staff: false, staff_type: null },
 ]
 
 async function findUserIdByEmail(email) {
   const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
   if (error) return null
   return data.users.find((u) => u.email === email)?.id ?? null
-}
-
-async function membershipTypeId(name) {
-  if (!name) return null
-  const { data } = await admin.from('membership_types').select('id').eq('name', name).single()
-  return data?.id ?? null
 }
 
 for (const user of USERS) {
@@ -74,18 +68,21 @@ for (const user of USERS) {
     .from('profiles')
     .update({
       role: user.role,
+      membership_status: 'guest',
+      is_staff: user.is_staff,
+      staff_type: user.staff_type,
       full_name: user.full_name,
       phone: user.phone,
       date_of_birth: user.date_of_birth ?? null,
       is_active: true,
-      membership_type_id: await membershipTypeId(user.membership),
+      membership_type_id: null,
     })
     .eq('id', userId)
 
   if (profileError) {
     console.error(`✗ ${user.email} profile update failed: ${profileError.message}`)
   } else {
-    console.log(`  profile set: ${user.role}${user.membership ? ` · ${user.membership}` : ''}`)
+    console.log(`  profile set: ${user.staff_type ?? 'guest'}`)
   }
 }
 

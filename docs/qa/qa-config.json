@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "discoveredAt": "2026-07-23T15:00:00Z",
+  "confirmedBy": "user",
+  "issueTracker": {
+    "type": "none",
+    "syncOnFile": false,
+    "pull": {
+      "onBRBStart": false,
+      "onReTest": false,
+      "window": "since-last-sync",
+      "createLocalForUntracked": "ask"
+    }
+  },
+  "triage": {
+    "runHeuristicsOnFile": false
+  },
+  "platforms": {
+    "web": {
+      "deviceModes": {
+        "mobile": "375x812",
+        "tablet": "768x1024",
+        "desktop": "1280x800"
+      },
+      "primary": "mobile",
+      "primarySource": "inferred"
+    }
+  },
+  "report": {
+    "outputDir": "docs/qa/report",
+    "title": "CFA Quality Report"
+  }
+}

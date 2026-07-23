@@ -1,43 +1,25 @@
-import { redirect } from "next/navigation";
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { getCurrentAccountContext } from '@/lib/services/MemberService'
+import { getLessonHistory } from '@/lib/services/PlatformService'
 
-import { createClient } from "@/lib/supabase/server";
-import { InfoIcon } from "lucide-react";
-import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
-import { Suspense } from "react";
-
-async function UserDetails() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims) {
-    redirect("/auth/login");
-  }
-
-  return JSON.stringify(data.claims, null, 2);
-}
-
-export default function ProtectedPage() {
+export default async function DashboardPage() {
+  const context = await getCurrentAccountContext()
+  if ('error' in context) redirect('/auth/login')
+  const history = await getLessonHistory()
+  const next = 'items' in history ? history.items.filter((i) => i.status === 'upcoming').sort((a,b) => a.starts_at.localeCompare(b.starts_at))[0] : null
   return (
-    <div className="flex-1 w-full flex flex-col gap-12">
-      <div className="w-full">
-        <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
-          <InfoIcon size="16" strokeWidth={2} />
-          This is a protected page that you can only see as an authenticated
-          user
-        </div>
+    <div className="w-full space-y-6">
+      <div><h1 className="text-3xl font-bold">My account</h1><p className="text-muted-foreground">Welcome, {context.profile.full_name || context.profile.email}.</p></div>
+      {!context.profile.profile_completed_at && <Card><CardHeader><CardTitle>Complete your account details</CardTitle></CardHeader><CardContent><p className="mb-4 text-muted-foreground">Add the required contact, emergency-contact and consent information.</p><Button asChild><Link href="/protected/complete-profile">Complete profile</Link></Button></CardContent></Card>}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card><CardHeader><CardTitle>Next lesson</CardTitle></CardHeader><CardContent>{next ? new Date(next.starts_at).toLocaleString('en-ZA') : 'No upcoming lessons.'}</CardContent></Card>
+        {context.capabilities.isPayer && context.householdMembers.length > 1 && <Card><CardHeader><CardTitle>Household</CardTitle></CardHeader><CardContent>{context.householdMembers.length - 1} dependent(s)</CardContent></Card>}
       </div>
-      <div className="flex flex-col gap-2 items-start">
-        <h2 className="font-bold text-2xl mb-4">Your user details</h2>
-        <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
-          <Suspense>
-            <UserDetails />
-          </Suspense>
-        </pre>
-      </div>
-      <div>
-        <h2 className="font-bold text-2xl mb-4">Next steps</h2>
-        <FetchDataSteps />
-      </div>
+      <Button asChild><Link href="/protected/book">Book a lesson</Link></Button>
+      {context.capabilities.canSeeHouseholdMoney && <Button variant="outline" asChild className="ml-2"><Link href="/protected/billing">View billing</Link></Button>}
     </div>
-  );
+  )
 }

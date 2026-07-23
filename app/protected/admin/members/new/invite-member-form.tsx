@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { inviteMemberAction } from '@/app/actions/admin-members'
-import type { MembershipType, Role } from '@/types/domain'
+import type { MembershipType } from '@/types/domain'
 import {
   Card,
   CardContent,
@@ -13,13 +13,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-
-const ROLES: { value: Role; label: string }[] = [
-  { value: 'fencer', label: 'Fencer' },
-  { value: 'guardian', label: 'Guardian' },
-  { value: 'coach', label: 'Coach' },
-  { value: 'admin', label: 'Admin' },
-]
 
 const selectClasses =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -64,13 +57,9 @@ export function InviteMemberForm({ membershipTypes }: { membershipTypes: Members
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <select id="role" name="role" defaultValue="fencer" className={selectClasses}>
-                {ROLES.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
+              <Label htmlFor="membership_status">Membership status</Label>
+              <select id="membership_status" name="membership_status" defaultValue="guest" className={selectClasses}>
+                <option value="guest">Guest</option><option value="member">Member</option>
               </select>
             </div>
             <div className="grid gap-2">
@@ -84,12 +73,14 @@ export function InviteMemberForm({ membershipTypes }: { membershipTypes: Members
                 <option value="">No membership</option>
                 {membershipTypes.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.name} — R{type.monthly_fee}/month
+                    {type.name} — R{type.price}
                   </option>
                 ))}
               </select>
             </div>
           </div>
+
+          <div className="grid gap-4 sm:grid-cols-2"><div className="flex items-center gap-2"><input id="is_staff" name="is_staff" type="checkbox" className="h-4 w-4 rounded border-input accent-primary"/><Label htmlFor="is_staff">Staff account</Label></div><div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue="" className={selectClasses}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div></div>
 
           {state.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
           {state.success && <p className="text-sm text-green-600" role="status">{state.message}</p>}

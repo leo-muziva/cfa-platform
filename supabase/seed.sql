@@ -26,11 +26,17 @@ insert into auth.users (
   raw_user_meta_data,
   is_super_admin,
   confirmation_token,
-  recovery_token
+  recovery_token,
+  email_change_token_new,
+  email_change,
+  email_change_token_current,
+  phone_change,
+  phone_change_token,
+  reauthentication_token
 )
 values
   (
-    '11111111-1111-1111-1111-111111111111',
+    '11111111-1111-4111-8111-111111111111',
     '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'admin@cfa.test',
@@ -38,10 +44,10 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Alice Admin"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   ),
   (
-    '22222222-2222-2222-2222-222222222222',
+    '22222222-2222-4222-8222-222222222222',
     '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'coach@cfa.test',
@@ -49,10 +55,10 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Charles Coach"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   ),
   (
-    '33333333-3333-3333-3333-333333333333',
+    '33333333-3333-4333-8333-333333333333',
     '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'fencer@cfa.test',
@@ -60,10 +66,10 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Fiona Fencer"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   ),
   (
-    '44444444-4444-4444-4444-444444444444',
+    '44444444-4444-4444-8444-444444444444',
     '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'guardian@cfa.test',
@@ -71,46 +77,73 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"George Guardian"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   );
 
 -- [HOSTED + LOCAL] Set roles, names, and phone numbers on the auto-created profiles.
 -- These UUIDs must match the auth.users IDs above (local) or the real UUIDs from
 -- Supabase Dashboard (hosted).
 update public.profiles set
-  role        = 'admin',
-  full_name   = 'Alice Admin',
-  phone       = '+27 21 000 0001',
-  is_active   = true
-where id = '11111111-1111-1111-1111-111111111111';
+  role              = 'admin',
+  membership_status = 'guest',
+  is_staff          = true,
+  staff_type        = 'admin',
+  full_name         = 'Alice Admin',
+  phone             = '+27 21 000 0001',
+  is_active         = true
+where id = '11111111-1111-4111-8111-111111111111';
 
 update public.profiles set
-  role        = 'coach',
-  full_name   = 'Charles Coach',
-  phone       = '+27 21 000 0002',
-  is_active   = true
-where id = '22222222-2222-2222-2222-222222222222';
+  role              = 'coach',
+  membership_status = 'guest',
+  is_staff          = true,
+  staff_type        = 'coach',
+  full_name         = 'Charles Coach',
+  phone             = '+27 21 000 0002',
+  is_active         = true
+where id = '22222222-2222-4222-8222-222222222222';
 
 update public.profiles set
-  role        = 'fencer',
-  full_name   = 'Fiona Fencer',
-  phone       = '+27 21 000 0003',
-  date_of_birth = '2005-03-15',
-  is_active   = true
-where id = '33333333-3333-3333-3333-333333333333';
+  role               = 'fencer',
+  membership_status  = 'guest',
+  is_staff           = false,
+  staff_type         = null,
+  full_name          = 'Fiona Fencer',
+  phone              = '+27 21 000 0003',
+  date_of_birth      = '2005-03-15',
+  is_active          = true,
+  membership_type_id = null
+where id = '33333333-3333-4333-8333-333333333333';
 
 update public.profiles set
-  role        = 'guardian',
-  full_name   = 'George Guardian',
-  phone       = '+27 21 000 0004',
-  is_active   = true
-where id = '44444444-4444-4444-4444-444444444444';
+  role               = 'guardian',
+  membership_status  = 'guest',
+  is_staff           = false,
+  staff_type         = null,
+  full_name          = 'George Guardian',
+  phone              = '+27 21 000 0004',
+  is_active          = true,
+  membership_type_id = null
+where id = '44444444-4444-4444-8444-444444444444';
 
--- Assign membership types to fencer (Junior) and coach (Senior)
-update public.profiles
-set membership_type_id = (select id from public.membership_types where name = 'Junior' limit 1)
-where id = '33333333-3333-3333-3333-333333333333';
+-- Make the guardian/fencer pair exercise payer and dependent permissions.
+-- The profile trigger initially creates a household of one for each account.
+delete from public.household_members
+where profile_id = '33333333-3333-4333-8333-333333333333';
 
-update public.profiles
-set membership_type_id = (select id from public.membership_types where name = 'Senior' limit 1)
-where id = '22222222-2222-2222-2222-222222222222';
+delete from public.households
+where payer_id = '33333333-3333-4333-8333-333333333333';
+
+insert into public.household_members (
+  household_id,
+  profile_id,
+  household_role,
+  payer_consent_at
+)
+select
+  id,
+  '33333333-3333-4333-8333-333333333333',
+  'dependent',
+  now()
+from public.households
+where payer_id = '44444444-4444-4444-8444-444444444444';

@@ -1,9 +1,21 @@
-export type Role = 'admin' | 'coach' | 'fencer' | 'guardian'
+export type MembershipStatus = 'guest' | 'member'
+export type HouseholdRole = 'payer' | 'dependent'
+export type StaffType = 'admin' | 'coach'
+export type PaymentPreference = 'manual' | 'recurring_card'
+export type PaymentOption = 'pay_now' | 'pay_later'
+export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
+export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
+export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee'
+export type FinancialStatus = 'unpaid' | 'paid' | 'overdue'
 
 export interface MembershipType {
   id: string
+  code: 'month_to_month' | 'six_month' | 'twelve_month' | 'beginner_package'
   name: string
   monthly_fee: number
+  price: number
+  term_months: number | null
+  joining_fee: number
   description: string | null
   is_active: boolean
   created_at: string
@@ -13,12 +25,19 @@ export interface Profile {
   id: string
   email: string
   full_name: string | null
-  role: Role
   phone: string | null
   date_of_birth: string | null
-  is_active: boolean
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  membership_status: MembershipStatus
   membership_type_id: string | null
-  membership_type?: MembershipType
+  membership_type?: Pick<MembershipType, 'id' | 'code' | 'name'> | null
+  is_staff: boolean
+  staff_type: StaffType | null
+  is_active: boolean
+  terms_accepted_at: string | null
+  privacy_accepted_at: string | null
+  profile_completed_at: string | null
   created_at: string
   updated_at: string
 }
@@ -27,23 +46,154 @@ export interface ProfileUpdate {
   full_name?: string
   phone?: string
   date_of_birth?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
 }
 
 export interface AdminProfileUpdate extends ProfileUpdate {
-  role?: Role
   is_active?: boolean
+  membership_status?: MembershipStatus
   membership_type_id?: string | null
+  is_staff?: boolean
+  staff_type?: StaffType | null
 }
 
-/** Parsed URL search params for the admin members list. */
+export interface Household {
+  id: string
+  payer_id: string
+  membership_payment_method: PaymentPreference
+  created_at: string
+  updated_at: string
+}
+
+export interface HouseholdMember {
+  household_id: string
+  profile_id: string
+  household_role: HouseholdRole
+  payer_consent_at: string | null
+  profile?: Pick<Profile, 'id' | 'full_name' | 'email' | 'membership_status'>
+}
+
+export interface MembershipRequest {
+  id: string
+  applicant_id: string
+  membership_type_id: string
+  status: MembershipRequestStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  applicant?: Pick<Profile, 'id' | 'full_name' | 'email'>
+  membership_type?: Pick<MembershipType, 'id' | 'name'>
+}
+
+export interface LessonSlot {
+  id: string
+  starts_at: string
+  ends_at: string
+  coach_id: string | null
+  capacity: number | null
+  price: number
+  is_open: boolean
+  created_by: string
+  created_at: string
+}
+
+export interface Booking {
+  id: string
+  lesson_slot_id: string
+  booked_by_id: string
+  fencer_id: string
+  payment_option: PaymentOption
+  status: BookingStatus
+  created_at: string
+  lesson_slot?: LessonSlot
+  fencer?: Pick<Profile, 'id' | 'full_name'>
+}
+
+export interface Charge {
+  id: string
+  fencer_id: string
+  payer_id: string
+  booking_id: string | null
+  type: ChargeType
+  amount: number
+  status: 'unpaid' | 'paid'
+  period: string
+  description: string
+  created_at: string
+  paid_at: string | null
+}
+
+export interface InvoiceLine {
+  id: string
+  invoice_id: string
+  charge_id: string
+  description: string
+  amount: number
+}
+
+export interface Invoice {
+  id: string
+  payer_id: string
+  period: string
+  invoice_number: string
+  status: FinancialStatus
+  total: number
+  payment_link: string | null
+  issued_at: string
+  paid_at: string | null
+  lines?: InvoiceLine[]
+}
+
+export interface Receipt {
+  id: string
+  payer_id: string
+  invoice_id: string | null
+  receipt_number: string
+  amount: number
+  issued_at: string
+}
+
+export interface PaymentAttempt {
+  id: string
+  payer_id: string
+  invoice_id: string | null
+  provider: string | null
+  provider_reference: string | null
+  status: 'pending' | 'succeeded' | 'failed'
+  amount: number
+  created_at: string
+  completed_at: string | null
+}
+
+export interface ProviderEvent {
+  id: string
+  provider: string
+  provider_event_id: string
+  event_type: string
+  processed_at: string | null
+  created_at: string
+}
+
+export interface Capabilities {
+  isAdmin: boolean
+  isCoach: boolean
+  isPayer: boolean
+  isDependent: boolean
+  canSeeHouseholdMoney: boolean
+  canTriggerPayment: boolean
+  canManageDependents: boolean
+  canManageStaffArea: boolean
+}
+
 export interface MemberListFilters {
   search?: string
-  role?: Role
+  membershipStatus?: MembershipStatus
+  staffType?: StaffType
   status?: 'active' | 'inactive'
   page: number
 }
 
-/** A single page of results plus the metadata needed to render pagination. */
 export interface Paged<T> {
   items: T[]
   total: number
@@ -52,19 +202,40 @@ export interface Paged<T> {
   pageCount: number
 }
 
-/** Minimal row shape fetched for dashboard statistics. */
 export interface MemberStatsRow {
-  role: Role
+  membership_status: MembershipStatus
+  is_staff: boolean
+  staff_type: StaffType | null
   is_active: boolean
   membership_type: Pick<MembershipType, 'name'> | null
 }
 
-/** Aggregated member statistics shown on the admin dashboard. */
 export interface MemberStats {
   total: number
   active: number
   inactive: number
-  byRole: Record<Role, number>
+  guests: number
+  members: number
+  admins: number
+  coaches: number
   byMembershipType: Record<string, number>
   unassigned: number
+}
+
+/** Safe lesson-history DTO. It intentionally has no monetary fields. */
+export interface LessonHistoryItem {
+  id: string
+  starts_at: string
+  ends_at: string
+  status: BookingStatus
+  fencer_id: string
+  fencer_name: string | null
+}
+
+export interface PayerBillingView {
+  balance: number
+  invoices: Invoice[]
+  receipts: Receipt[]
+  paymentPreference: PaymentPreference
+  providerAvailable: boolean
 }
