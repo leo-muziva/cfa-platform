@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Priority | P0 |
-| Status | open |
+| Status | resolved |
 | Phase | 00 |
 | Test ID | P0-B1 |
 | Reported | 2026-07-23 |
@@ -88,3 +88,15 @@ at handleSubmit
 ## Triage log
 
 - 2026-07-23: Filed as P0. Auto QA stopped before protected workflows.
+- 2026-07-23: Resolved. Browser password login redirected to
+  `/protected`, the admin dashboard rendered, session refresh succeeded,
+  and logout restored the route guard. Verified on the production-style
+  local build.
+
+## Verification
+
+![Verified admin dashboard](assets/BUG-001/02-admin-dashboard-verified.png)
+
+- Reproduction before: browser login failed with `Failed to fetch`.
+- Verification after: no Auth network failure; admin dashboard access
+  and session persistence passed.
