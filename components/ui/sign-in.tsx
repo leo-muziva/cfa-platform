@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { SupabaseConfigError } from "@/lib/supabase/config";
 import {
   AuthModal,
   type AuthModalState,
@@ -49,8 +50,8 @@ export function SignInFlow() {
   // Real Supabase call; until Google is enabled in the Supabase dashboard
   // this returns "provider is not enabled" and is shown honestly.
   const handleGoogle = async () => {
-    const supabase = createClient();
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: `${window.location.origin}/auth/callback?next=/protected` },
@@ -68,16 +69,31 @@ export function SignInFlow() {
     e.preventDefault();
     setModal({ status: "loading", messages: ["Logging you in..."] });
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setModal({ status: "error", message: error.message });
-      return;
+      if (error) {
+        setModal({ status: "error", message: error.message });
+        return;
+      }
+
+      // No confetti here — members logging in want speed, not a flourish.
+      router.push("/protected");
+    } catch (error: unknown) {
+      const message =
+        error instanceof SupabaseConfigError
+          ? error.message
+          : error instanceof TypeError
+            ? "Cannot reach the configured Supabase service. If you are working locally, start Supabase and run npm run dev:local."
+            : error instanceof Error
+              ? error.message
+              : "Could not log in.";
+      setModal({ status: "error", message });
     }
-
-    // No confetti here — members logging in want speed, not a flourish.
-    router.push("/protected");
   };
 
   const closeModal = () => setModal({ status: "idle" });
