@@ -1,21 +1,21 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/services/MemberService'
 
-/**
- * Shared frame for all admin pages: a small sub-nav under the app header.
- * Access control happens per-page via the admin service guard + RLS,
- * so this layout stays purely presentational.
- */
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const guard = await requireAdmin()
+  if ('error' in guard) redirect(guard.error === 'Not authenticated' ? '/auth/login' : '/protected')
   return (
     <div className="flex-1 w-full flex flex-col gap-6">
-      <nav aria-label="Admin sections" className="flex items-center gap-4 border-b pb-3 text-sm">
+      <nav aria-label="Admin sections" className="flex flex-wrap items-center gap-4 border-b pb-3 text-sm">
         <span className="font-semibold">Admin</span>
-        <Link href="/protected/admin" className="text-muted-foreground hover:text-foreground transition-colors">
-          Dashboard
-        </Link>
-        <Link href="/protected/admin/members" className="text-muted-foreground hover:text-foreground transition-colors">
-          Members
-        </Link>
+        <Link href="/protected/admin" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
+        <Link href="/protected/admin/members" className="text-muted-foreground hover:text-foreground">Members</Link>
+        <Link href="/protected/admin/households" className="text-muted-foreground hover:text-foreground">Households</Link>
+        <Link href="/protected/admin/membership-requests" className="text-muted-foreground hover:text-foreground">Requests</Link>
+        <Link href="/protected/admin/lessons" className="text-muted-foreground hover:text-foreground">Lesson slots</Link>
+        <Link href="/protected/admin/invoicing" className="text-muted-foreground hover:text-foreground">Invoicing</Link>
+        <Link href="/protected/admin/payments" className="text-muted-foreground hover:text-foreground">Payments</Link>
       </nav>
       {children}
     </div>
