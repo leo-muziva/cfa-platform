@@ -74,13 +74,17 @@ This downloads all the packages the project needs. It only needs to run once (or
 
 ## Step 6 — Environment Variables (Leo sends you this)
 
-The project needs a `.env.local` file to connect to our Supabase database.
+For the shared hosted database, the project needs a `.env.local` file.
 **Leo will send you the values in a private message** (never share these publicly).
 
 1. In the `cfa-platform` folder, create a file called `.env.local`
-2. Copy the contents from `.env.example` and fill in the values Leo sends you:
+2. Copy the contents from `.env.template` and fill in the values Leo sends you:
 
 ```
+
+For local Supabase, do not replace your hosted `.env.local`. Start Docker
+Desktop, run `npx supabase start`, and use `npm run dev:local`. The command
+gets the local public connection values directly from the Supabase CLI.
 NEXT_PUBLIC_SUPABASE_URL=<paste value from Leo>
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<paste value from Leo>
 ```
