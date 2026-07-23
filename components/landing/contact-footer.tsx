@@ -2,27 +2,17 @@
 
 import { Mail, MapPin, Users } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import {
+  PUBLIC_CONTACT_LINKS,
+  PUBLIC_LEGAL_LINKS,
+} from "@/lib/public-site";
 
-const CONTACT_ROWS = [
-  {
-    icon: MapPin,
-    label: "Belvedere Community Centre, 9 Chess Road, Rondebosch, Cape Town",
-    href: "https://maps.google.com/?cid=1423116138085293119",
-    external: true,
-  },
-  {
-    icon: Mail,
-    label: "jeremy@capefencingacademy.com",
-    href: "mailto:jeremy@capefencingacademy.com",
-    external: false,
-  },
-  {
-    icon: Users,
-    label: "Fencing Western Cape community",
-    href: "https://www.facebook.com/groups/FencingWC/",
-    external: true,
-  },
-] as const;
+const CONTACT_ICONS = {
+  location: MapPin,
+  email: Mail,
+  facebook: Users,
+} as const;
 
 export function ContactFooter() {
   const shouldReduceMotion = useReducedMotion();
@@ -56,8 +46,8 @@ export function ContactFooter() {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="flex flex-col gap-4"
           >
-            {CONTACT_ROWS.map((row) => {
-              const Icon = row.icon;
+            {PUBLIC_CONTACT_LINKS.map((row) => {
+              const Icon = CONTACT_ICONS[row.id];
               return (
                 <li key={row.label}>
                   <a
@@ -98,9 +88,20 @@ export function ContactFooter() {
           </motion.div>
         </div>
 
-        <div className="border-t border-[#2d176b]/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-2 text-sm text-[#625b73]">
+        <div className="border-t border-[#2d176b]/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-3 text-sm text-[#625b73]">
           <p>© 2026 Cape Fencing Academy</p>
-          <p>Est. 1997 · Rondebosch, Cape Town</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <span>Est. 1997 · Rondebosch, Cape Town</span>
+            {PUBLIC_LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="hover:text-[#8a6810] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>
