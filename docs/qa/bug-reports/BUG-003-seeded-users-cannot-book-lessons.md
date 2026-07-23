@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Priority | P1 |
-| Status | open |
+| Status | resolved |
 | Phase | 00 |
 | Test ID | P0-D2, P0-D3, P0-D4 |
 | Reported | 2026-07-23 |
@@ -62,3 +62,16 @@ related seeded profile, household, and identity reference consistently.
 ## Triage log
 
 - 2026-07-23: Filed as P1 after repeatable real-browser reproduction.
+- 2026-07-23: Resolved by replacing the four local Auth fixture IDs
+  with RFC-compliant version-4 UUIDs and updating all linked seed
+  references.
+
+## Verification
+
+![Dependent lesson history after booking](assets/BUG-003/02-dependent-booking-verified.png)
+
+- The seeded dependent completed a browser booking with forced
+  pay-later behavior.
+- The booking appeared under Fiona Fencer in lesson history.
+- The booking created a linked charge, while the dependent still had no
+  billing navigation and received HTTP 404 from direct billing access.
