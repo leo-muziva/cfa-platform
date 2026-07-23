@@ -1,0 +1,10 @@
+import Link from 'next/link'
+
+const links = [
+  ['Home', '/'], ['Classes', '/classes'], ['Membership', '/membership'],
+  ['About', '/about'], ['Trial & contact', '/contact'],
+] as const
+
+export function PublicPageShell({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {
+  return <main className="min-h-screen bg-black text-white"><header className="border-b border-white/10"><nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5" aria-label="Public navigation"><Link href="/" className="font-semibold">Cape Fencing Academy</Link><div className="flex flex-wrap gap-5 text-sm text-gray-300">{links.map(([label, href]) => <Link key={href} href={href} className="hover:text-white">{label}</Link>)}<Link href="/auth" className="hover:text-white">Login / Sign up</Link></div></nav></header><section className="mx-auto max-w-6xl px-6 py-20"><h1 className="text-4xl md:text-6xl tracking-[-0.04em]">{title}</h1><p className="mt-5 max-w-2xl text-lg text-gray-400">{intro}</p><div className="mt-12">{children}</div></section><footer className="mx-auto flex max-w-6xl flex-wrap justify-between gap-4 border-t border-white/10 px-6 py-10 text-sm text-gray-400"><span>© 2026 Cape Fencing Academy</span><div className="flex gap-4"><Link href="/privacy">Privacy / POPIA</Link><Link href="/terms">Terms & Conditions</Link></div></footer></main>
+}

@@ -1,0 +1,5 @@
+import Link from 'next/link'
+import { PublicPageShell } from '@/components/public-page-shell'
+
+const plans = [['Month-to-month','R550','1 month'],['Six-month','R3,050','6 months'],['Twelve-month','R6,000','12 months'],['Beginner package','R1,000','4 individual lessons']] as const
+export default function MembershipPage() { return <PublicPageShell title="Membership & pricing" intro="CFA uses the same membership prices for adults and children."><div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">{plans.map(([name,price,term]) => <article key={name} className="liquid-glass rounded-2xl p-6"><h2 className="text-xl">{name}</h2><p className="mt-4 text-3xl">{price}</p><p className="mt-2 text-gray-400">{term}</p></article>)}</div><p className="mt-8 text-gray-400">A R350 first-time joining fee applies to memberships. Individual lessons may also be booked pay-as-you-go.</p><div className="mt-8 flex gap-3"><Link href="/contact" className="rounded-full bg-white px-6 py-3 text-black">Book a trial</Link><Link href="/auth" className="rounded-full border border-white/30 px-6 py-3">Request membership</Link></div></PublicPageShell> }
