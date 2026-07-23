@@ -47,11 +47,17 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
+  const publicPrefixes = [
+    "/", "/classes", "/membership", "/about", "/contact", "/privacy", "/terms", "/auth"
+  ];
+  const isPublicRoute = publicPrefixes.some((prefix) =>
+    prefix === "/" ? request.nextUrl.pathname === "/" : request.nextUrl.pathname.startsWith(prefix)
+  );
+
   if (
-    request.nextUrl.pathname !== "/" &&
+    !isPublicRoute &&
     !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !request.nextUrl.pathname.startsWith("/login")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
