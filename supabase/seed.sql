@@ -26,7 +26,13 @@ insert into auth.users (
   raw_user_meta_data,
   is_super_admin,
   confirmation_token,
-  recovery_token
+  recovery_token,
+  email_change_token_new,
+  email_change,
+  email_change_token_current,
+  phone_change,
+  phone_change_token,
+  reauthentication_token
 )
 values
   (
@@ -38,7 +44,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Alice Admin"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   ),
   (
     '22222222-2222-2222-2222-222222222222',
@@ -49,7 +55,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Charles Coach"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   ),
   (
     '33333333-3333-3333-3333-333333333333',
@@ -60,7 +66,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Fiona Fencer"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   ),
   (
     '44444444-4444-4444-4444-444444444444',
@@ -71,7 +77,7 @@ values
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"George Guardian"}',
-    false, '', ''
+    false, '', '', '', '', '', '', '', ''
   );
 
 -- [HOSTED + LOCAL] Set roles, names, and phone numbers on the auto-created profiles.
