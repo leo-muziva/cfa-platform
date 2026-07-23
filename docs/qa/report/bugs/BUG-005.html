@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- skill:running-bug-review-board v0.3 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BUG-005 - Admin personal household count</title>
+  <link rel="stylesheet" href="../assets.css">
+</head>
+<body>
+  <header class="masthead"><div class="masthead-inner"><h1 class="masthead-title"><a href="../index.html">CFA Quality Report</a></h1></div></header>
+  <main class="read">
+    <article>
+      <header class="article-header">
+        <p class="eyebrow"><span class="pri">P2</span><span class="sep">·</span>Phase 00<span class="sep">·</span>Open</p>
+        <h1 class="article-title">Admin personal dashboard counts all visible households</h1>
+        <p class="article-deck">The admin’s personal account summary uses every household row visible through staff authorization.</p>
+      </header>
+      <aside class="article-impact"><p class="eyebrow">Impact</p><p>Alice sees an inaccurate dependent count, but critical staff and member workflows remain functional.</p></aside>
+      <h2>Evidence</h2>
+      <img src="../../bug-reports/assets/BUG-005/01-admin-personal-household-count.png" alt="Admin personal dashboard showing three dependents">
+      <h2>Expected</h2>
+      <p>Personal household UI should filter to Alice’s household while admin-wide access remains available in staff workflows.</p>
+    </article>
+  </main>
+</body>
+</html>

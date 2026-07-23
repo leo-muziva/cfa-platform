@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- skill:running-bug-review-board v0.3 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BUG-003 - Seeded users cannot book lessons</title>
+  <link rel="stylesheet" href="../assets.css">
+</head>
+<body>
+  <header class="masthead"><div class="masthead-inner"><h1 class="masthead-title"><a href="../index.html">CFA Quality Report</a></h1></div></header>
+  <main class="read">
+    <article>
+      <header class="article-header">
+        <p class="eyebrow"><span class="pri">P1</span><span class="sep">·</span>Phase 00<span class="sep">·</span>Resolved</p>
+        <h1 class="article-title">Seeded users cannot book lessons</h1>
+        <p class="article-deck">Strict request validation rejected the non-RFC fixture UUIDs used by local Auth accounts.</p>
+      </header>
+      <aside class="article-impact"><p class="eyebrow">Impact</p><p>Guest, dependent, and payer booking acceptance paths were blocked.</p></aside>
+      <h2>Before</h2>
+      <p>The dependent form returned “Invalid input,” created no booking, and left lesson history empty.</p>
+      <img src="../../bug-reports/assets/BUG-003/01-dependent-booking-invalid-input.png" alt="Dependent booking showing Invalid input">
+      <h2>Verification</h2>
+      <p>All four fixtures now use valid version-4 UUIDs. The dependent booking persisted with forced pay-later and appeared under Fiona Fencer.</p>
+      <img src="../../bug-reports/assets/BUG-003/02-dependent-booking-verified.png" alt="Fiona Fencer lesson history after a successful booking">
+    </article>
+  </main>
+</body>
+</html>
