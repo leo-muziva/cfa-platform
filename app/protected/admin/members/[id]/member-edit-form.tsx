@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { adminUpdateMemberAction } from '@/app/actions/admin-members'
-import type { Profile, MembershipType } from '@/types/domain'
+import type { Profile } from '@/types/domain'
 import {
   Card,
   CardContent,
@@ -19,10 +19,8 @@ const selectClasses =
 
 export function MemberEditForm({
   profile,
-  membershipTypes,
 }: {
   profile: Profile
-  membershipTypes: MembershipType[]
 }) {
   const [state, formAction, isPending] = useActionState(adminUpdateMemberAction, {})
 
@@ -69,32 +67,6 @@ export function MemberEditForm({
                 type="date"
                 defaultValue={profile.date_of_birth ?? ''}
               />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="membership_status">Membership status</Label>
-              <select id="membership_status" name="membership_status" defaultValue={profile.membership_status} className={selectClasses}>
-                <option value="guest">Guest</option>
-                <option value="member">Member</option>
-              </select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="membership_type_id">Membership Type</Label>
-              <select
-                id="membership_type_id"
-                name="membership_type_id"
-                defaultValue={profile.membership_type_id ?? ''}
-                className={selectClasses}
-              >
-                <option value="">No membership</option>
-                {membershipTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name} — R{type.price}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 

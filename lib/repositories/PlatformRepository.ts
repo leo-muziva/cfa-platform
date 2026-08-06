@@ -1,11 +1,25 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { Booking, Invoice, LessonSlot, MembershipRequest, Receipt } from '@/types/domain'
+import type { BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, Receipt } from '@/types/domain'
 
-export async function listOpenSlots(): Promise<LessonSlot[]> {
+type PublicLessonSlotRow = Omit<BookableLessonSlot, 'price' | 'booked_count' | 'remaining_capacity' | 'is_full'> & {
+  price: number | string
+  booked_count: number | string
+  remaining_capacity: number | string | null
+  is_full: boolean
+}
+
+export async function listOpenSlots(): Promise<BookableLessonSlot[]> {
   const db = await createClient()
-  const { data, error } = await db.from('lesson_slots').select('*').eq('is_open', true).gt('starts_at', new Date().toISOString()).order('starts_at')
-  return error ? [] : data as LessonSlot[]
+  const { data, error } = await db.rpc('list_open_lesson_slots')
+  if (error) return []
+  return ((data ?? []) as PublicLessonSlotRow[]).map((slot) => ({
+    ...slot,
+    price: Number(slot.price),
+    booked_count: Number(slot.booked_count),
+    remaining_capacity: slot.remaining_capacity === null ? null : Number(slot.remaining_capacity),
+    is_full: Boolean(slot.is_full),
+  }))
 }
 
 export async function createSlot(input: Omit<LessonSlot, 'id' | 'created_by' | 'created_at' | 'is_open'>, createdBy: string) {
@@ -33,30 +47,76 @@ export async function listBookings(): Promise<Booking[]> {
 
 export async function createMembershipRequest(applicantId: string, membershipTypeId: string) {
   const db = await createClient()
-  const { error } = await db.from('membership_requests').insert({ applicant_id: applicantId, membership_type_id: membershipTypeId })
+  const { error } = await db.rpc('submit_membership_application', { target_type: membershipTypeId })
+  void applicantId
   return error ? { error: error.message } : { success: true as const }
 }
 
-export async function listMembershipRequests(): Promise<MembershipRequest[]> {
+export async function listMembershipRequests(): Promise<MembershipApplication[]> {
   const db = await createClient()
-  const { data, error } = await db.from('membership_requests').select(`
-    id,applicant_id,membership_type_id,status,reviewed_by,reviewed_at,created_at,
-    applicant:profiles!membership_requests_applicant_id_fkey(id,full_name,email),
+  const { data, error } = await db.from('membership_applications').select(`
+    id,applicant_id,membership_type_id,version,status,submitted_details,visible_response,
+    private_notes,reviewer_id,reviewed_at,created_at,
+    applicant:profiles!membership_applications_applicant_id_fkey(id,full_name,email),
     membership_type:membership_types(id,name)
   `).order('created_at', { ascending: false })
-  return error ? [] : data as unknown as MembershipRequest[]
+  return error ? [] : data as unknown as MembershipApplication[]
 }
 
-export async function reviewMembershipRequest(requestId: string, decision: 'approved' | 'declined') {
+export async function reviewMembershipRequest(requestId: string, decision: 'approve' | 'request_changes' | 'reject', visibleResponse?: string | null, privateNotes?: string | null) {
   const db = await createClient()
-  const { error } = await db.rpc('review_membership_request', { request_id: requestId, decision })
+  const { error } = await db.rpc('review_membership_application', {
+    application_id: requestId, decision, visible_response: visibleResponse ?? null, private_notes: privateNotes ?? null,
+  })
+  return error ? { error: error.message } : { success: true as const }
+}
+
+export async function getMembership(profileId: string): Promise<Membership | null> {
+  const db = await createClient()
+  const { data, error } = await db.from('memberships').select('*,membership_type:membership_types(id,code,name)').eq('profile_id', profileId).maybeSingle()
+  return error ? null : data as Membership | null
+}
+
+export async function resubmitMembership(applicationId: string, membershipTypeId: string) {
+  const db = await createClient()
+  const { error } = await db.rpc('resubmit_membership_application', { application_id: applicationId, target_type: membershipTypeId })
+  return error ? { error: error.message } : { success: true as const }
+}
+
+export async function changeMembershipStatus(profileId: string, status: string) {
+  const db = await createClient()
+  const { error } = await db.rpc('change_membership_status', { target_profile: profileId, target_status: status })
+  return error ? { error: error.message } : { success: true as const }
+}
+
+export async function listFamilyLinks(): Promise<FamilyLink[]> {
+  const db = await createClient()
+  const { data, error } = await db.from('family_links').select(`*,guardian:profiles!family_links_guardian_id_fkey(id,full_name,email),dependent:profiles!family_links_dependent_id_fkey(id,full_name,email)`).order('requested_at', { ascending: false })
+  return error ? [] : data as unknown as FamilyLink[]
+}
+
+export async function requestFamilyLink(email: string) {
+  const db = await createClient()
+  const { error } = await db.rpc('request_family_link_by_email', { target_email: email })
+  return error ? { error: error.message } : { success: true as const }
+}
+
+export async function respondFamilyLink(linkId: string, response: 'accept' | 'reject') {
+  const db = await createClient()
+  const { error } = await db.rpc('respond_family_link', { link_id: linkId, response })
+  return error ? { error: error.message } : { success: true as const }
+}
+
+export async function endFamilyLink(linkId: string) {
+  const db = await createClient()
+  const { error } = await db.rpc('end_family_link', { link_id: linkId })
   return error ? { error: error.message } : { success: true as const }
 }
 
 export async function getBillingForPayer(payerId: string) {
   const db = await createClient()
   const [{ data: invoices }, { data: receipts }, { data: household }, { data: charges }] = await Promise.all([
-    db.from('invoices').select('*,lines:invoice_lines(*)').eq('payer_id', payerId).order('issued_at', { ascending: false }),
+    db.from('invoices').select('*,lines:invoice_lines(*,participant:profiles!invoice_lines_participant_id_fkey(id,full_name))').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('receipts').select('*').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('households').select('membership_payment_method').eq('payer_id', payerId).single(),
     db.from('charges').select('amount').eq('payer_id', payerId).eq('status', 'unpaid'),

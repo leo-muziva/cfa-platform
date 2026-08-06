@@ -11,7 +11,7 @@ import { FaqSection } from "@/components/landing/faq-section";
 import { ContactFooter } from "@/components/landing/contact-footer";
 
 // Full public landing page: cinematic full-viewport hero followed by the
-// scrollable landing sections (hero nav links anchor to their ids).
+// scrollable landing sections. The primary menu links only to separate pages.
 // The page stays a Server Component — all interactivity lives inside
 // CinematicHero ("use client") and the individual sections. This page is
 // deliberately always-dark (cinematic), so the ThemeSwitcher is not shown

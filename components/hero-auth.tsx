@@ -29,6 +29,12 @@ export async function HeroAuth() {
           Hey, {user.email}!
         </span>
         <Link
+          href="/membership-portal"
+          className="rounded-full px-4 py-1.5 text-sm font-medium text-white hover:bg-white/10 transition-colors inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
+        >
+          Portal
+        </Link>
+        <Link
           href="/protected"
           className="bg-white text-black rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
         >

@@ -3,6 +3,9 @@ import { notFound, redirect } from 'next/navigation'
 import { getMemberEditDataForAdmin } from '@/lib/services/MemberService'
 import { Badge } from '@/components/ui/badge'
 import { MemberEditForm } from './member-edit-form'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { changeMembershipStatusAction } from '@/app/actions/platform'
 
 export default async function MemberDetailPage({
   params,
@@ -18,7 +21,7 @@ export default async function MemberDetailPage({
     redirect('/protected')
   }
 
-  const { profile, membershipTypes } = result
+  const { profile, membership } = result
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
@@ -40,7 +43,8 @@ export default async function MemberDetailPage({
         </p>
       </div>
 
-      <MemberEditForm profile={profile} membershipTypes={membershipTypes} />
+      <MemberEditForm profile={profile} />
+      <Card><CardHeader><CardTitle>Membership lifecycle</CardTitle></CardHeader><CardContent>{membership ? <form action={changeMembershipStatusAction} className="flex flex-wrap items-center gap-3"><input type="hidden" name="profile_id" value={profile.id}/><Badge>{membership.status}</Badge><select name="status" defaultValue={membership.status} className="rounded-md border bg-background px-3 py-2"><option value="active">Active</option><option value="suspended">Suspended</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option></select><Button>Apply transition</Button></form> : <p>No approved membership.</p>}</CardContent></Card>
     </div>
   )
 }

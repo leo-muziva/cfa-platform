@@ -147,3 +147,54 @@ select
   now()
 from public.households
 where payer_id = '44444444-4444-4444-8444-444444444444';
+
+-- [LOCAL ONLY] Relative future lesson slots keep the public calendar usable
+-- after every local database reset. Hosted lessons are created by admins.
+insert into public.lesson_slots (
+  id,
+  starts_at,
+  ends_at,
+  coach_id,
+  capacity,
+  price,
+  is_open,
+  access_rule,
+  created_by
+)
+values
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '1 day 18 hours 30 minutes') at time zone 'Africa/Johannesburg',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '1 day 19 hours 30 minutes') at time zone 'Africa/Johannesburg',
+    '22222222-2222-4222-8222-222222222222', 6, 300, true, 'guest_allowed',
+    '11111111-1111-4111-8111-111111111111'
+  ),
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '1 day 19 hours 45 minutes') at time zone 'Africa/Johannesburg',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '1 day 20 hours 45 minutes') at time zone 'Africa/Johannesburg',
+    '22222222-2222-4222-8222-222222222222', 4, 350, true, 'guest_allowed',
+    '11111111-1111-4111-8111-111111111111'
+  ),
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '3 days 18 hours 30 minutes') at time zone 'Africa/Johannesburg',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '3 days 19 hours 30 minutes') at time zone 'Africa/Johannesburg',
+    '22222222-2222-4222-8222-222222222222', 6, 300, true, 'guest_allowed',
+    '11111111-1111-4111-8111-111111111111'
+  ),
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '5 days 18 hours 30 minutes') at time zone 'Africa/Johannesburg',
+    (date_trunc('day', now() at time zone 'Africa/Johannesburg') + interval '5 days 19 hours 30 minutes') at time zone 'Africa/Johannesburg',
+    '22222222-2222-4222-8222-222222222222', 8, 250, true, 'active_members_only',
+    '11111111-1111-4111-8111-111111111111'
+  )
+on conflict (id) do update set
+  starts_at = excluded.starts_at,
+  ends_at = excluded.ends_at,
+  coach_id = excluded.coach_id,
+  capacity = excluded.capacity,
+  price = excluded.price,
+  is_open = excluded.is_open,
+  access_rule = excluded.access_rule;

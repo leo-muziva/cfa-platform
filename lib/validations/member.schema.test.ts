@@ -126,20 +126,17 @@ describe('adminProfileUpdateSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects non-UUID membership_type_id', () => {
+  it('does not expose direct membership assignment', () => {
     const result = adminProfileUpdateSchema.safeParse({
       full_name: 'Someone',
       membership_type_id: 'not-a-uuid',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('accepts null membership_type_id', () => {
-    const result = adminProfileUpdateSchema.safeParse({
-      full_name: 'Someone',
-      membership_type_id: null,
+      membership_status: 'member',
     })
     expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('membership_type_id')
+      expect(result.data).not.toHaveProperty('membership_status')
+    }
   })
 
   it('accepts both valid staff types', () => {

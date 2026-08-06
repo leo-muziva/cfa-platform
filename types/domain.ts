@@ -1,4 +1,9 @@
 export type MembershipStatus = 'guest' | 'member'
+export type MembershipLifecycleStatus = 'active' | 'suspended' | 'expired' | 'cancelled'
+export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'rejected' | 'approved'
+export type MembershipReviewDecision = 'approve' | 'request_changes' | 'reject'
+export type FamilyLinkStatus = 'pending' | 'active' | 'rejected' | 'ended'
+export type LessonAccessRule = 'guest_allowed' | 'active_members_only'
 export type HouseholdRole = 'payer' | 'dependent'
 export type StaffType = 'admin' | 'coach'
 export type PaymentPreference = 'manual' | 'recurring_card'
@@ -52,10 +57,71 @@ export interface ProfileUpdate {
 
 export interface AdminProfileUpdate extends ProfileUpdate {
   is_active?: boolean
-  membership_status?: MembershipStatus
-  membership_type_id?: string | null
   is_staff?: boolean
   staff_type?: StaffType | null
+}
+
+export interface Membership {
+  id: string
+  profile_id: string
+  membership_type_id: string
+  status: MembershipLifecycleStatus
+  started_at: string
+  status_changed_at: string
+  cancelled_at: string | null
+  membership_type?: Pick<MembershipType, 'id' | 'code' | 'name'>
+}
+
+export interface MembershipApplication {
+  id: string
+  applicant_id: string
+  membership_type_id: string
+  version: number
+  status: MembershipApplicationStatus
+  submitted_details: { membership_type_id: string }
+  visible_response: string | null
+  private_notes?: string | null
+  reviewer_id: string | null
+  reviewed_at: string | null
+  created_at: string
+  applicant?: Pick<Profile, 'id' | 'full_name' | 'email'>
+  membership_type?: Pick<MembershipType, 'id' | 'name'>
+}
+
+export interface FamilyLink {
+  id: string
+  guardian_id: string
+  dependent_id: string
+  status: FamilyLinkStatus
+  requested_by: string
+  accepted_by: string | null
+  requested_at: string
+  accepted_at: string | null
+  rejected_at: string | null
+  ended_at: string | null
+  guardian?: Pick<Profile, 'id' | 'full_name' | 'email'>
+  dependent?: Pick<Profile, 'id' | 'full_name' | 'email'>
+}
+
+export interface DependentBillingLink {
+  id: string
+  household_id: string
+  guardian_id: string
+  dependent_id: string
+  family_link_id: string
+  effective_from: string
+  effective_to: string | null
+}
+
+export interface AuditEvent {
+  id: string
+  event_type: string
+  actor_id: string | null
+  subject_profile_id: string | null
+  entity_type: string
+  entity_id: string | null
+  metadata: Record<string, unknown>
+  created_at: string
 }
 
 export interface Household {
@@ -94,8 +160,15 @@ export interface LessonSlot {
   capacity: number | null
   price: number
   is_open: boolean
+  access_rule: LessonAccessRule
   created_by: string
   created_at: string
+}
+
+export interface BookableLessonSlot extends LessonSlot {
+  booked_count: number
+  remaining_capacity: number | null
+  is_full: boolean
 }
 
 export interface Booking {
@@ -128,6 +201,8 @@ export interface InvoiceLine {
   id: string
   invoice_id: string
   charge_id: string
+  participant_id: string
+  participant?: Pick<Profile, 'id' | 'full_name'>
   description: string
   amount: number
 }

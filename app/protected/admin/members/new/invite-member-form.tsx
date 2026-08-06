@@ -2,7 +2,6 @@
 
 import { useActionState } from 'react'
 import { inviteMemberAction } from '@/app/actions/admin-members'
-import type { MembershipType } from '@/types/domain'
 import {
   Card,
   CardContent,
@@ -17,7 +16,7 @@ import { Button } from '@/components/ui/button'
 const selectClasses =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
-export function InviteMemberForm({ membershipTypes }: { membershipTypes: MembershipType[] }) {
+export function InviteMemberForm() {
   const [state, formAction, isPending] = useActionState(inviteMemberAction, {})
 
   return (
@@ -53,31 +52,6 @@ export function InviteMemberForm({ membershipTypes }: { membershipTypes: Members
               maxLength={100}
               placeholder="Jane Fencer"
             />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="membership_status">Membership status</Label>
-              <select id="membership_status" name="membership_status" defaultValue="guest" className={selectClasses}>
-                <option value="guest">Guest</option><option value="member">Member</option>
-              </select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="membership_type_id">Membership Type</Label>
-              <select
-                id="membership_type_id"
-                name="membership_type_id"
-                defaultValue=""
-                className={selectClasses}
-              >
-                <option value="">No membership</option>
-                {membershipTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name} — R{type.price}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2"><div className="flex items-center gap-2"><input id="is_staff" name="is_staff" type="checkbox" className="h-4 w-4 rounded border-input accent-primary"/><Label htmlFor="is_staff">Staff account</Label></div><div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue="" className={selectClasses}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div></div>

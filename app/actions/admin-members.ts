@@ -28,12 +28,10 @@ export async function adminUpdateMemberAction(
     full_name: formData.get('full_name') as string,
     phone: (formData.get('phone') as string) || undefined,
     date_of_birth: (formData.get('date_of_birth') as string) || null,
-    membership_status: formData.get('membership_status') as string,
     is_staff: formData.get('is_staff') === 'on',
     staff_type: (formData.get('staff_type') as string) || null,
     // Unchecked checkboxes are absent from FormData, so absence means inactive.
     is_active: formData.get('is_active') === 'on',
-    membership_type_id: (formData.get('membership_type_id') as string) || null,
   }
 
   const result = await adminUpdateMember(targetId, rawData)
@@ -54,10 +52,8 @@ export async function inviteMemberAction(
   const rawData = {
     email: formData.get('email') as string,
     full_name: formData.get('full_name') as string,
-    membership_status: formData.get('membership_status') as string,
     is_staff: formData.get('is_staff') === 'on',
     staff_type: (formData.get('staff_type') as string) || null,
-    membership_type_id: (formData.get('membership_type_id') as string) || null,
   }
 
   const result = await inviteMemberForAdmin(rawData)

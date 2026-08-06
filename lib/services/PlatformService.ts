@@ -4,14 +4,23 @@ import { getMembershipTypes } from '@/lib/repositories/MemberRepository'
 import {
   listOpenSlots, createSlot, createBooking, listBookings, createMembershipRequest,
   listMembershipRequests, reviewMembershipRequest, getBillingForPayer, runInvoices, recordManualPayment, listAllInvoices,
+  getMembership, resubmitMembership, changeMembershipStatus, listFamilyLinks, requestFamilyLink, respondFamilyLink, endFamilyLink,
 } from '@/lib/repositories/PlatformRepository'
-import { bookingSchema, lessonSlotSchema, membershipRequestSchema } from '@/lib/validations/member.schema'
+import { bookingSchema, lessonSlotSchema, membershipRequestSchema, membershipResubmissionSchema,
+  membershipReviewSchema, membershipStatusChangeSchema, familyLinkRequestSchema,
+  familyLinkResponseSchema, familyLinkEndSchema } from '@/lib/validations/member.schema'
 import type { LessonHistoryItem, PayerBillingView } from '@/types/domain'
 
 export async function getBookingPageData() {
   const context = await getCurrentAccountContext()
   if ('error' in context) return context
-  return { ...context, slots: await listOpenSlots() }
+  const links = await listFamilyLinks()
+  const linkedDependents = links.filter((link) => link.status === 'active' && link.guardian_id === context.profile.id)
+    .map((link) => ({ household_id: '', profile_id: link.dependent_id, household_role: 'dependent' as const,
+      payer_consent_at: link.accepted_at, profile: link.dependent ? { ...link.dependent, membership_status: 'guest' as const } : undefined }))
+  const participants = context.capabilities.isDependent ? context.householdMembers.filter((item) => item.profile_id === context.profile.id)
+    : [...context.householdMembers.filter((item) => item.profile_id === context.profile.id), ...linkedDependents]
+  return { ...context, bookingParticipants: participants, slots: await listOpenSlots() }
 }
 
 export async function bookLesson(raw: unknown) {
@@ -52,7 +61,7 @@ export async function getMembershipRequestPageData() {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' } as const
   const requests = await listMembershipRequests()
-  return { profile, membershipTypes: await getMembershipTypes(), requests: requests.filter((r) => r.applicant_id === profile.id) }
+  return { profile, membership: await getMembership(profile.id), membershipTypes: await getMembershipTypes(), requests: requests.filter((r) => r.applicant_id === profile.id) }
 }
 
 export async function getMembershipRequestsForAdmin() {
@@ -60,9 +69,57 @@ export async function getMembershipRequestsForAdmin() {
   return 'error' in guard ? guard : { requests: await listMembershipRequests() }
 }
 
-export async function decideMembershipRequest(id: string, decision: 'approved' | 'declined') {
+export async function decideMembershipRequest(raw: unknown) {
+  const parsed = membershipReviewSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
   const guard = await requireAdmin()
-  return 'error' in guard ? guard : reviewMembershipRequest(id, decision)
+  return 'error' in guard ? guard : reviewMembershipRequest(parsed.data.application_id, parsed.data.decision, parsed.data.visible_response, parsed.data.private_notes)
+}
+
+export async function resubmitMembershipRequest(raw: unknown) {
+  const parsed = membershipResubmissionSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!await getCurrentProfile()) return { error: 'Not authenticated' }
+  return resubmitMembership(parsed.data.application_id, parsed.data.membership_type_id)
+}
+
+export async function cancelCurrentMembership(confirmed: boolean) {
+  const profile = await getCurrentProfile()
+  if (!profile) return { error: 'Not authenticated' }
+  if (!confirmed) return { error: 'Cancellation must be confirmed' }
+  return changeMembershipStatus(profile.id, 'cancelled')
+}
+
+export async function changeMembershipForAdmin(raw: unknown) {
+  const parsed = membershipStatusChangeSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  const guard = await requireAdmin()
+  return 'error' in guard ? guard : changeMembershipStatus(parsed.data.profile_id, parsed.data.status)
+}
+
+export async function getFamilyAccountsPageData() {
+  const profile = await getCurrentProfile()
+  if (!profile) return { error: 'Not authenticated' } as const
+  return { profile, links: await listFamilyLinks() }
+}
+
+export async function requestExistingAccountLink(raw: unknown) {
+  const parsed = familyLinkRequestSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!await getCurrentProfile()) return { error: 'Not authenticated' }
+  return requestFamilyLink(parsed.data.email)
+}
+
+export async function answerFamilyLink(raw: unknown) {
+  const parsed = familyLinkResponseSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  return respondFamilyLink(parsed.data.link_id, parsed.data.response)
+}
+
+export async function endActiveFamilyLink(raw: unknown) {
+  const parsed = familyLinkEndSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  return endFamilyLink(parsed.data.link_id)
 }
 
 export async function getPayerBilling(): Promise<PayerBillingView | { error: string }> {

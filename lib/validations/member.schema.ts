@@ -11,11 +11,9 @@ export const profileUpdateSchema = z.object({
 })
 
 export const adminProfileUpdateSchema = profileUpdateSchema.extend({
-  membership_status: z.enum(['guest', 'member']).optional(),
   is_staff: z.boolean().optional(),
   staff_type: z.enum(['admin', 'coach']).optional().nullable(),
   is_active: z.boolean().optional(),
-  membership_type_id: z.uuid().optional().nullable(),
 }).refine((value) => value.is_staff !== false || !value.staff_type, {
   message: 'Non-staff accounts cannot have a staff type',
 })
@@ -31,10 +29,8 @@ export const memberListFiltersSchema = z.object({
 export const inviteMemberSchema = z.object({
   email: z.email('Invalid email address').max(254),
   full_name: z.string().trim().min(2).max(100),
-  membership_status: z.enum(['guest', 'member']).default('guest'),
   is_staff: z.coerce.boolean().default(false),
   staff_type: z.enum(['admin', 'coach']).optional().nullable(),
-  membership_type_id: z.uuid().optional().nullable(),
 })
 
 export const registrationDetailsSchema = profileUpdateSchema.extend({
@@ -58,6 +54,7 @@ export const lessonSlotSchema = z.object({
   price: z.coerce.number().min(0),
   capacity: z.coerce.number().int().positive().optional().nullable(),
   coach_id: z.uuid().optional().nullable(),
+  access_rule: z.enum(['guest_allowed', 'active_members_only']).default('guest_allowed'),
 }).refine((v) => new Date(v.ends_at) > new Date(v.starts_at), { message: 'End time must be after start time' })
 
 export const bookingSchema = z.object({
@@ -67,6 +64,19 @@ export const bookingSchema = z.object({
 })
 
 export const membershipRequestSchema = z.object({ membership_type_id: z.uuid() })
+export const membershipResubmissionSchema = membershipRequestSchema.extend({ application_id: z.uuid() })
+export const membershipReviewSchema = z.object({
+  application_id: z.uuid(),
+  decision: z.enum(['approve', 'request_changes', 'reject']),
+  visible_response: z.string().trim().max(2000).optional().nullable(),
+  private_notes: z.string().trim().max(2000).optional().nullable(),
+})
+export const membershipStatusChangeSchema = z.object({
+  profile_id: z.uuid(), status: z.enum(['active', 'suspended', 'expired', 'cancelled']),
+})
+export const familyLinkRequestSchema = z.object({ email: z.email().max(254) })
+export const familyLinkResponseSchema = z.object({ link_id: z.uuid(), response: z.enum(['accept', 'reject']) })
+export const familyLinkEndSchema = z.object({ link_id: z.uuid() })
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>
 export type AdminProfileUpdateInput = z.infer<typeof adminProfileUpdateSchema>
