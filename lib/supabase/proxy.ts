@@ -51,7 +51,7 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   const publicPrefixes = [
-    "/", "/classes", "/membership", "/about", "/contact", "/privacy", "/terms", "/auth"
+    "/", "/book", "/classes", "/membership", "/membership-portal", "/family", "/about", "/contact", "/privacy", "/terms", "/auth"
   ];
   const isPublicRoute = publicPrefixes.some((prefix) =>
     prefix === "/" ? request.nextUrl.pathname === "/" : request.nextUrl.pathname.startsWith(prefix)
@@ -65,6 +65,7 @@ export async function updateSession(request: NextRequest) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    url.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
 

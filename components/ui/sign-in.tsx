@@ -21,7 +21,7 @@ type Step = "email" | "password";
 const STEPS: Step[] = ["email", "password"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
-export function SignInFlow() {
+export function SignInFlow({ next = '/protected' }: { next?: string }) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
@@ -54,7 +54,7 @@ export function SignInFlow() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=/protected` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
       });
       if (error) throw error;
     } catch (error: unknown) {
@@ -82,7 +82,7 @@ export function SignInFlow() {
       }
 
       // No confetti here — members logging in want speed, not a flourish.
-      router.push("/protected");
+      router.push(next);
     } catch (error: unknown) {
       const message =
         error instanceof SupabaseConfigError
@@ -233,8 +233,8 @@ export function SignInFlow() {
 
           <p className="text-center text-sm text-muted-foreground">
             New to CFA?{" "}
-            <Link href="/auth/sign-up" className="font-medium text-foreground underline underline-offset-4">
-              Create an account
+            <Link href={`/auth/sign-up?next=${encodeURIComponent(next)}`} className="font-medium text-foreground underline underline-offset-4">
+              Create a guest account
             </Link>
           </p>
         </fieldset>

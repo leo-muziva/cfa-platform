@@ -26,7 +26,7 @@ export default async function NewMemberPage() {
         </p>
       </div>
 
-      <InviteMemberForm membershipTypes={result.membershipTypes} />
+      <InviteMemberForm />
     </div>
   )
 }

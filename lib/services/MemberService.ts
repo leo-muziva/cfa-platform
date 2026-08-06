@@ -5,6 +5,7 @@ import {
   getMemberStatsRows, getMembershipTypes, inviteMemberByEmail,
   getHouseholdMembership, getHouseholdMembers, completeProfile, attachDependent,
 } from '@/lib/repositories/MemberRepository'
+import { getMembership } from '@/lib/repositories/PlatformRepository'
 import {
   profileUpdateSchema, adminProfileUpdateSchema, memberListFiltersSchema, inviteMemberSchema, registrationDetailsSchema,
 } from '@/lib/validations/member.schema'
@@ -97,12 +98,12 @@ export async function getInviteFormDataForAdmin(): Promise<{ membershipTypes: Me
 }
 
 export async function getMemberEditDataForAdmin(targetId: string): Promise<
-  { profile: Profile; membershipTypes: MembershipType[] } | { error: string }
+  { profile: Profile; membershipTypes: MembershipType[]; membership: Awaited<ReturnType<typeof getMembership>> } | { error: string }
 > {
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const profile = await getProfileById(targetId)
-  return profile ? { profile, membershipTypes: await getMembershipTypes() } : { error: 'Member not found' }
+  return profile ? { profile, membershipTypes: await getMembershipTypes(), membership: await getMembership(targetId) } : { error: 'Member not found' }
 }
 
 export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
@@ -122,8 +123,6 @@ export async function inviteMemberForAdmin(rawData: unknown): Promise<{ success:
   const invited = await inviteMemberByEmail(parsed.data.email, parsed.data.full_name)
   if (typeof invited.userId !== 'string') return { error: invited.error ?? 'Failed to send invite' }
   const updated = await adminUpdateProfile(invited.userId, {
-    membership_status: parsed.data.membership_status,
-    membership_type_id: parsed.data.membership_type_id ?? null,
     is_staff: parsed.data.is_staff,
     staff_type: parsed.data.is_staff ? parsed.data.staff_type ?? 'coach' : null,
   })

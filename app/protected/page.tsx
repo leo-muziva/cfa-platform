@@ -19,6 +19,11 @@ export default async function DashboardPage() {
         {context.capabilities.isPayer && context.householdMembers.length > 1 && <Card><CardHeader><CardTitle>Household</CardTitle></CardHeader><CardContent>{context.householdMembers.length - 1} dependent(s)</CardContent></Card>}
       </div>
       <Button asChild><Link href="/protected/book">Book a lesson</Link></Button>
+      <Button variant="outline" asChild className="ml-2">
+        <Link href="/protected/membership-request">
+          {context.profile.membership_status === 'guest' ? 'Request membership' : 'Manage membership'}
+        </Link>
+      </Button>
       {context.capabilities.canSeeHouseholdMoney && <Button variant="outline" asChild className="ml-2"><Link href="/protected/billing">View billing</Link></Button>}
     </div>
   )
