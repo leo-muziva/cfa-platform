@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Clock } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -62,6 +63,21 @@ export function ScheduleSection() {
         <p className="text-[#625b73] text-sm mt-8">
           Visiting fencers welcome — R120 drop-in.
         </p>
+
+        <div className="mt-12 rounded-3xl bg-[#25145c] p-7 text-white shadow-[0_20px_60px_rgba(37,20,92,0.18)] sm:p-9">
+          <h3 className="text-2xl font-medium tracking-[-0.03em] sm:text-3xl">Create an account to book</h3>
+          <p className="mt-3 max-w-2xl leading-7 text-white/75">
+            Every booking, including drop-in lessons, requires a CFA guest or member account.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/auth/sign-up?next=%2Fprotected%2Fbook" className="rounded-full bg-white px-6 py-3 font-medium text-[#25145c] hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]">
+              Create account
+            </Link>
+            <Link href="/auth/login?next=%2Fprotected%2Fbook" className="rounded-full border border-white/30 px-6 py-3 font-medium text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]">
+              Log in to book
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

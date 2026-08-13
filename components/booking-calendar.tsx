@@ -7,7 +7,9 @@ import { bookLessonAction } from "@/app/actions/platform";
 import { ActionForm } from "@/components/portal/action-form";
 import {
   capeTownDateKey,
+  formatCapeTownCompactDate,
   formatCapeTownDate,
+  formatCapeTownLessonDate,
   formatCapeTownTime,
   getAvailableDateKeys,
   getInitialBookingSelection,
@@ -22,17 +24,13 @@ interface BookingParticipantOption {
 export function BookingCalendar({
   slots,
   requestedSlotId,
-  isAuthenticated,
   participants = [],
   isDependent = false,
-  bookingContextError,
 }: {
   slots: BookableLessonSlot[];
   requestedSlotId?: string;
-  isAuthenticated: boolean;
   participants?: BookingParticipantOption[];
   isDependent?: boolean;
-  bookingContextError?: string;
 }) {
   const initial = useMemo(
     () => getInitialBookingSelection(slots, requestedSlotId),
@@ -114,9 +112,7 @@ export function BookingCalendar({
                     : "border border-[#2d176b]/15 bg-white text-[#625b73] hover:border-[#8a6810]/50"
                 }`}
               >
-                {new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short" }).format(
-                  new Date(`${dateKey}T12:00:00+02:00`),
-                )}
+                {formatCapeTownCompactDate(dateKey)}
               </button>
             ))}
           </div>
@@ -183,30 +179,13 @@ export function BookingCalendar({
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#f0c71b]">Your selection</p>
         {selectedSlot ? (
           <>
-            <h2 className="mt-4 text-2xl tracking-[-0.03em]">{formatCapeTownDate(capeTownDateKey(selectedSlot.starts_at))}</h2>
+            <h2 className="mt-4 text-2xl tracking-[-0.03em]">{formatCapeTownLessonDate(selectedSlot.starts_at)}</h2>
             <p className="mt-2 text-lg text-white/80">
               {formatCapeTownTime(selectedSlot.starts_at)} - {formatCapeTownTime(selectedSlot.ends_at)}
             </p>
             <p className="mt-1 text-white/70">R{Number(selectedSlot.price).toFixed(2)}</p>
 
-            {bookingContextError ? (
-              <p role="alert" className="mt-6 rounded-xl bg-red-500/15 p-4 text-sm text-red-100">
-                {bookingContextError}
-              </p>
-            ) : !isAuthenticated ? (
-              <>
-                <p className="mt-6 text-sm leading-6 text-white/70">
-                  You can browse without an account. Log in or create one when you are ready to proceed.
-                </p>
-                <Link
-                  href={`/auth/login?next=${encodeURIComponent(`/book?slot=${selectedSlot.id}`)}`}
-                  className="mt-6 inline-flex w-full justify-center rounded-full bg-white px-6 py-3 font-medium text-[#25145c] transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]"
-                >
-                  Log in to continue
-                </Link>
-              </>
-            ) : (
-              <ActionForm
+            <ActionForm
                 action={bookLessonAction}
                 submitLabel="Confirm booking"
                 className="mt-6 space-y-4"
@@ -248,8 +227,7 @@ export function BookingCalendar({
                     </select>
                   </label>
                 )}
-              </ActionForm>
-            )}
+            </ActionForm>
           </>
         ) : (
           <p className="mt-4 text-white/70">Choose an available lesson time to continue.</p>
