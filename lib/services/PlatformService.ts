@@ -9,7 +9,9 @@ import {
 import { bookingSchema, lessonSlotSchema, membershipRequestSchema, membershipResubmissionSchema,
   membershipReviewSchema, membershipStatusChangeSchema, familyLinkRequestSchema,
   familyLinkResponseSchema, familyLinkEndSchema } from '@/lib/validations/member.schema'
-import type { LessonHistoryItem, PayerBillingView } from '@/types/domain'
+import type { BookingErrorCode, LessonHistoryItem, PayerBillingView } from '@/types/domain'
+
+export type BookingResult = { bookingId: string } | { errorCode: BookingErrorCode }
 
 export async function getBookingPageData() {
   const context = await getCurrentAccountContext()
@@ -23,9 +25,9 @@ export async function getBookingPageData() {
   return { ...context, bookingParticipants: participants, slots: await listOpenSlots() }
 }
 
-export async function bookLesson(raw: unknown) {
+export async function bookLesson(raw: unknown): Promise<BookingResult> {
   const parsed = bookingSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return { errorCode: 'invalid_input' }
   return createBooking(parsed.data.lesson_slot_id, parsed.data.fencer_id, parsed.data.payment_option)
 }
 

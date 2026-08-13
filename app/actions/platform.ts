@@ -7,6 +7,7 @@ import {
   cancelCurrentMembership, changeMembershipForAdmin, requestExistingAccountLink,
   answerFamilyLink, endActiveFamilyLink,
 } from '@/lib/services/PlatformService'
+import { bookingErrorMessage } from '@/lib/booking-errors'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -15,9 +16,8 @@ export async function bookLessonAction(_: ActionState, formData: FormData): Prom
     lesson_slot_id: formData.get('lesson_slot_id'), fencer_id: formData.get('fencer_id'),
     payment_option: formData.get('payment_option'),
   })
-  if ('error' in result) return { error: result.error }
+  if ('errorCode' in result) return { error: bookingErrorMessage(result.errorCode) }
   revalidatePath('/protected/book')
-  revalidatePath('/book')
   revalidatePath('/protected/lessons')
   return { success: 'Lesson booked successfully' }
 }

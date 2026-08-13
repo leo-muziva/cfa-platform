@@ -183,6 +183,16 @@ export interface Booking {
   fencer?: Pick<Profile, 'id' | 'full_name'>
 }
 
+export type BookingErrorCode =
+  | 'duplicate'
+  | 'unavailable'
+  | 'full'
+  | 'unauthorized_participant'
+  | 'membership_required'
+  | 'invalid_payment'
+  | 'invalid_input'
+  | 'unexpected'
+
 export interface Charge {
   id: string
   fencer_id: string
