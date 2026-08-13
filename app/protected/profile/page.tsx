@@ -10,7 +10,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Member Portal</p>
         <h1 className="font-serif text-4xl font-light tracking-tight text-slate-950 sm:text-5xl">My Profile</h1>
