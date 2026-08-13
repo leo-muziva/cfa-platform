@@ -10,10 +10,11 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-8">
+    <div className="flex w-full flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-bold">My Profile</h1>
-        <p className="text-muted-foreground text-sm mt-1">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Member Portal</p>
+        <h1 className="font-serif text-4xl font-light tracking-tight text-slate-950 sm:text-5xl">My Profile</h1>
+        <p className="mt-2 text-sm text-slate-600">
           View and update your account information
         </p>
       </div>

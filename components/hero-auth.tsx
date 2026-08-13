@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/services/MemberService";
 
 /**
  * Auth links for the cinematic hero navbar, rendered into CinematicHero via
  * its `authSlot` prop.
  *
- * Server component so auth state is read server-side — the same
- * `supabase.auth.getClaims()` pattern as components/auth-button.tsx (claims
- * are decoded from the session cookie, avoiding the slower getUser() network
- * round-trip). The whole cluster is ONE `liquid-glass` capsule (an "island",
+ * Server component so auth state is verified server-side through the profile
+ * service. This prevents a deleted local user from appearing signed in after
+ * a Supabase reset. The whole cluster is ONE `liquid-glass` capsule (an "island",
  * like grouped iOS glass controls); the links inside are plain text/solid
  * pills, never individually glass. Plain links rather than the shadcn Button:
  * the always-dark cinematic design needs its own treatment. Logout
@@ -18,27 +17,20 @@ import { createClient } from "@/lib/supabase/server";
  * the mobile menu, so it must stay self-contained.
  */
 export async function HeroAuth() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  const profile = await getCurrentProfile();
 
-  if (user) {
+  if (profile) {
+    const firstName = profile.full_name?.trim().split(/\s+/)[0] || "member";
     return (
       <div className="liquid-glass rounded-full p-1.5 flex items-center gap-1">
         <span className="hidden md:inline px-2 text-sm text-gray-300">
-          Hey, {user.email}!
+          Hello, {firstName}
         </span>
-        <Link
-          href="/membership-portal"
-          className="rounded-full px-4 py-1.5 text-sm font-medium text-white hover:bg-white/10 transition-colors inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
-        >
-          Portal
-        </Link>
         <Link
           href="/protected"
           className="bg-white text-black rounded-full px-4 py-1.5 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
         >
-          Dashboard
+          Member Portal
         </Link>
       </div>
     );

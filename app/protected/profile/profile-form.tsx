@@ -19,8 +19,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   const [state, formAction, isPending] = useActionState(updateProfileAction, {})
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
-      <Card>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <Card className="cfa-light-card">
         <CardHeader>
           <CardTitle>Account Information</CardTitle>
           <CardDescription>Managed by CFA staff</CardDescription>
@@ -45,7 +45,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="cfa-light-card">
         <CardHeader>
           <CardTitle>Personal Details</CardTitle>
           <CardDescription>Update your personal information</CardDescription>
