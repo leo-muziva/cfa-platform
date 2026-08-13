@@ -22,7 +22,7 @@ type Step = "name" | "email" | "password" | "confirm";
 const STEPS: Step[] = ["name", "email", "password", "confirm"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
-export function SignUpFlow({ next = '/protected' }: { next?: string }) {
+export function SignUpFlow({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
@@ -115,7 +115,7 @@ export function SignUpFlow({ next = '/protected' }: { next?: string }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: `${window.location.origin}/auth/login?confirmed=1`,
         // Stored as raw_user_meta_data; the handle_new_user DB trigger
         // copies full_name onto the auto-created profiles row.
         data: { full_name: fullName.trim() },

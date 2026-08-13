@@ -24,8 +24,8 @@ export function InviteMemberForm() {
       <CardHeader>
         <CardTitle>Invite a member</CardTitle>
         <CardDescription>
-          They receive an email invitation, set their own password, and their
-          profile is created automatically.
+          They receive an email invitation. Their profile and selected staff
+          access become available after they confirm and set a password.
         </CardDescription>
       </CardHeader>
       <CardContent>

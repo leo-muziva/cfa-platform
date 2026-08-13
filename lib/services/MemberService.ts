@@ -120,13 +120,14 @@ export async function inviteMemberForAdmin(rawData: unknown): Promise<{ success:
   if (!parsed.success) return { error: parsed.error.issues[0].message }
   const guard = await requireAdmin()
   if ('error' in guard) return guard
-  const invited = await inviteMemberByEmail(parsed.data.email, parsed.data.full_name)
+  const invited = await inviteMemberByEmail(
+    parsed.data.email,
+    parsed.data.full_name,
+    parsed.data.is_staff,
+    parsed.data.is_staff ? parsed.data.staff_type ?? 'coach' : null,
+  )
   if (typeof invited.userId !== 'string') return { error: invited.error ?? 'Failed to send invite' }
-  const updated = await adminUpdateProfile(invited.userId, {
-    is_staff: parsed.data.is_staff,
-    staff_type: parsed.data.is_staff ? parsed.data.staff_type ?? 'coach' : null,
-  })
-  return updated ? { success: true } : { error: 'Invite sent, but account assignment failed' }
+  return { success: true }
 }
 
 export function aggregateMemberStats(rows: MemberStatsRow[]): MemberStats {

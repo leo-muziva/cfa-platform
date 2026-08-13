@@ -6,6 +6,16 @@ export const metadata: Metadata = {
   title: "Log in — Cape Fencing Academy",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  return <SignInFlow next={safeInternalNext((await searchParams).next)} />;
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; confirmed?: string }>;
+}) {
+  const params = await searchParams;
+  return (
+    <SignInFlow
+      next={safeInternalNext(params.next, "/")}
+      accountConfirmed={params.confirmed === "1"}
+    />
+  );
 }
