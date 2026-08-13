@@ -42,22 +42,25 @@ const localEnvironment = Object.fromEntries(
 const url = localEnvironment.API_URL;
 const publishableKey =
   localEnvironment.PUBLISHABLE_KEY || localEnvironment.ANON_KEY;
+const secretKey =
+  localEnvironment.SECRET_KEY || localEnvironment.SERVICE_ROLE_KEY;
 
-if (!url || !publishableKey) {
+if (!url || !publishableKey || !secretKey) {
   console.error(
-    "Supabase status did not return API_URL and a public key. Update the Supabase CLI and retry.",
+    "Supabase status did not return API_URL, a public key, and a server secret key. Update the Supabase CLI and retry.",
   );
   process.exit(1);
 }
 
 console.log(`Starting CFA against local Supabase at ${url}`);
 
-const next = spawn(process.execPath, [nextBinary, "dev"], {
+const next = spawn(process.execPath, [nextBinary, "dev", "--webpack"], {
   cwd: process.cwd(),
   env: {
     ...process.env,
     NEXT_PUBLIC_SUPABASE_URL: url,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
+    SUPABASE_SECRET_KEY: secretKey,
   },
   stdio: "inherit",
 });

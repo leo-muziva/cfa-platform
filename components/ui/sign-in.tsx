@@ -21,7 +21,13 @@ type Step = "email" | "password";
 const STEPS: Step[] = ["email", "password"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
-export function SignInFlow({ next = '/protected' }: { next?: string }) {
+export function SignInFlow({
+  next = "/",
+  accountConfirmed = false,
+}: {
+  next?: string;
+  accountConfirmed?: boolean;
+}) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
@@ -132,6 +138,11 @@ export function SignInFlow({ next = '/protected' }: { next?: string }) {
                     Welcome back
                   </h1>
                   <p className="mt-2 text-muted-foreground">Log in to your member portal</p>
+                  {accountConfirmed && (
+                    <p className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200" role="status">
+                      Account confirmed. You can log in now.
+                    </p>
+                  )}
                 </BlurFade>
 
                 <div className="mt-8 flex flex-col items-center gap-4">

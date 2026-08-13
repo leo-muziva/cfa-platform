@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  return <SignUpFlow next={safeInternalNext((await searchParams).next)} />;
+  return <SignUpFlow next={safeInternalNext((await searchParams).next, "/")} />;
 }

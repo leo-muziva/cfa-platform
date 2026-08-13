@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const localSeed = readFileSync(new URL("./seed.sql", import.meta.url), "utf8");
+const localSeed = readFileSync(new URL("./seed.sql", import.meta.url), "utf8").replaceAll("\r\n", "\n");
 const hostedSeed = readFileSync(
   new URL("../scripts/seed-hosted-users.mjs", import.meta.url),
   "utf8",

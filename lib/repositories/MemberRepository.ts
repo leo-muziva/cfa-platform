@@ -68,12 +68,22 @@ export async function getProfilesPage(filters: MemberListFilters, pageSize: numb
   return { profiles: data as unknown as Profile[], total: count ?? 0 }
 }
 
-export async function inviteMemberByEmail(email: string, fullName: string) {
+export async function inviteMemberByEmail(
+  email: string,
+  fullName: string,
+  isStaff: boolean,
+  staffType: "admin" | "coach" | null,
+) {
   const admin = createAdminClient()
   if (!admin) return { error: 'Invites are not configured on this server' } as const
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName }, redirectTo: `${siteUrl}/auth/confirm?next=/auth/update-password`,
+    data: {
+      full_name: fullName,
+      cfa_is_staff: isStaff,
+      cfa_staff_type: isStaff ? staffType ?? 'coach' : null,
+    },
+    redirectTo: `${siteUrl}/auth/update-password`,
   })
   if (error) return { error: error.message.toLowerCase().includes('already') ? 'A user with this email already exists' : 'Failed to send invite' } as const
   return { userId: data.user.id }
