@@ -3,15 +3,26 @@ import { getCurrentAccountContext, getCurrentProfile, requireAdmin } from '@/lib
 import { getMembershipTypes } from '@/lib/repositories/MemberRepository'
 import {
   listOpenSlots, createSlot, createBooking, listBookings, createMembershipRequest,
-  listMembershipRequests, reviewMembershipRequest, getBillingForPayer, runInvoices, recordManualPayment, listAllInvoices,
+  listMembershipRequestsForMember, listMembershipRequestsForAdmin, reviewMembershipRequest, getBillingForPayer, runInvoices, recordManualPayment, listAllInvoices,
   getMembership, resubmitMembership, changeMembershipStatus, listFamilyLinks, requestFamilyLink, respondFamilyLink, endFamilyLink,
 } from '@/lib/repositories/PlatformRepository'
 import { bookingSchema, lessonSlotSchema, membershipRequestSchema, membershipResubmissionSchema,
   membershipReviewSchema, membershipStatusChangeSchema, familyLinkRequestSchema,
   familyLinkResponseSchema, familyLinkEndSchema } from '@/lib/validations/member.schema'
-import type { BookingErrorCode, LessonHistoryItem, PayerBillingView } from '@/types/domain'
+import type { BookingErrorCode, LessonHistoryItem, MembershipOperationErrorCode, PayerBillingView } from '@/types/domain'
 
 export type BookingResult = { bookingId: string } | { errorCode: BookingErrorCode }
+
+const membershipErrorMessages: Record<MembershipOperationErrorCode, string> = {
+  request_failed: 'Unable to submit the membership request. Please try again.',
+  review_failed: 'Unable to update this membership request. Please try again.',
+  resubmit_failed: 'Unable to resubmit the membership request. Please try again.',
+  status_change_failed: 'Unable to change the membership status. Please try again.',
+}
+
+function safeMembershipResult(result: { success: true } | { errorCode: MembershipOperationErrorCode }) {
+  return 'errorCode' in result ? { error: membershipErrorMessages[result.errorCode] } : result
+}
 
 export async function getBookingPageData() {
   const context = await getCurrentAccountContext()
@@ -56,47 +67,47 @@ export async function requestMembership(raw: unknown) {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   if (profile.membership_status === 'member') return { error: 'This account is already a member' }
-  return createMembershipRequest(profile.id, parsed.data.membership_type_id)
+  return safeMembershipResult(await createMembershipRequest(profile.id, parsed.data.membership_type_id))
 }
 
 export async function getMembershipRequestPageData() {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' } as const
-  const requests = await listMembershipRequests()
-  return { profile, membership: await getMembership(profile.id), membershipTypes: await getMembershipTypes(), requests: requests.filter((r) => r.applicant_id === profile.id) }
+  const requests = await listMembershipRequestsForMember(profile.id)
+  return { profile, membership: await getMembership(profile.id), membershipTypes: await getMembershipTypes(), requests }
 }
 
 export async function getMembershipRequestsForAdmin() {
   const guard = await requireAdmin()
-  return 'error' in guard ? guard : { requests: await listMembershipRequests() }
+  return 'error' in guard ? guard : { requests: await listMembershipRequestsForAdmin() }
 }
 
 export async function decideMembershipRequest(raw: unknown) {
   const parsed = membershipReviewSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
   const guard = await requireAdmin()
-  return 'error' in guard ? guard : reviewMembershipRequest(parsed.data.application_id, parsed.data.decision, parsed.data.visible_response, parsed.data.private_notes)
+  return 'error' in guard ? guard : safeMembershipResult(await reviewMembershipRequest(parsed.data.application_id, parsed.data.decision, parsed.data.visible_response, parsed.data.private_notes))
 }
 
 export async function resubmitMembershipRequest(raw: unknown) {
   const parsed = membershipResubmissionSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
   if (!await getCurrentProfile()) return { error: 'Not authenticated' }
-  return resubmitMembership(parsed.data.application_id, parsed.data.membership_type_id)
+  return safeMembershipResult(await resubmitMembership(parsed.data.application_id, parsed.data.membership_type_id))
 }
 
 export async function cancelCurrentMembership(confirmed: boolean) {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   if (!confirmed) return { error: 'Cancellation must be confirmed' }
-  return changeMembershipStatus(profile.id, 'cancelled')
+  return safeMembershipResult(await changeMembershipStatus(profile.id, 'cancelled'))
 }
 
 export async function changeMembershipForAdmin(raw: unknown) {
   const parsed = membershipStatusChangeSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
   const guard = await requireAdmin()
-  return 'error' in guard ? guard : changeMembershipStatus(parsed.data.profile_id, parsed.data.status)
+  return 'error' in guard ? guard : safeMembershipResult(await changeMembershipStatus(parsed.data.profile_id, parsed.data.status))
 }
 
 export async function getFamilyAccountsPageData() {

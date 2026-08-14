@@ -2,6 +2,11 @@ export type MembershipStatus = 'guest' | 'member'
 export type MembershipLifecycleStatus = 'active' | 'suspended' | 'expired' | 'cancelled'
 export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'rejected' | 'approved'
 export type MembershipReviewDecision = 'approve' | 'request_changes' | 'reject'
+export type MembershipOperationErrorCode =
+  | 'request_failed'
+  | 'review_failed'
+  | 'resubmit_failed'
+  | 'status_change_failed'
 export type FamilyLinkStatus = 'pending' | 'active' | 'rejected' | 'ended'
 export type LessonAccessRule = 'guest_allowed' | 'active_members_only'
 export type HouseholdRole = 'payer' | 'dependent'
@@ -80,7 +85,6 @@ export interface MembershipApplication {
   status: MembershipApplicationStatus
   submitted_details: { membership_type_id: string }
   visible_response: string | null
-  private_notes?: string | null
   reviewer_id: string | null
   reviewed_at: string | null
   created_at: string
@@ -181,6 +185,10 @@ export interface Booking {
   created_at: string
   lesson_slot?: LessonSlot
   fencer?: Pick<Profile, 'id' | 'full_name'>
+}
+
+export interface AdminMembershipApplication extends MembershipApplication {
+  private_notes: string | null
 }
 
 export type BookingErrorCode =

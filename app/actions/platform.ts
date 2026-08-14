@@ -38,25 +38,28 @@ export async function createSlotAction(_: ActionState, formData: FormData): Prom
 export async function requestMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await requestMembership({ membership_type_id: formData.get('membership_type_id') })
   if ('error' in result) return { error: result.error }
-  revalidatePath('/protected/membership-request')
+  revalidatePath('/protected')
   return { success: 'Membership request submitted for staff approval' }
 }
 
-export async function decideMembershipRequestAction(formData: FormData) {
-  await decideMembershipRequest({ application_id: formData.get('application_id'), decision: formData.get('decision'),
+export async function decideMembershipRequestAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const result = await decideMembershipRequest({ application_id: formData.get('application_id'), decision: formData.get('decision'),
     visible_response: formData.get('visible_response'), private_notes: formData.get('private_notes') })
+  if ('error' in result) return { error: result.error }
   revalidatePath('/protected/admin/membership-requests')
+  revalidatePath('/protected')
+  return { success: 'Membership request updated successfully' }
 }
 
 export async function resubmitMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await resubmitMembershipRequest({ application_id: formData.get('application_id'), membership_type_id: formData.get('membership_type_id') })
   if ('error' in result) return { error: result.error }
-  revalidatePath('/protected/membership-request'); return { success: 'Membership application resubmitted' }
+  revalidatePath('/protected'); return { success: 'Membership application resubmitted' }
 }
 
 export async function cancelMembershipAction(formData: FormData) {
   await cancelCurrentMembership(formData.get('confirm') === 'yes')
-  revalidatePath('/protected/membership-request')
+  revalidatePath('/protected')
 }
 
 export async function changeMembershipStatusAction(formData: FormData) {
