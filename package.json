@@ -6,7 +6,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest"
+    "test": "vitest",
+    "test:db-workflows": "npx supabase test db supabase/tests/database/member-workflows.test.sql"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
