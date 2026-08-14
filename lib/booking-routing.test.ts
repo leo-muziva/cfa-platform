@@ -1,0 +1,29 @@
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+
+const read = (relativePath: string) => readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
+const compatibilityPage = read('app/book/page.tsx')
+const protectedPage = read('app/protected/book/page.tsx')
+const publicNavigation = read('components/public-navigation.tsx')
+const signup = read('components/ui/sign-up.tsx')
+
+describe('protected booking routing', () => {
+  it('keeps the public compatibility route data-free and redirects to the canonical page', () => {
+    expect(compatibilityPage).toContain('redirect(`/protected/book')
+    expect(compatibilityPage).toContain('safeBookingSlot')
+    expect(compatibilityPage).not.toContain('listOpenSlots')
+    expect(compatibilityPage).not.toContain('BookingCalendar')
+  })
+
+  it('loads booking data only on the protected page and preserves a validated return slot', () => {
+    expect(protectedPage).toContain('getBookingPageData()')
+    expect(protectedPage).toContain('/auth/login?next=')
+    expect(protectedPage).toContain('safeBookingSlot')
+  })
+
+  it('removes public booking navigation and carries booking through signup confirmation', () => {
+    expect(publicNavigation).not.toContain('href: "/book"')
+    expect(signup).toContain('/auth/confirm?next=')
+    expect(signup).toContain('encodeURIComponent(next)')
+  })
+})

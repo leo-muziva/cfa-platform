@@ -1,6 +1,7 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import type { BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, Receipt } from '@/types/domain'
+import { bookingDatabaseErrorCode } from '@/lib/booking-errors'
 
 type PublicLessonSlotRow = Omit<BookableLessonSlot, 'price' | 'booked_count' | 'remaining_capacity' | 'is_full'> & {
   price: number | string
@@ -33,7 +34,9 @@ export async function createBooking(slotId: string, fencerId: string, paymentOpt
   const { data, error } = await db.rpc('create_lesson_booking', {
     target_slot: slotId, target_fencer: fencerId, requested_payment: paymentOption,
   })
-  return error ? { error: error.message } as const : { bookingId: data as string }
+  return error
+    ? { errorCode: bookingDatabaseErrorCode(error.message, error.code) } as const
+    : { bookingId: data as string }
 }
 
 export async function listBookings(): Promise<Booking[]> {

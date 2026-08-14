@@ -115,7 +115,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/login?confirmed=1`,
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(`/auth/login?confirmed=1&next=${encodeURIComponent(next)}`)}`,
         // Stored as raw_user_meta_data; the handle_new_user DB trigger
         // copies full_name onto the auto-created profiles row.
         data: { full_name: fullName.trim() },

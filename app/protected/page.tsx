@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
 import { getLessonHistory } from '@/lib/services/PlatformService'
+import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
 
 export default async function DashboardPage() {
   const context = await getCurrentAccountContext()
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
       </div>
       {!context.profile.profile_completed_at && <Card className="cfa-light-card"><CardHeader><CardTitle>Complete your account details</CardTitle></CardHeader><CardContent><p className="mb-4 text-muted-foreground">Add the required contact, emergency-contact and consent information.</p><Button asChild><Link href="/protected/complete-profile">Complete profile</Link></Button></CardContent></Card>}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="cfa-light-card"><CardHeader><CardTitle>Next lesson</CardTitle></CardHeader><CardContent>{next ? new Date(next.starts_at).toLocaleString('en-ZA') : 'No upcoming lessons.'}</CardContent></Card>
+        <Card className="cfa-light-card"><CardHeader><CardTitle>Next lesson</CardTitle></CardHeader><CardContent>{next ? formatCapeTownLessonDate(next.starts_at) : 'No upcoming lessons.'}</CardContent></Card>
         {context.capabilities.isPayer && context.householdMembers.length > 1 && <Card className="cfa-light-card"><CardHeader><CardTitle>Household</CardTitle></CardHeader><CardContent>{context.householdMembers.length - 1} dependent(s)</CardContent></Card>}
       </div>
       <div className="flex flex-wrap gap-3">

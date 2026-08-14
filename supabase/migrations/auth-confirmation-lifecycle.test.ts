@@ -37,9 +37,9 @@ describe('email confirmation lifecycle', () => {
   })
 
   it('sends confirmation and invitation links through the SSR confirm route', () => {
-    expect(confirmationTemplate).toContain('/auth/confirm?token_hash={{ .TokenHash }}')
+    expect(confirmationTemplate).toContain('{{ .RedirectTo }}')
+    expect(confirmationTemplate).toContain('token_hash={{ .TokenHash }}')
     expect(confirmationTemplate).toContain('type=email')
-    expect(confirmationTemplate).toContain('next=%2Fauth%2Flogin%3Fconfirmed%3D1')
     expect(inviteTemplate).toContain('/auth/confirm?token_hash={{ .TokenHash }}')
     expect(inviteTemplate).toContain('type=invite')
     expect(inviteTemplate).toContain('next=%2Fauth%2Fupdate-password')

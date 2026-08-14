@@ -13,13 +13,38 @@ export function capeTownDateKey(isoDate: string): string {
   return `${value.year}-${value.month}-${value.day}`;
 }
 export function formatCapeTownDate(dateKey: string): string {
-  return new Intl.DateTimeFormat("en-ZA", {
+  const parts = new Intl.DateTimeFormat("en-ZA", {
     timeZone: CAPE_TOWN_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(`${dateKey}T12:00:00+02:00`));
+  }).formatToParts(new Date(`${dateKey}T12:00:00+02:00`));
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.weekday}, ${Number(value.day)} ${value.month} ${value.year}`;
+}
+
+export function formatCapeTownCompactDate(dateKey: string): string {
+  const parts = new Intl.DateTimeFormat("en-ZA", {
+    timeZone: CAPE_TOWN_TIME_ZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).formatToParts(new Date(`${dateKey}T12:00:00+02:00`));
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.weekday}, ${Number(value.day)} ${value.month}`;
+}
+
+export function formatCapeTownLessonDate(isoDate: string): string {
+  const parts = new Intl.DateTimeFormat("en-ZA", {
+    timeZone: CAPE_TOWN_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).formatToParts(new Date(isoDate));
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.weekday}, ${Number(value.day)} ${value.month} ${value.year}, ${formatCapeTownTime(isoDate)}`;
 }
 
 export function formatCapeTownTime(isoDate: string): string {
@@ -48,4 +73,10 @@ export function getInitialBookingSelection(
     selectedSlotId: selectedSlot?.is_full ? "" : (selectedSlot?.id ?? ""),
     requestedSlotUnavailable: Boolean(requestedSlotId && !requestedSlot),
   };
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function safeBookingSlot(value: string | null | undefined): string | undefined {
+  return value && UUID_PATTERN.test(value) ? value : undefined;
 }
