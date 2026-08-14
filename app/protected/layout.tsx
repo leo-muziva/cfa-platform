@@ -4,22 +4,17 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import { hasEnvVars } from '@/lib/utils'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
 import { Suspense } from 'react'
-import { BackButton } from '@/components/back-button'
 import { PortalNavigation, type PortalNavigationLink } from '@/components/portal/portal-navigation'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const context = await getCurrentAccountContext()
   const capabilities = 'error' in context ? null : context.capabilities
-  const dependentCount = 'error' in context ? 0 : context.householdMembers.filter((m) => m.household_role === 'dependent').length
   const links: PortalNavigationLink[] = [
-    { href: '/protected', label: 'Overview' },
+    { href: '/protected', label: 'Profile' },
     { href: '/protected/book', label: 'Book' },
     { href: '/protected/lessons', label: 'Lessons' },
-    { href: '/protected/membership-request', label: 'Membership' },
     { href: '/protected/family', label: 'Family' },
-    ...(capabilities?.isPayer && dependentCount > 0 ? [{ href: '/protected/dependents', label: 'Dependents' }] : []),
     ...(capabilities?.canSeeHouseholdMoney ? [{ href: '/protected/billing', label: 'Billing' }] : []),
-    { href: '/protected/profile', label: 'Profile' },
     ...(capabilities?.canManageStaffArea ? [{ href: '/protected/admin', label: 'Admin' }] : []),
   ]
   return (
@@ -28,13 +23,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <PortalNavigation links={links} authSlot={!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>} />
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-8 sm:py-10">
           <div className="rounded-[2rem] border border-white/30 bg-white/[0.96] p-5 text-slate-950 shadow-[0_28px_90px_rgba(0,0,0,0.30)] backdrop-blur-2xl sm:p-8">
-          <BackButton
-            fallback="/protected"
-            rootFallback="/"
-            routeFallbacks={[{ prefix: '/protected/admin', target: '/protected/admin' }]}
-            className="mb-8 w-fit border-slate-300 bg-white text-slate-800 hover:bg-slate-100 focus-visible:outline-slate-950"
-          />
-          {children}
+            {children}
           </div>
         </div>
         <footer className="mx-auto flex w-full max-w-7xl items-center justify-between border-t border-white/15 px-5 py-8 text-xs text-white/60 sm:px-8">

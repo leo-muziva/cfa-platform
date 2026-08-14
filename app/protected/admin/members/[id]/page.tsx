@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getMemberEditDataForAdmin } from '@/lib/services/MemberService'
 import { Badge } from '@/components/ui/badge'
@@ -26,13 +25,7 @@ export default async function MemberDetailPage({
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
       <div>
-        <Link
-          href="/protected/admin/members"
-          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
-          ← Back to members
-        </Link>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{profile.full_name || profile.email}</h1>
           <Badge variant={profile.is_active ? 'default' : 'outline'}>
             {profile.is_active ? 'Active' : 'Inactive'}
