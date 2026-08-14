@@ -55,24 +55,23 @@ export function PortalNavigation({
 
   return (
     <nav aria-label="Member Portal navigation" className="sticky top-0 z-30 border-b border-white/15 bg-black/40 backdrop-blur-xl">
-      <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-        <Link href="/protected" className="flex shrink-0 items-center gap-3 rounded-xl font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+      <div className="relative grid w-full grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 sm:px-8 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <Link href="/" aria-label="Cape Fencing Academy home" className="flex min-w-0 shrink-0 items-center gap-3 justify-self-start rounded-xl font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
           <Image src="/cfa-crest.png" alt="" width={40} height={40} priority className="h-10 w-10 rounded-full object-cover" />
           <span className="hidden sm:inline">Member Portal</span>
         </Link>
 
-        <div className="hidden min-w-0 items-center gap-3 xl:flex">
-          <div className="liquid-glass flex items-center gap-1 rounded-full p-1 text-white/75">
+        <div className="liquid-glass hidden items-center gap-1 justify-self-center rounded-full p-1 text-white/75 xl:flex">
             {links.map((link) => (
               <Link key={link.href} href={link.href} aria-current={isCurrent(link.href) ? "page" : undefined} className={`${linkClass} ${isCurrent(link.href) ? "bg-white/15 text-white" : ""}`}>
                 {link.label}
               </Link>
             ))}
-          </div>
-          <div className="shrink-0">{authSlot}</div>
         </div>
 
-        <div className="flex items-center gap-3 xl:hidden">
+        <div className="hidden shrink-0 justify-self-end xl:block">{authSlot}</div>
+
+        <div className="flex items-center gap-3 justify-self-end xl:hidden">
           <div className="hidden sm:block">{authSlot}</div>
           <button ref={buttonRef} type="button" aria-label={menuOpen ? "Close portal menu" : "Open portal menu"} aria-expanded={menuOpen} aria-controls="portal-menu" onClick={() => setMenuOpen((open) => !open)} className="liquid-glass inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
             {menuOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}

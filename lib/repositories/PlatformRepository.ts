@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, Receipt } from '@/types/domain'
+import type { AdminMembershipApplication, BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, MembershipOperationErrorCode, Receipt } from '@/types/domain'
 import { bookingDatabaseErrorCode } from '@/lib/booking-errors'
 
 type PublicLessonSlotRow = Omit<BookableLessonSlot, 'price' | 'booked_count' | 'remaining_capacity' | 'is_full'> & {
@@ -52,18 +52,39 @@ export async function createMembershipRequest(applicantId: string, membershipTyp
   const db = await createClient()
   const { error } = await db.rpc('submit_membership_application', { target_type: membershipTypeId })
   void applicantId
-  return error ? { error: error.message } : { success: true as const }
+  return membershipOperationResult(error, 'request_failed')
 }
 
-export async function listMembershipRequests(): Promise<MembershipApplication[]> {
+export async function listMembershipRequestsForMember(applicantId: string): Promise<MembershipApplication[]> {
   const db = await createClient()
   const { data, error } = await db.from('membership_applications').select(`
     id,applicant_id,membership_type_id,version,status,submitted_details,visible_response,
-    private_notes,reviewer_id,reviewed_at,created_at,
+    reviewer_id,reviewed_at,created_at,
     applicant:profiles!membership_applications_applicant_id_fkey(id,full_name,email),
     membership_type:membership_types(id,name)
-  `).order('created_at', { ascending: false })
+  `).eq('applicant_id', applicantId).order('created_at', { ascending: false })
   return error ? [] : data as unknown as MembershipApplication[]
+}
+
+export async function listMembershipRequestsForAdmin(): Promise<AdminMembershipApplication[]> {
+  const db = await createClient()
+  const { data, error } = await db.from('membership_applications').select(`
+    id,applicant_id,membership_type_id,version,status,submitted_details,visible_response,
+    reviewer_id,reviewed_at,created_at,
+    applicant:profiles!membership_applications_applicant_id_fkey(id,full_name,email),
+    membership_type:membership_types(id,name),
+    admin_notes:membership_application_admin_notes(private_notes)
+  `).order('created_at', { ascending: false })
+  if (error) return []
+  return (data ?? []).map((row) => {
+    const raw = row as unknown as MembershipApplication & {
+      admin_notes: { private_notes: string | null } | { private_notes: string | null }[] | null
+    }
+    const notes = Array.isArray(raw.admin_notes) ? raw.admin_notes[0] : raw.admin_notes
+    const { admin_notes: _adminNotes, ...application } = raw
+    void _adminNotes
+    return { ...application, private_notes: notes?.private_notes ?? null }
+  })
 }
 
 export async function reviewMembershipRequest(requestId: string, decision: 'approve' | 'request_changes' | 'reject', visibleResponse?: string | null, privateNotes?: string | null) {
@@ -71,7 +92,7 @@ export async function reviewMembershipRequest(requestId: string, decision: 'appr
   const { error } = await db.rpc('review_membership_application', {
     application_id: requestId, decision, visible_response: visibleResponse ?? null, private_notes: privateNotes ?? null,
   })
-  return error ? { error: error.message } : { success: true as const }
+  return membershipOperationResult(error, 'review_failed')
 }
 
 export async function getMembership(profileId: string): Promise<Membership | null> {
@@ -83,13 +104,17 @@ export async function getMembership(profileId: string): Promise<Membership | nul
 export async function resubmitMembership(applicationId: string, membershipTypeId: string) {
   const db = await createClient()
   const { error } = await db.rpc('resubmit_membership_application', { application_id: applicationId, target_type: membershipTypeId })
-  return error ? { error: error.message } : { success: true as const }
+  return membershipOperationResult(error, 'resubmit_failed')
 }
 
 export async function changeMembershipStatus(profileId: string, status: string) {
   const db = await createClient()
   const { error } = await db.rpc('change_membership_status', { target_profile: profileId, target_status: status })
-  return error ? { error: error.message } : { success: true as const }
+  return membershipOperationResult(error, 'status_change_failed')
+}
+
+function membershipOperationResult(error: unknown, errorCode: MembershipOperationErrorCode) {
+  return error ? { errorCode } as const : { success: true as const }
 }
 
 export async function listFamilyLinks(): Promise<FamilyLink[]> {
