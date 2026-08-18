@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 const read = (relativePath: string) => readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const compatibilityPage = read('app/book/page.tsx')
 const protectedPage = read('app/protected/book/page.tsx')
+const protectedCoachPage = read('app/protected/book/[coachId]/page.tsx')
 const publicNavigation = read('components/public-navigation.tsx')
 const signup = read('components/ui/sign-up.tsx')
 
@@ -15,10 +16,12 @@ describe('protected booking routing', () => {
     expect(compatibilityPage).not.toContain('BookingCalendar')
   })
 
-  it('loads booking data only on the protected page and preserves a validated return slot', () => {
-    expect(protectedPage).toContain('getBookingPageData()')
+  it('loads the active coach directory only on the canonical protected page', () => {
+    expect(protectedPage).toContain('getLessonCoachDirectory()')
     expect(protectedPage).toContain('/auth/login?next=')
-    expect(protectedPage).toContain('safeBookingSlot')
+    expect(protectedPage).toContain('<CoachDirectory')
+    expect(protectedPage).not.toContain('listOpenSlots')
+    expect(protectedCoachPage).toContain('getLessonBookingPageData(coachId')
   })
 
   it('removes public booking navigation and carries booking through signup confirmation', () => {

@@ -25,17 +25,34 @@ describe('aggregateMemberStats', () => {
 describe('deriveCapabilities', () => {
   const profile = { is_staff: false, staff_type: null } as Profile
   it('never grants household money or payment to a dependent', () => {
-    const capabilities = deriveCapabilities(profile, { household_role: 'dependent' } as HouseholdMember)
+    const capabilities = deriveCapabilities(profile, { household_role: 'dependent' } as HouseholdMember, 'payer-id')
     expect(capabilities.canSeeHouseholdMoney).toBe(false)
     expect(capabilities.canTriggerPayment).toBe(false)
   })
   it('grants payer financial capabilities', () => {
-    const capabilities = deriveCapabilities(profile, { household_role: 'payer' } as HouseholdMember)
+    const payer = { ...profile, id: 'payer-id' } as Profile
+    const capabilities = deriveCapabilities(payer, { household_role: 'payer' } as HouseholdMember, 'payer-id')
     expect(capabilities.canSeeHouseholdMoney).toBe(true)
     expect(capabilities.canTriggerPayment).toBe(true)
   })
   it('keeps coach and admin capabilities distinct', () => {
-    expect(deriveCapabilities({ ...profile, is_staff: true, staff_type: 'coach' } as Profile, { household_role: 'payer' } as HouseholdMember).canManageStaffArea).toBe(false)
-    expect(deriveCapabilities({ ...profile, is_staff: true, staff_type: 'admin' } as Profile, { household_role: 'dependent' } as HouseholdMember).canManageStaffArea).toBe(true)
+    const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
+    const admin = { ...profile, id: 'admin-id', is_staff: true, staff_type: 'admin' } as Profile
+    expect(deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id').canManageStaffArea).toBe(false)
+    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').canManageStaffArea).toBe(true)
+    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').isDependent).toBe(false)
+  })
+  it('uses effective billing responsibility instead of a stale household role', () => {
+    const linked = { ...profile, id: 'linked-dependent' } as Profile
+    const capabilities = deriveCapabilities(linked, { household_role: 'payer' } as HouseholdMember, 'guardian-id')
+    expect(capabilities.isDependent).toBe(true)
+    expect(capabilities.isPayer).toBe(false)
+    expect(capabilities.canSeeHouseholdMoney).toBe(false)
+  })
+  it('never grants coach financial capabilities even when the coach is their own payer', () => {
+    const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
+    const capabilities = deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id')
+    expect(capabilities.canSeeHouseholdMoney).toBe(false)
+    expect(capabilities.canTriggerPayment).toBe(false)
   })
 })

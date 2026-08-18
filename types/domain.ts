@@ -329,6 +329,166 @@ export interface PayerBillingView {
   balance: number
   invoices: Invoice[]
   receipts: Receipt[]
+  pendingLessonCharges: PendingLessonCharge[]
   paymentPreference: PaymentPreference
   providerAvailable: boolean
 }
+
+export interface PendingLessonCharge {
+  id: string
+  participantName: string
+  amount: number
+  description: string
+  lessonStartsAt: string | null
+}
+
+export type Weapon = 'foil' | 'epee' | 'sabre'
+
+export type LessonBookingStatus =
+  | 'scheduled'
+  | 'attended'
+  | 'no_show'
+  | 'cancelled'
+  | 'rescheduled'
+
+export interface LessonCoachSummary {
+  coachId: string
+  fullName: string
+  weapons: Weapon[]
+}
+
+export interface AvailableLessonTime {
+  startsAt: string
+  endsAt: string
+}
+
+/** Pricing is deliberately isolated from availability and booking DTOs. */
+export interface LessonQuote {
+  participantCount: 1 | 2
+  totalCents: number
+  currency: 'ZAR'
+}
+
+export interface LessonParticipant {
+  id: string
+  fullName: string
+  isSelf?: boolean
+}
+
+/** Financially safe lesson DTO for members, dependents, coaches, and admins. */
+export interface LessonBooking {
+  id: string
+  coachId: string
+  coachName: string
+  startsAt: string
+  endsAt: string
+  weapon: Weapon
+  status: LessonBookingStatus
+  participants: LessonParticipant[]
+  cancellationDeadline?: string | null
+  cancelledAt: string | null
+  cancellationReason: string | null
+  rescheduledFromBookingId: string | null
+  rescheduledToBookingId: string | null
+}
+
+export interface CoachAvailabilityRule {
+  id: string
+  coachId: string
+  isoWeekday: 1 | 2 | 3 | 4 | 5 | 6 | 7
+  startsAtLocal: string
+  endsAtLocal: string
+  isActive: boolean
+}
+
+export interface CoachAvailabilityException {
+  id: string
+  coachId: string
+  exceptionType: 'block' | 'extra'
+  startsAt: string
+  endsAt: string
+  reason: string | null
+}
+
+export interface ClubClosure {
+  id: string
+  startsOn: string
+  endsOn: string
+  reason: string
+  cancelledAt: string | null
+  affectedBookingCount?: number
+}
+
+/** Money-free preview row returned before an admin confirms a closure. */
+export interface ClosureAffectedBooking {
+  bookingId: string
+  coachId: string
+  startsAt: string
+  participantNames: string[]
+}
+
+export interface LessonBookingSettings {
+  cancellationWindowHours: number
+  lateCancellationAction: 'allow'
+  lateCancellationFeeMultiplier: number
+  noShowFeeMultiplier: number
+  bookingHorizonDays: number
+  bookingCutoffMinutes: number
+  paymentMode: 'invoice_only'
+  arrearsBlockingEnabled: false
+  futureBookingCapPerFencer: null
+  coachAssignmentMode: 'any_matching_weapon'
+  coachWeaponsMode: 'per_coach'
+  singleLessonPriceCents: number
+  externalRemindersEnabled: boolean
+  doubleLessonMultiplier: 2
+  doubleLessonAtomic: true
+  closureMode: 'club_wide_date_ranges'
+  lessonDurationMinutes: 30
+  updatedAt: string
+}
+
+export interface CoachLessonProfile {
+  coachId: string
+  fullName: string
+  isActive: boolean
+  weapons: Weapon[]
+}
+
+export interface LessonActivityItem {
+  id: string
+  eventType: string
+  actorId: string | null
+  bookingId: string | null
+  createdAt: string
+  metadata: Record<string, unknown>
+}
+
+export type LessonBookingErrorCode =
+  | 'not_authenticated'
+  | 'account_incomplete'
+  | 'invalid_input'
+  | 'invalid_participants'
+  | 'participant_unauthorized'
+  | 'mixed_payers'
+  | 'slot_taken'
+  | 'booking_not_scheduled'
+  | 'booking_already_started'
+  | 'invalid_actor_type'
+  | 'invalid_outcome'
+  | 'outcome_not_allowed'
+  | 'forbidden'
+  | 'locked_setting'
+  | 'invalid_settings'
+  | 'invalid_coach'
+  | 'invalid_weapon'
+  | 'invalid_exception'
+  | 'affected_bookings_require_confirmation'
+  | 'invalid_closure'
+  | 'waiver_reason_required'
+  | 'not_found'
+  | 'request_failed'
+
+export type LessonBookingResult<T> =
+  | { success: true; data: T }
+  | { success: false; errorCode: LessonBookingErrorCode; error: string }

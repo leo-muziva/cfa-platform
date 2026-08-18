@@ -1,0 +1,340 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1920"
+     width="1000" height="1920" role="img"
+     aria-label="Navigation map of the Cape Fencing Academy website. Four sections stacked by access level: public pages, sign-in pages, member pages marked protected, and admin pages marked admin only. Arrows show which link or button moves a visitor between pages, with dashed arrows for automatic redirects and dotted arrows for email links.">
+
+  <style>
+text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .nm      { font-size: 16px; fill: #16161A; text-anchor: middle; }
+  .nm.sm   { font-size: 14px; }
+  .nm.xs   { font-size: 13px; }
+  .qual    { font-size: 12px; fill: #6B6B76; text-anchor: middle; letter-spacing: .04em; }
+  .qual.xs { font-size: 11px; }
+  .sub     { font-size: 12.5px; fill: #4E4E58; text-anchor: middle; }
+  .warn    { font-size: 12px; fill: #8E2415; text-anchor: middle; letter-spacing: .04em; }
+  .lbl     { font-size: 13px; fill: #4E4E58; text-anchor: middle; }
+  .lbl.s   { text-anchor: start; }
+  .lbl.e   { text-anchor: end; }
+  .lane    { font-size: 15px; fill: #16161A; letter-spacing: .16em; }
+  .lanesub { font-size: 12.5px; fill: #6B6B76; }
+  .keyhead { font-size: 12.5px; fill: #6B6B76; letter-spacing: .18em; }
+  .keytext { font-size: 14px; fill: #16161A; }
+  .keymark { font-size: 13.5px; fill: #16161A; letter-spacing: .04em; }
+
+  .pg   { fill: #FFFFFF; stroke: #16161A; stroke-width: 1.5; }
+  .plan { fill: #FFFFFF; stroke: #8B8B96; stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .orph { stroke: #8E2415; }
+  .chip { fill: none; stroke: #D6D6DC; stroke-width: 1.2; }
+  .rule { stroke: #D6D6DC; stroke-width: 1; }
+
+  .link { fill: none; stroke: #16161A; stroke-width: 1.4; marker-end: url(#ar); }
+  .link.auto { stroke-dasharray: 7 5; }
+  .link.mail { stroke-dasharray: 1.5 4.5; stroke-linecap: round; }
+  .plain { fill: none; stroke: #8B8B96; stroke-width: 1.1; stroke-dasharray: 5 4; }
+  .spine { fill: none; stroke: #8B8B96; stroke-width: 1.1; stroke-dasharray: 5 4; marker-end: url(#arG); }
+  .junc  { fill: #16161A; }
+  .plate { fill: #FFFFFF; }
+rect.bg { fill: #FFFFFF; }
+</style>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16161A"/>
+    </marker>
+    <marker id="arG" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8B8B96"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1000" height="1920"/>
+
+  <!-- ================= KEY ================= -->
+  <rect x="20" y="20" width="960" height="160" fill="none" stroke="#D6D6DC" stroke-width="1"/>
+  <text x="44" y="48" class="keyhead">KEY</text>
+
+  <rect x="44" y="68" width="40" height="24" class="pg"/>
+  <text x="96" y="85" class="keytext">A page people can see</text>
+
+  <rect x="44" y="108" width="40" height="24" class="plan"/>
+  <text x="96" y="125" class="keytext">Planned – not built yet</text>
+
+  <polygon points="52,148 76,148 84,160 76,172 52,172 44,160" class="pg"/>
+  <text x="96" y="165" class="keytext">A step with no screen</text>
+
+  <path d="M300,80 H344" class="link"/>
+  <text x="362" y="85" class="keytext">Someone clicks a link or button</text>
+
+  <path d="M300,120 H344" class="link auto"/>
+  <text x="362" y="125" class="keytext">The site moves you by itself</text>
+
+  <path d="M300,160 H344" class="link mail"/>
+  <text x="362" y="165" class="keytext">Goes out by email, comes back</text>
+
+  <rect x="640" y="68" width="40" height="24" class="pg orph"/>
+  <text x="692" y="85" class="keytext">Built, but nothing links to it</text>
+
+  <text x="640" y="125" class="keymark">(protected)</text>
+  <text x="730" y="125" class="keytext">You must be logged in</text>
+
+  <text x="640" y="165" class="keymark">(admin only)</text>
+  <text x="730" y="165" class="keytext">You must be an admin as well</text>
+
+  <!-- ================= SECTION 1: PUBLIC ================= -->
+  <line x1="20" y1="210" x2="980" y2="210" class="rule"/>
+  <text x="30" y="238" class="lane">PUBLIC</text>
+  <text x="30" y="257" class="lanesub">no account needed</text>
+
+  <text x="320" y="266" class="lbl">planned top-bar and footer links</text>
+  <path d="M140,292 V272 H860" class="plain"/>
+  <path d="M500,272 V288" class="spine"/>
+  <path d="M860,272 V288" class="spine"/>
+
+  <rect x="30" y="292" width="220" height="64" class="pg"/>
+  <text x="140" y="318" class="nm">Home page</text>
+  <text x="140" y="338" class="sub">the whole public site</text>
+
+  <rect x="390" y="296" width="220" height="56" class="plan"/>
+  <text x="500" y="329" class="nm sm">Class availability</text>
+  <rect x="750" y="296" width="220" height="56" class="plan"/>
+  <text x="860" y="329" class="nm sm">Family information</text>
+
+  <path d="M140,356 V384" class="spine"/>
+  <path d="M140,370 H860" class="plain"/>
+  <path d="M500,370 V384" class="spine"/>
+  <path d="M860,370 V384" class="spine"/>
+
+  <rect x="30" y="392" width="220" height="56" class="plan"/>
+  <text x="140" y="425" class="nm sm">Apply to join</text>
+  <rect x="390" y="392" width="220" height="56" class="plan"/>
+  <text x="500" y="425" class="nm sm">Privacy notice</text>
+  <rect x="750" y="392" width="220" height="56" class="plan"/>
+  <text x="860" y="425" class="nm sm">Terms of use</text>
+
+  <rect x="30" y="478" width="940" height="60" class="chip"/>
+  <text x="500" y="502" class="nm sm">About · Coaches · Schedule · Membership · FAQ · Contact</text>
+  <text x="500" y="522" class="sub">top-bar links that scroll down the home page – not separate pages</text>
+
+  <rect x="30" y="550" width="940" height="60" class="chip"/>
+  <text x="500" y="574" class="nm sm">Grey boxes come from our Milestone 2 design.</text>
+  <text x="500" y="594" class="sub">They are drawn so this map matches the plan – none of them work yet.</text>
+
+  <!-- ================= SECTION 2: SIGNING IN ================= -->
+  <line x1="20" y1="642" x2="980" y2="642" class="rule"/>
+  <text x="30" y="668" class="lane">SIGNING IN</text>
+  <text x="30" y="687" class="lanesub">open to all – this is the door</text>
+
+  <rect x="30" y="718" width="220" height="64" class="pg"/>
+  <text x="140" y="744" class="nm">Sign up</text>
+  <text x="140" y="764" class="sub">create an account</text>
+
+  <rect x="390" y="718" width="220" height="64" class="pg"/>
+  <text x="500" y="744" class="nm">Log in</text>
+  <text x="500" y="764" class="sub">email or Google</text>
+
+  <rect x="750" y="718" width="220" height="64" class="pg"/>
+  <text x="860" y="744" class="nm">Forgot password</text>
+  <text x="860" y="764" class="sub">ask for a reset email</text>
+
+  <path d="M250,736 H382" class="link"/>
+  <text x="316" y="728" class="lbl">Log in instead</text>
+
+  <path d="M390,764 H258" class="link"/>
+  <text x="324" y="778" class="lbl">Create one</text>
+
+  <path d="M610,750 H742" class="link"/>
+  <text x="676" y="742" class="lbl">Forgot password?</text>
+
+  <path d="M140,782 V824" class="link mail"/>
+  <text x="153" y="808" class="lbl s">confirmation email</text>
+
+  <path d="M500,782 V824" class="link"/>
+  <text x="513" y="808" class="lbl s">Continue with Google</text>
+
+  <path d="M860,782 V824" class="link mail"/>
+  <text x="847" y="808" class="lbl e">emailed reset link</text>
+
+  <polygon points="52,832 228,832 250,864 228,896 52,896 30,864" class="pg"/>
+  <text x="140" y="860" class="nm sm">Confirm email link</text>
+  <text x="140" y="879" class="sub">no screen</text>
+
+  <polygon points="412,832 588,832 610,864 588,896 412,896 390,864" class="pg"/>
+  <text x="500" y="860" class="nm sm">Google sign-in check</text>
+  <text x="500" y="879" class="sub">no screen</text>
+
+  <rect x="750" y="832" width="220" height="64" class="pg"/>
+  <text x="860" y="858" class="nm">Set a new password</text>
+  <text x="860" y="878" class="sub">from the emailed link</text>
+
+  <!-- both checks fail into the same arrow -->
+  <path d="M250,864 H320 V930 H500" class="link auto" style="marker-end:none"/>
+  <text x="304" y="924" class="lbl e">if the link is bad</text>
+  <path d="M500,896 V938" class="link auto"/>
+  <text x="513" y="918" class="lbl s">if Google says no</text>
+  <circle cx="500" cy="930" r="4" class="junc"/>
+
+  <rect x="390" y="946" width="220" height="74" class="pg"/>
+  <text x="500" y="974" class="nm">Error page</text>
+  <text x="500" y="994" class="sub">explains what went wrong</text>
+
+  <rect x="750" y="946" width="220" height="74" class="pg orph"/>
+  <text x="860" y="972" class="nm">Check your email</text>
+  <text x="860" y="991" class="sub">after signing up</text>
+  <text x="860" y="1009" class="warn">nothing links here yet</text>
+
+  <!-- every successful way in collects into one arrow -->
+  <path d="M610,764 H680" class="link" style="marker-end:none"/>
+  <path d="M610,864 H680" class="link" style="marker-end:none"/>
+  <path d="M860,896 V916 H680" class="link" style="marker-end:none"/>
+  <text x="693" y="907" class="lbl s">new password saved</text>
+  <path d="M680,764 V1078 H508" class="link" style="marker-end:none"/>
+  <path d="M140,896 V1078 H492" class="link" style="marker-end:none"/>
+  <circle cx="680" cy="764" r="4" class="junc"/>
+  <circle cx="680" cy="864" r="4" class="junc"/>
+  <circle cx="680" cy="916" r="4" class="junc"/>
+  <circle cx="500" cy="1078" r="4" class="junc"/>
+  <path d="M500,1078 V1182" class="link"/>
+  <text x="513" y="1102" class="lbl s">signed in – you land here</text>
+
+  <!-- ================= SECTION 3: MEMBERS ================= -->
+  <line x1="20" y1="1114" x2="980" y2="1114" class="rule"/>
+  <text x="30" y="1140" class="lane">MEMBERS</text>
+  <text x="30" y="1159" class="lanesub">must be logged in</text>
+
+  <polygon points="52,1190 228,1190 250,1235 228,1280 52,1280 30,1235" class="pg"/>
+  <text x="140" y="1222" class="nm">Signed in?</text>
+  <text x="140" y="1242" class="sub">checked before every</text>
+  <text x="140" y="1259" class="sub">page in this section</text>
+
+  <path d="M30,1235 H16 V704 H500 V710" class="link auto"/>
+  <text x="330" y="698" class="lbl">no – back to Log in</text>
+
+  <path d="M250,1235 H382" class="link"/>
+  <text x="316" y="1227" class="lbl">yes – carry on</text>
+
+  <rect x="390" y="1190" width="220" height="90" class="pg"/>
+  <text x="500" y="1220" class="nm">Your account</text>
+  <text x="500" y="1239" class="qual">(protected)</text>
+  <text x="500" y="1260" class="sub">top bar: home, Members, log out</text>
+
+  <rect x="750" y="1190" width="220" height="90" class="pg orph"/>
+  <text x="860" y="1217" class="nm">My profile</text>
+  <text x="860" y="1236" class="qual">(protected)</text>
+  <text x="860" y="1255" class="sub">edit name and phone</text>
+  <text x="860" y="1272" class="warn">no link points here yet</text>
+
+  <text x="770" y="1160" class="lbl">“Members” in the top bar</text>
+  <path d="M560,1190 V1166 H984 V1563 H978" class="link"/>
+
+  <path d="M500,1280 V1322" class="plain"/>
+  <path d="M104,1322 H894" class="plain"/>
+  <path d="M104,1322 V1338" class="spine"/>
+  <path d="M262,1322 V1338" class="spine"/>
+  <path d="M420,1322 V1338" class="spine"/>
+  <path d="M578,1322 V1338" class="spine"/>
+  <path d="M736,1322 V1338" class="spine"/>
+  <path d="M894,1322 V1338" class="spine"/>
+
+  <rect x="30" y="1346" width="148" height="62" class="plan"/>
+  <text x="104" y="1370" class="nm xs">Complete profile</text>
+  <text x="104" y="1390" class="qual xs">(protected)</text>
+
+  <rect x="188" y="1346" width="148" height="62" class="plan"/>
+  <text x="262" y="1370" class="nm xs">My lessons</text>
+  <text x="262" y="1390" class="qual xs">(protected)</text>
+
+  <rect x="346" y="1346" width="148" height="62" class="plan"/>
+  <text x="420" y="1370" class="nm xs">Membership request</text>
+  <text x="420" y="1390" class="qual xs">(protected)</text>
+
+  <rect x="504" y="1346" width="148" height="62" class="plan"/>
+  <text x="578" y="1370" class="nm xs">My family</text>
+  <text x="578" y="1390" class="qual xs">(protected)</text>
+
+  <rect x="662" y="1346" width="148" height="62" class="plan"/>
+  <text x="736" y="1370" class="nm xs">My dependents</text>
+  <text x="736" y="1390" class="qual xs">(protected)</text>
+
+  <rect x="820" y="1346" width="148" height="62" class="plan"/>
+  <text x="894" y="1370" class="nm xs">My billing</text>
+  <text x="894" y="1390" class="qual xs">(protected)</text>
+
+  <!-- ================= SECTION 4: ADMINS ================= -->
+  <line x1="20" y1="1442" x2="980" y2="1442" class="rule"/>
+  <text x="30" y="1468" class="lane">ADMINS</text>
+  <text x="30" y="1487" class="lanesub">logged in, with an admin role</text>
+
+  <polygon points="52,1518 228,1518 250,1563 228,1608 52,1608 30,1563" class="pg"/>
+  <text x="140" y="1550" class="nm">Admin role?</text>
+  <text x="140" y="1570" class="sub">checked before every</text>
+  <text x="140" y="1587" class="sub">page in this section</text>
+
+  <path d="M30,1563 H16 V1302 H420 V1288" class="link auto"/>
+  <text x="300" y="1296" class="lbl">no – back to your account</text>
+
+  <path d="M250,1563 H382" class="link"/>
+
+  <rect x="390" y="1518" width="220" height="90" class="pg"/>
+  <text x="500" y="1546" class="nm">Admin dashboard</text>
+  <text x="500" y="1565" class="qual">(admin only)</text>
+  <text x="500" y="1585" class="sub">member counts by role</text>
+  <text x="500" y="1600" class="sub">and membership type</text>
+
+  <rect x="750" y="1518" width="220" height="90" class="pg"/>
+  <text x="860" y="1546" class="nm">Members list</text>
+  <text x="860" y="1565" class="qual">(admin only)</text>
+  <text x="860" y="1585" class="sub">search · filter · pages</text>
+
+  <path d="M610,1546 H742" class="link"/>
+  <text x="676" y="1538" class="lbl">Members</text>
+
+  <path d="M750,1580 H618" class="link"/>
+  <text x="684" y="1594" class="lbl">Dashboard</text>
+
+  <rect x="390" y="1658" width="220" height="90" class="pg"/>
+  <text x="500" y="1686" class="nm">Invite a member</text>
+  <text x="500" y="1705" class="qual">(admin only)</text>
+  <text x="500" y="1725" class="sub">send a joining email</text>
+  <text x="500" y="1740" class="sub">← back to members</text>
+
+  <rect x="750" y="1658" width="220" height="90" class="pg"/>
+  <text x="860" y="1686" class="nm">Member details</text>
+  <text x="860" y="1705" class="qual">(admin only)</text>
+  <text x="860" y="1725" class="sub">edit and deactivate</text>
+  <text x="860" y="1740" class="sub">← back to members</text>
+
+  <path d="M860,1608 V1650" class="link"/>
+  <text x="873" y="1632" class="lbl s">click a row</text>
+
+  <path d="M790,1608 V1630 H500 V1650" class="link"/>
+  <text x="645" y="1624" class="lbl">Add member</text>
+
+  <path d="M390,1588 H350 V1798" class="plain"/>
+  <path d="M118,1798 H882" class="plain"/>
+  <path d="M118,1798 V1814" class="spine"/>
+  <path d="M309,1798 V1814" class="spine"/>
+  <path d="M500,1798 V1814" class="spine"/>
+  <path d="M691,1798 V1814" class="spine"/>
+  <path d="M882,1798 V1814" class="spine"/>
+
+  <rect x="30" y="1822" width="176" height="62" class="plan"/>
+  <text x="118" y="1846" class="nm xs">Membership requests</text>
+  <text x="118" y="1866" class="qual xs">(admin only)</text>
+
+  <rect x="221" y="1822" width="176" height="62" class="plan"/>
+  <text x="309" y="1846" class="nm xs">Lesson schedule</text>
+  <text x="309" y="1866" class="qual xs">(admin only)</text>
+
+  <rect x="412" y="1822" width="176" height="62" class="plan"/>
+  <text x="500" y="1846" class="nm xs">Households</text>
+  <text x="500" y="1866" class="qual xs">(admin only)</text>
+
+  <rect x="603" y="1822" width="176" height="62" class="plan"/>
+  <text x="691" y="1846" class="nm xs">Invoicing</text>
+  <text x="691" y="1866" class="qual xs">(admin only)</text>
+
+  <rect x="794" y="1822" width="176" height="62" class="plan"/>
+  <text x="882" y="1846" class="nm xs">Payments</text>
+  <text x="882" y="1866" class="qual xs">(admin only)</text>
+
+</svg>

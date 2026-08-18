@@ -139,7 +139,7 @@ export async function getPayerBilling(): Promise<PayerBillingView | { error: str
   const context = await getCurrentAccountContext()
   if ('error' in context) return context
   if (!context.capabilities.canSeeHouseholdMoney) return { error: 'Forbidden' }
-  return getBillingForPayer(context.household.household_role === 'payer' ? context.profile.id : '') as Promise<PayerBillingView>
+  return getBillingForPayer(context.profile.id) as Promise<PayerBillingView>
 }
 
 export async function runInvoicesForAdmin(period: string) {
