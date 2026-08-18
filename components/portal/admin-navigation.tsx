@@ -8,7 +8,10 @@ const links = [
   { href: '/protected/admin/members', label: 'Members' },
   { href: '/protected/admin/households', label: 'Households' },
   { href: '/protected/admin/membership-requests', label: 'Requests' },
-  { href: '/protected/admin/lessons', label: 'Lesson slots' },
+  { href: '/protected/admin/lessons', label: 'Lessons' },
+  { href: '/protected/admin/coaches', label: 'Coaches' },
+  { href: '/protected/admin/closures', label: 'Closures' },
+  { href: '/protected/admin/lesson-settings', label: 'Lesson settings' },
   { href: '/protected/admin/invoicing', label: 'Invoicing' },
   { href: '/protected/admin/payments', label: 'Payments' },
 ]

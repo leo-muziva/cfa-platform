@@ -1,0 +1,132 @@
+import { z } from 'zod'
+
+export const weaponSchema = z.enum(['foil', 'epee', 'sabre'])
+
+const participantIdsSchema = z.union([
+  z.tuple([z.uuid()]),
+  z.tuple([z.uuid(), z.uuid()]),
+]).refine((ids) => new Set(ids).size === ids.length, {
+  message: 'Participants must be distinct',
+})
+
+export const lessonParticipantsSchema = z.object({
+  participantIds: participantIdsSchema,
+}).strict()
+
+export const createLessonBookingSchema = z.object({
+  coachId: z.uuid(),
+  startsAt: z.iso.datetime({ offset: true }),
+  participantIds: participantIdsSchema,
+  weapon: weaponSchema,
+}).strict()
+
+export const lessonAvailabilitySchema = z.object({
+  coachId: z.uuid(),
+  weapon: weaponSchema,
+  rangeStart: z.iso.date().optional(),
+  rangeEnd: z.iso.date().optional(),
+}).strict().refine((value) => !value.rangeStart || !value.rangeEnd || value.rangeEnd >= value.rangeStart, {
+  message: 'End date must be on or after start date',
+  path: ['rangeEnd'],
+})
+
+export const cancelLessonBookingSchema = z.object({
+  bookingId: z.uuid(),
+  reason: z.string().trim().max(500).optional().nullable(),
+}).strict()
+
+export const rescheduleLessonBookingSchema = z.object({
+  bookingId: z.uuid(),
+  startsAt: z.iso.datetime({ offset: true }),
+}).strict()
+
+export const lessonOutcomeSchema = z.object({
+  bookingId: z.uuid(),
+  outcome: z.enum(['attended', 'no_show']),
+}).strict()
+
+export const lessonSettingsPatchSchema = z.object({
+  cancellationWindowHours: z.coerce.number().int().min(0).optional(),
+  lateCancellationFeeMultiplier: z.coerce.number().min(0).optional(),
+  noShowFeeMultiplier: z.coerce.number().min(0).optional(),
+  bookingHorizonDays: z.coerce.number().int().min(1).max(365).optional(),
+  bookingCutoffMinutes: z.coerce.number().int().min(0).optional(),
+  singleLessonPriceCents: z.coerce.number().int().min(0).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, 'At least one setting is required')
+
+export const coachLessonProfileSchema = z.object({
+  coachId: z.uuid(),
+  isActive: z.boolean(),
+  weapons: z.array(weaponSchema).max(3).refine((weapons) => new Set(weapons).size === weapons.length, {
+    message: 'Weapons must be distinct',
+  }),
+}).strict()
+
+const localTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/, 'Use a 24-hour local time')
+
+export const coachAvailabilityRuleSchema = z.object({
+  coachId: z.uuid(),
+  isoWeekday: z.coerce.number().int().min(1).max(7),
+  startsAtLocal: localTimeSchema,
+  endsAtLocal: localTimeSchema,
+}).strict().refine((value) => value.endsAtLocal > value.startsAtLocal, {
+  message: 'End time must be after start time',
+  path: ['endsAtLocal'],
+})
+
+export const deleteAvailabilityRuleSchema = z.object({ ruleId: z.uuid() }).strict()
+
+export const coachAvailabilityExceptionSchema = z.object({
+  coachId: z.uuid(),
+  exceptionType: z.enum(['block', 'extra']),
+  startsAt: z.iso.datetime({ offset: true }),
+  endsAt: z.iso.datetime({ offset: true }),
+  reason: z.string().trim().max(500).optional().nullable(),
+  cancelAffected: z.boolean().default(false),
+}).strict().refine((value) => new Date(value.endsAt) > new Date(value.startsAt), {
+  message: 'End time must be after start time',
+  path: ['endsAt'],
+})
+
+export const coachAvailabilityExceptionPreviewSchema = z.object({
+  startsAt: z.iso.datetime({ offset: true }),
+  endsAt: z.iso.datetime({ offset: true }),
+}).strict().refine((value) => new Date(value.endsAt) > new Date(value.startsAt), {
+  message: 'End time must be after start time', path: ['endsAt'],
+})
+
+export const deleteAvailabilityExceptionSchema = z.object({ exceptionId: z.uuid() }).strict()
+
+export const clubClosureSchema = z.object({
+  startsOn: z.iso.date(),
+  endsOn: z.iso.date(),
+  reason: z.string().trim().min(1, 'Reason is required').max(500),
+  cancelAffected: z.boolean().default(false),
+}).strict().refine((value) => value.endsOn >= value.startsOn, {
+  message: 'End date must be on or after start date',
+  path: ['endsOn'],
+})
+
+export const cancelClubClosureSchema = z.object({ closureId: z.uuid() }).strict()
+
+export const cancelCoachFutureBookingsSchema = z.object({
+  coachId: z.uuid(),
+  reason: z.string().trim().min(1, 'Reason is required').max(500),
+}).strict()
+
+export const waiveLessonChargesSchema = z.object({
+  bookingId: z.uuid(),
+  reason: z.string().trim().min(1, 'Reason is required').max(500),
+}).strict()
+
+export type CreateLessonBookingInput = z.infer<typeof createLessonBookingSchema>
+export type LessonAvailabilityInput = z.infer<typeof lessonAvailabilitySchema>
+export type LessonParticipantsInput = z.infer<typeof lessonParticipantsSchema>
+export type CancelLessonBookingInput = z.infer<typeof cancelLessonBookingSchema>
+export type RescheduleLessonBookingInput = z.infer<typeof rescheduleLessonBookingSchema>
+export type LessonOutcomeInput = z.infer<typeof lessonOutcomeSchema>
+export type LessonSettingsPatchInput = z.infer<typeof lessonSettingsPatchSchema>
+export type CoachLessonProfileInput = z.infer<typeof coachLessonProfileSchema>
+export type CoachAvailabilityRuleInput = z.infer<typeof coachAvailabilityRuleSchema>
+export type CoachAvailabilityExceptionInput = z.infer<typeof coachAvailabilityExceptionSchema>
+export type ClubClosureInput = z.infer<typeof clubClosureSchema>

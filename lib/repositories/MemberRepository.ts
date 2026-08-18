@@ -52,6 +52,12 @@ export async function getHouseholdMembers(): Promise<HouseholdMember[]> {
   return error ? [] : data as unknown as HouseholdMember[]
 }
 
+export async function getActiveBillingPayer(profileId: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('active_billing_payer', { target_participant: profileId })
+  return error || typeof data !== 'string' ? null : data
+}
+
 export async function getProfilesPage(filters: MemberListFilters, pageSize: number) {
   const supabase = await createClient()
   let query = supabase.from('profiles').select(PROFILE_SELECT, { count: 'exact' })

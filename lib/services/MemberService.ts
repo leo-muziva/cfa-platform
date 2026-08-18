@@ -4,6 +4,7 @@ import {
   getProfileById, updateProfile, getProfilesPage, adminUpdateProfile,
   getMemberStatsRows, getMembershipTypes, inviteMemberByEmail,
   getHouseholdMembership, getHouseholdMembers, completeProfile, attachDependent,
+  getActiveBillingPayer,
 } from '@/lib/repositories/MemberRepository'
 import { getMembership } from '@/lib/repositories/PlatformRepository'
 import {
@@ -27,16 +28,18 @@ export async function requireAdmin(): Promise<{ profile: Profile } | { error: st
   return { profile }
 }
 
-export function deriveCapabilities(profile: Profile, household: HouseholdMember): Capabilities {
+export function deriveCapabilities(profile: Profile, household: HouseholdMember, effectivePayerId: string | null): Capabilities {
   const isAdmin = profile.is_staff && profile.staff_type === 'admin'
-  const isPayer = household.household_role === 'payer'
+  const isCoach = profile.is_staff && profile.staff_type === 'coach'
+  const isPayer = effectivePayerId === profile.id
+  void household
   return {
     isAdmin,
-    isCoach: profile.is_staff && profile.staff_type === 'coach',
+    isCoach,
     isPayer,
-    isDependent: !isPayer,
-    canSeeHouseholdMoney: isPayer || isAdmin,
-    canTriggerPayment: isPayer || isAdmin,
+    isDependent: !isAdmin && !isPayer,
+    canSeeHouseholdMoney: isAdmin || (isPayer && !isCoach),
+    canTriggerPayment: isAdmin || (isPayer && !isCoach),
     canManageDependents: isPayer || isAdmin,
     canManageStaffArea: isAdmin,
   }
@@ -50,8 +53,10 @@ export async function getCurrentAccountContext(): Promise<
   if (!profile) return { error: 'Not authenticated' }
   const household = await getHouseholdMembership(profile.id)
   if (!household) return { error: 'Household setup is incomplete' }
+  const effectivePayerId = await getActiveBillingPayer(profile.id)
+  if (!effectivePayerId) return { error: 'Billing responsibility is unavailable' }
   const householdMembers = await getHouseholdMembers()
-  return { profile, household, householdMembers, capabilities: deriveCapabilities(profile, household) }
+  return { profile, household, householdMembers, capabilities: deriveCapabilities(profile, household, effectivePayerId) }
 }
 
 export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string }> {

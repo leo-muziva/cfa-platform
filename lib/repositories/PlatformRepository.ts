@@ -143,17 +143,39 @@ export async function endFamilyLink(linkId: string) {
 
 export async function getBillingForPayer(payerId: string) {
   const db = await createClient()
-  const [{ data: invoices }, { data: receipts }, { data: household }, { data: charges }] = await Promise.all([
+  const [{ data: invoices }, { data: receipts }, { data: household }, { data: charges }, { data: credits }, { data: pending }] = await Promise.all([
     db.from('invoices').select('*,lines:invoice_lines(*,participant:profiles!invoice_lines_participant_id_fkey(id,full_name))').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('receipts').select('*').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('households').select('membership_payment_method').eq('payer_id', payerId).single(),
-    db.from('charges').select('amount').eq('payer_id', payerId).eq('status', 'unpaid'),
+    db.from('charges').select('amount').eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'finalized'),
+    db.from('ledger_credits').select('amount').eq('payer_id', payerId),
+    db.from('charges').select(`
+      id,amount,description,
+      participant:profiles!charges_fencer_id_fkey(full_name),
+      booking:bookings!charges_booking_id_fkey(starts_at)
+    `).eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'provisional').order('created_at'),
   ])
   return {
-    balance: (charges ?? []).reduce((sum, row) => sum + Number(row.amount), 0),
+    balance: calculateOutstandingBalance(charges ?? [], credits ?? []),
     invoices: (invoices ?? []) as Invoice[], receipts: (receipts ?? []) as Receipt[],
+    pendingLessonCharges: (pending ?? []).map((row) => ({
+      id: row.id,
+      participantName: relationValue(row.participant)?.full_name ?? 'Participant',
+      amount: Number(row.amount), description: row.description,
+      lessonStartsAt: relationValue(row.booking)?.starts_at ?? null,
+    })),
     paymentPreference: household?.membership_payment_method ?? 'manual', providerAvailable: false,
   }
+}
+
+function relationValue<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? value[0] ?? null : value
+}
+
+export function calculateOutstandingBalance(charges: Array<{ amount: number | string }>, credits: Array<{ amount: number | string }>) {
+  const chargeTotal = charges.reduce((sum, row) => sum + Number(row.amount), 0)
+  const creditTotal = credits.reduce((sum, row) => sum + Number(row.amount), 0)
+  return Math.max(0, chargeTotal - creditTotal)
 }
 
 export async function runInvoices(period: string) {
