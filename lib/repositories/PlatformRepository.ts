@@ -147,7 +147,11 @@ export async function getBillingForPayer(payerId: string) {
     db.from('invoices').select('*,lines:invoice_lines(*,participant:profiles!invoice_lines_participant_id_fkey(id,full_name))').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('receipts').select('*').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('households').select('membership_payment_method').eq('payer_id', payerId).single(),
-    db.from('charges').select('amount').eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'finalized'),
+    db.from('charges').select(`
+      id,amount,type,finalized_at,
+      participant:profiles!charges_fencer_id_fkey(full_name),
+      booking:bookings!charges_booking_id_fkey(status)
+    `).eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'finalized').order('finalized_at', { ascending: false }),
     db.from('ledger_credits').select('amount').eq('payer_id', payerId),
     db.from('charges').select(`
       id,amount,description,
@@ -157,6 +161,14 @@ export async function getBillingForPayer(payerId: string) {
   ])
   return {
     balance: calculateOutstandingBalance(charges ?? [], credits ?? []),
+    outstandingCharges: (charges ?? []).map((charge) => ({
+      id: charge.id,
+      participantName: relationValue(charge.participant)?.full_name ?? 'Participant',
+      amount: Number(charge.amount),
+      label: outstandingChargeLabel(charge.type, relationValue(charge.booking)?.status ?? null),
+      finalizedAt: charge.finalized_at,
+    })),
+    creditTotal: calculateCreditTotal(credits ?? []),
     invoices: (invoices ?? []) as Invoice[], receipts: (receipts ?? []) as Receipt[],
     pendingLessonCharges: (pending ?? []).map((row) => ({
       id: row.id,
@@ -174,8 +186,20 @@ function relationValue<T>(value: T | T[] | null): T | null {
 
 export function calculateOutstandingBalance(charges: Array<{ amount: number | string }>, credits: Array<{ amount: number | string }>) {
   const chargeTotal = charges.reduce((sum, row) => sum + Number(row.amount), 0)
-  const creditTotal = credits.reduce((sum, row) => sum + Number(row.amount), 0)
-  return Math.max(0, chargeTotal - creditTotal)
+  return Math.max(0, chargeTotal - calculateCreditTotal(credits))
+}
+
+export function calculateCreditTotal(credits: Array<{ amount: number | string }>) {
+  return credits.reduce((sum, row) => sum + Number(row.amount), 0)
+}
+
+export function outstandingChargeLabel(type: string, bookingStatus: string | null) {
+  if (type === 'membership') return 'Membership fee'
+  if (type === 'joining_fee') return 'Joining fee'
+  if (type === 'lesson' && bookingStatus === 'attended') return 'Completed private lesson'
+  if (type === 'lesson' && bookingStatus === 'no_show') return 'Missed private lesson'
+  if (type === 'lesson' && bookingStatus === 'cancelled') return 'Late lesson cancellation'
+  return 'Lesson charge'
 }
 
 export async function runInvoices(period: string) {

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { ArrowLeft, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -56,10 +56,19 @@ export function PortalNavigation({
   return (
     <nav aria-label="Member Portal navigation" className="sticky top-0 z-30 border-b border-white/15 bg-black/40 backdrop-blur-xl">
       <div className="relative grid w-full grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 sm:px-8 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-        <Link href="/" aria-label="Cape Fencing Academy home" className="flex min-w-0 shrink-0 items-center gap-3 justify-self-start rounded-xl font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-          <Image src="/cfa-crest.png" alt="" width={40} height={40} priority className="h-10 w-10 rounded-full object-cover" />
-          <span className="hidden sm:inline">Member Portal</span>
-        </Link>
+        <div className="flex min-w-0 shrink-0 items-center gap-2 justify-self-start">
+          <Link
+            href="/"
+            aria-label="Back to Cape Fencing Academy home"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          >
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <Link href="/" aria-label="Cape Fencing Academy home" className="flex min-w-0 items-center gap-3 rounded-xl font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+            <Image src="/cfa-crest.png" alt="" width={40} height={40} priority className="h-10 w-10 rounded-full object-cover" />
+            <span className="hidden sm:inline">Member Portal</span>
+          </Link>
+        </div>
 
         <div className="liquid-glass hidden items-center gap-1 justify-self-center rounded-full p-1 text-white/75 xl:flex">
             {links.map((link) => (
