@@ -30,13 +30,13 @@ export default async function ProfileDashboardPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
           CFA Member Portal
         </p>
-        <h1 className="font-serif text-4xl font-light tracking-tight text-slate-950 sm:text-5xl">
+        <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
           My Profile
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           Welcome, {context.profile.full_name || context.profile.email}. Manage your account and
           membership from one place.
         </p>

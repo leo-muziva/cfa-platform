@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 export interface LessonOperationState {
@@ -16,6 +16,7 @@ export function OperationForm({
   variant = "default",
   className = "space-y-4",
   submitClassName,
+  onSuccess,
 }: {
   action: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;
   children: React.ReactNode;
@@ -24,8 +25,20 @@ export function OperationForm({
   variant?: "default" | "outline" | "destructive" | "secondary" | "ghost" | "link";
   className?: string;
   submitClassName?: string;
+  /** Fires once when the action reports success — lets a caller (e.g. a
+   * preview popup) auto-dismiss instead of leaving the success message
+   * sitting behind a closed dialog. */
+  onSuccess?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+  const lastSuccessRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (state.success && state.success !== lastSuccessRef.current) {
+      lastSuccessRef.current = state.success;
+      onSuccess?.();
+    }
+  }, [state.success, onSuccess]);
 
   return (
     <form action={formAction} className={className}>

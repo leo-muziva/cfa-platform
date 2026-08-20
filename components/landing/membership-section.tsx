@@ -22,10 +22,10 @@ export function MembershipSection() {
   return (
     <section
       id="membership"
-      className="relative bg-white text-[#25145c] px-4 sm:px-6 md:px-12 py-20 md:py-28"
+      className="relative bg-background text-primary px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] mb-3">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
           Membership
         </p>
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
@@ -57,16 +57,16 @@ export function MembershipSection() {
                   {plan.price}
                 </span>
                 {plan.period && (
-                  <span className="text-[#625b73]">{plan.period}</span>
+                  <span className="text-muted-foreground">{plan.period}</span>
                 )}
               </div>
               {plan.note && (
-                <p className="text-[#8a6810] text-sm mb-4">{plan.note}</p>
+                <p className="text-[#8a6810] dark:text-cfa-gold text-sm mb-4">{plan.note}</p>
               )}
               <ul className="mt-4 space-y-2">
                 {PERKS.map((perk) => (
-                  <li key={perk} className="flex items-start gap-2 text-[#625b73]">
-                    <Check size={16} className="mt-1 shrink-0 text-[#8a6810]" aria-hidden="true" />
+                  <li key={perk} className="flex items-start gap-2 text-muted-foreground">
+                    <Check size={16} className="mt-1 shrink-0 text-[#8a6810] dark:text-cfa-gold" aria-hidden="true" />
                     <span>{perk}</span>
                   </li>
                 ))}
@@ -75,7 +75,7 @@ export function MembershipSection() {
           ))}
         </div>
 
-        <p className="text-[#625b73] text-sm mt-8">
+        <p className="text-muted-foreground text-sm mt-8">
           + R350 once-off joining fee · Individual lessons from R300 ·
           Beginner package (4 lessons) R1,000.
         </p>
@@ -83,7 +83,7 @@ export function MembershipSection() {
         <div className="mt-10">
           <Link
             href="/auth/sign-up"
-            className="bg-[#2d176b] text-white rounded-full font-medium px-6 sm:px-8 py-2.5 sm:py-3 hover:bg-[#3c2186] transition-colors inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c] focus-visible:outline-offset-2"
+            className="bg-cfa-purple text-white rounded-full font-medium px-6 sm:px-8 py-2.5 sm:py-3 hover:bg-cfa-purple/90 transition-colors inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-gold focus-visible:outline-offset-2"
           >
             Join the Academy
             <ArrowRight size={18} aria-hidden="true" />

@@ -139,7 +139,7 @@ export function SignInFlow({
                   </h1>
                   <p className="mt-2 text-muted-foreground">Log in to your member portal</p>
                   {accountConfirmed && (
-                    <p className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200" role="status">
+                    <p className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200" role="status">
                       Account confirmed. You can log in now.
                     </p>
                   )}

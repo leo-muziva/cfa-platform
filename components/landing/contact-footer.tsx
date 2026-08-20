@@ -20,10 +20,10 @@ export function ContactFooter() {
   return (
     <section
       id="contact"
-      className="relative bg-white text-[#25145c] px-4 sm:px-6 md:px-12 py-20 md:py-28"
+      className="relative bg-background text-primary px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] mb-3">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
           Get in Touch
         </p>
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
@@ -55,7 +55,7 @@ export function ContactFooter() {
                     {...(row.external
                       ? { target: "_blank", rel: "noopener noreferrer" }
                       : {})}
-                    className="cfa-light-card rounded-2xl p-6 flex items-center gap-4 hover:text-[#8a6810] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]"
+                    className="cfa-light-card rounded-2xl p-6 flex items-center gap-4 hover:text-[#8a6810] dark:hover:text-cfa-gold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-gold"
                   >
                     <Icon size={22} className="shrink-0" aria-hidden="true" />
                     <span>{row.label}</span>
@@ -81,14 +81,14 @@ export function ContactFooter() {
             className="cfa-light-card rounded-2xl p-6"
           >
             <h3 className="text-lg font-medium mb-4">Training hours</h3>
-            <ul className="space-y-2 text-[#625b73]">
+            <ul className="space-y-2 text-muted-foreground">
               <li>Tue–Thu 18:30 – 21:30</li>
               <li>Sat 11:00 – 13:30</li>
             </ul>
           </motion.div>
         </div>
 
-        <div className="border-t border-[#2d176b]/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-3 text-sm text-[#625b73]">
+        <div className="border-t border-cfa-purple/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-3 text-sm text-muted-foreground">
           <p>© 2026 Cape Fencing Academy</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             <span>Est. 1997 · Rondebosch, Cape Town</span>
@@ -96,7 +96,7 @@ export function ContactFooter() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="hover:text-[#8a6810] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c]"
+                className="hover:text-[#8a6810] dark:hover:text-cfa-gold underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-gold"
               >
                 {link.label}
               </Link>

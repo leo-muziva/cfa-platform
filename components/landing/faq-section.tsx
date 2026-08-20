@@ -36,10 +36,10 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="relative bg-[#faf9fd] text-[#25145c] px-4 sm:px-6 md:px-12 py-20 md:py-28"
+      className="relative bg-muted/30 text-primary px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] mb-3">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
           Questions
         </p>
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
@@ -64,7 +64,7 @@ export function FaqSection() {
               transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.08 }}
               className="group cfa-light-card rounded-2xl px-6 py-4"
             >
-              <summary className="cursor-pointer list-none flex justify-between items-center gap-4 font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffd21c] rounded-lg">
+              <summary className="cursor-pointer list-none flex justify-between items-center gap-4 font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-gold rounded-lg">
                 {faq.question}
                 <ChevronDown
                   size={20}
@@ -72,7 +72,7 @@ export function FaqSection() {
                   aria-hidden="true"
                 />
               </summary>
-              <p className="text-[#625b73] mt-3">{faq.answer}</p>
+              <p className="text-muted-foreground mt-3">{faq.answer}</p>
             </motion.details>
           ))}
         </div>

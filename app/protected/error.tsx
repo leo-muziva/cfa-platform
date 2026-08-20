@@ -17,14 +17,14 @@ export default function ProtectedError({
 
   return (
     <div className="flex min-h-[22rem] items-center justify-center">
-      <div className="w-full max-w-lg rounded-[1.75rem] bg-slate-950 px-8 py-10 text-center text-white shadow-xl">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xs font-bold tracking-widest text-black">CFA</div>
-        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-white/55">Member Portal</p>
+      <div className="w-full max-w-lg rounded-[1.75rem] border border-border bg-card px-8 py-10 text-center text-card-foreground shadow-xl">
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-xs font-bold tracking-widest text-primary-foreground">CFA</div>
+        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">Member Portal</p>
         <h1 className="mt-3 font-serif text-3xl font-light">We could not load this page</h1>
-        <p className="mt-3 text-sm leading-6 text-white/65">Try again once. If the problem continues, return to the CFA home page and sign in again.</p>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">Try again once. If the problem continues, return to the CFA home page and sign in again.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
-          <Button onClick={reset} className="rounded-full bg-white text-black hover:bg-white/85">Try again</Button>
-          <Button asChild variant="outline" className="rounded-full border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+          <Button onClick={reset} className="rounded-full">Try again</Button>
+          <Button asChild variant="outline" className="rounded-full">
             <Link href="/">CFA home</Link>
           </Button>
         </div>
