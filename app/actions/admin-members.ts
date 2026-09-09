@@ -1,12 +1,18 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { adminUpdateMember, inviteMemberForAdmin } from '@/lib/services/MemberService'
+import { adminUpdateMember, inviteMemberForAdmin, attachDependentForAdmin } from '@/lib/services/MemberService'
 
 export type AdminMemberActionState = {
   error?: string
   success?: boolean
   message?: string
+}
+
+export async function attachDependentAction(formData: FormData) {
+  await attachDependentForAdmin(String(formData.get('profile_id')), String(formData.get('payer_id')))
+  revalidatePath('/protected/admin/households')
+  revalidatePath('/protected/admin/members')
 }
 
 export async function adminUpdateMemberAction(
@@ -22,10 +28,10 @@ export async function adminUpdateMemberAction(
     full_name: formData.get('full_name') as string,
     phone: (formData.get('phone') as string) || undefined,
     date_of_birth: (formData.get('date_of_birth') as string) || null,
-    role: formData.get('role') as string,
+    is_staff: formData.get('is_staff') === 'on',
+    staff_type: (formData.get('staff_type') as string) || null,
     // Unchecked checkboxes are absent from FormData, so absence means inactive.
     is_active: formData.get('is_active') === 'on',
-    membership_type_id: (formData.get('membership_type_id') as string) || null,
   }
 
   const result = await adminUpdateMember(targetId, rawData)
@@ -46,8 +52,8 @@ export async function inviteMemberAction(
   const rawData = {
     email: formData.get('email') as string,
     full_name: formData.get('full_name') as string,
-    role: formData.get('role') as string,
-    membership_type_id: (formData.get('membership_type_id') as string) || null,
+    is_staff: formData.get('is_staff') === 'on',
+    staff_type: (formData.get('staff_type') as string) || null,
   }
 
   const result = await inviteMemberForAdmin(rawData)

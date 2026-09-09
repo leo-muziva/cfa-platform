@@ -21,21 +21,23 @@ describe('memberListFiltersSchema', () => {
     }
   )
 
-  it('accepts valid role and status values', () => {
-    const parsed = memberListFiltersSchema.parse({ role: 'fencer', status: 'inactive' })
-    expect(parsed.role).toBe('fencer')
+  it('accepts valid membership and status values', () => {
+    const parsed = memberListFiltersSchema.parse({ membershipStatus: 'member', staffType: 'coach', status: 'inactive' })
+    expect(parsed.membershipStatus).toBe('member')
+    expect(parsed.staffType).toBe('coach')
     expect(parsed.status).toBe('inactive')
   })
 
   it('degrades unknown role/status values to undefined instead of throwing', () => {
-    const parsed = memberListFiltersSchema.parse({ role: 'hacker', status: 'banned' })
-    expect(parsed.role).toBeUndefined()
+    const parsed = memberListFiltersSchema.parse({ membershipStatus: 'hacker', staffType: 'owner', status: 'banned' })
+    expect(parsed.membershipStatus).toBeUndefined()
+    expect(parsed.staffType).toBeUndefined()
     expect(parsed.status).toBeUndefined()
   })
 
   it('treats empty-string selects ("All roles") as no filter', () => {
-    const parsed = memberListFiltersSchema.parse({ role: '', status: '', search: '' })
-    expect(parsed.role).toBeUndefined()
+    const parsed = memberListFiltersSchema.parse({ membershipStatus: '', staffType: '', status: '', search: '' })
+    expect(parsed.membershipStatus).toBeUndefined()
     expect(parsed.status).toBeUndefined()
     expect(parsed.search).toBeUndefined()
   })
@@ -106,43 +108,44 @@ describe('adminProfileUpdateSchema', () => {
   it('accepts valid admin update with all fields', () => {
     const result = adminProfileUpdateSchema.safeParse({
       full_name: 'Coach Bob',
-      role: 'coach',
+      membership_status: 'member',
+      is_staff: true,
+      staff_type: 'coach',
       is_active: true,
       membership_type_id: '550e8400-e29b-41d4-a716-446655440000',
     })
     expect(result.success).toBe(true)
   })
 
-  it('rejects invalid role', () => {
+  it('rejects invalid staff type', () => {
     const result = adminProfileUpdateSchema.safeParse({
       full_name: 'Someone',
-      role: 'superuser',
+      is_staff: true,
+      staff_type: 'superuser',
     })
     expect(result.success).toBe(false)
   })
 
-  it('rejects non-UUID membership_type_id', () => {
+  it('does not expose direct membership assignment', () => {
     const result = adminProfileUpdateSchema.safeParse({
       full_name: 'Someone',
       membership_type_id: 'not-a-uuid',
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('accepts null membership_type_id', () => {
-    const result = adminProfileUpdateSchema.safeParse({
-      full_name: 'Someone',
-      membership_type_id: null,
+      membership_status: 'member',
     })
     expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('membership_type_id')
+      expect(result.data).not.toHaveProperty('membership_status')
+    }
   })
 
-  it('accepts all four valid roles', () => {
-    const roles = ['admin', 'coach', 'fencer', 'guardian'] as const
-    for (const role of roles) {
+  it('accepts both valid staff types', () => {
+    const staffTypes = ['admin', 'coach'] as const
+    for (const staff_type of staffTypes) {
       const result = adminProfileUpdateSchema.safeParse({
         full_name: 'Test User',
-        role,
+        is_staff: true,
+        staff_type,
       })
       expect(result.success).toBe(true)
     }

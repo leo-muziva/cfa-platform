@@ -1,57 +1,58 @@
-import { describe, it, expect } from 'vitest'
-import { aggregateMemberStats } from './MemberService'
-import type { MemberStatsRow } from '@/types/domain'
+import { describe, expect, it, vi } from 'vitest'
+vi.mock('server-only', () => ({}))
+import { aggregateMemberStats, deriveCapabilities } from './MemberService'
+import type { HouseholdMember, MemberStatsRow, Profile } from '@/types/domain'
 
-const row = (
-  role: MemberStatsRow['role'],
-  is_active = true,
-  membershipName: string | null = null
-): MemberStatsRow => ({
-  role,
-  is_active,
+const row = (membership_status: 'guest' | 'member', is_active = true, membershipName: string | null = null,
+  staff_type: 'admin' | 'coach' | null = null): MemberStatsRow => ({
+  membership_status, is_active, is_staff: staff_type !== null, staff_type,
   membership_type: membershipName ? { name: membershipName } : null,
 })
 
 describe('aggregateMemberStats', () => {
   it('returns zeroed stats for an empty club', () => {
-    const stats = aggregateMemberStats([])
-    expect(stats.total).toBe(0)
-    expect(stats.active).toBe(0)
-    expect(stats.inactive).toBe(0)
-    expect(stats.unassigned).toBe(0)
-    expect(stats.byRole).toEqual({ admin: 0, coach: 0, fencer: 0, guardian: 0 })
-    expect(stats.byMembershipType).toEqual({})
+    expect(aggregateMemberStats([])).toEqual({ total: 0, active: 0, inactive: 0, guests: 0, members: 0,
+      admins: 0, coaches: 0, byMembershipType: {}, unassigned: 0 })
   })
 
-  it('counts totals and active/inactive split', () => {
-    const stats = aggregateMemberStats([
-      row('fencer', true, 'Junior'),
-      row('fencer', false, 'Senior'),
-      row('admin', true),
-    ])
-    expect(stats.total).toBe(3)
-    expect(stats.active).toBe(2)
-    expect(stats.inactive).toBe(1)
+  it('counts independent membership and staff dimensions', () => {
+    const stats = aggregateMemberStats([row('guest'), row('member', true, 'Month-to-month'), row('member', false, null, 'admin'), row('guest', true, null, 'coach')])
+    expect(stats).toMatchObject({ total: 4, active: 3, inactive: 1, guests: 2, members: 2, admins: 1, coaches: 1 })
+    expect(stats.byMembershipType).toEqual({ 'Month-to-month': 1 })
   })
+})
 
-  it('counts every role, including roles with zero members', () => {
-    const stats = aggregateMemberStats([
-      row('fencer'),
-      row('fencer'),
-      row('guardian'),
-    ])
-    expect(stats.byRole).toEqual({ admin: 0, coach: 0, fencer: 2, guardian: 1 })
+describe('deriveCapabilities', () => {
+  const profile = { is_staff: false, staff_type: null } as Profile
+  it('never grants household money or payment to a dependent', () => {
+    const capabilities = deriveCapabilities(profile, { household_role: 'dependent' } as HouseholdMember, 'payer-id')
+    expect(capabilities.canSeeHouseholdMoney).toBe(false)
+    expect(capabilities.canTriggerPayment).toBe(false)
   })
-
-  it('groups by membership type name and counts unassigned members', () => {
-    const stats = aggregateMemberStats([
-      row('fencer', true, 'Junior'),
-      row('fencer', true, 'Junior'),
-      row('fencer', true, 'Senior'),
-      row('guardian', true, null),
-      row('admin', true, null),
-    ])
-    expect(stats.byMembershipType).toEqual({ Junior: 2, Senior: 1 })
-    expect(stats.unassigned).toBe(2)
+  it('grants payer financial capabilities', () => {
+    const payer = { ...profile, id: 'payer-id' } as Profile
+    const capabilities = deriveCapabilities(payer, { household_role: 'payer' } as HouseholdMember, 'payer-id')
+    expect(capabilities.canSeeHouseholdMoney).toBe(true)
+    expect(capabilities.canTriggerPayment).toBe(true)
+  })
+  it('keeps coach and admin capabilities distinct', () => {
+    const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
+    const admin = { ...profile, id: 'admin-id', is_staff: true, staff_type: 'admin' } as Profile
+    expect(deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id').canManageStaffArea).toBe(false)
+    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').canManageStaffArea).toBe(true)
+    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').isDependent).toBe(false)
+  })
+  it('uses effective billing responsibility instead of a stale household role', () => {
+    const linked = { ...profile, id: 'linked-dependent' } as Profile
+    const capabilities = deriveCapabilities(linked, { household_role: 'payer' } as HouseholdMember, 'guardian-id')
+    expect(capabilities.isDependent).toBe(true)
+    expect(capabilities.isPayer).toBe(false)
+    expect(capabilities.canSeeHouseholdMoney).toBe(false)
+  })
+  it('never grants coach financial capabilities even when the coach is their own payer', () => {
+    const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
+    const capabilities = deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id')
+    expect(capabilities.canSeeHouseholdMoney).toBe(false)
+    expect(capabilities.canTriggerPayment).toBe(false)
   })
 })

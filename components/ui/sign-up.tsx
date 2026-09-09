@@ -22,7 +22,7 @@ type Step = "name" | "email" | "password" | "confirm";
 const STEPS: Step[] = ["name", "email", "password", "confirm"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
-export function SignUpFlow() {
+export function SignUpFlow({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
@@ -79,7 +79,7 @@ export function SignUpFlow() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=/protected` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
       });
       if (error) throw error;
     } catch (error: unknown) {
@@ -115,7 +115,7 @@ export function SignUpFlow() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/protected`,
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(`/auth/login?confirmed=1&next=${encodeURIComponent(next)}`)}`,
         // Stored as raw_user_meta_data; the handle_new_user DB trigger
         // copies full_name onto the auto-created profiles row.
         data: { full_name: fullName.trim() },
@@ -133,7 +133,7 @@ export function SignUpFlow() {
       title: "Almost there!",
       message: "Check your email to confirm your account.",
       actionLabel: "Go to login",
-      onAction: () => router.push("/auth/login"),
+      onAction: () => router.push(`/auth/login?next=${encodeURIComponent(next)}`),
     });
   };
 
@@ -177,7 +177,7 @@ export function SignUpFlow() {
               >
                 <BlurFade>
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
-                    Join the Academy
+                    Create your guest account
                   </h1>
                   <p className="mt-2 text-muted-foreground">What should we call you?</p>
                 </BlurFade>
@@ -355,8 +355,8 @@ export function SignUpFlow() {
           </AnimatePresence>
 
           <p className="text-center text-sm text-muted-foreground">
-            Already a member?{" "}
-            <Link href="/auth/login" className="font-medium text-foreground underline underline-offset-4">
+            Already have an account?{" "}
+            <Link href={`/auth/login?next=${encodeURIComponent(next)}`} className="font-medium text-foreground underline underline-offset-4">
               Log in
             </Link>
           </p>

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { SupabaseConfigError } from "@/lib/supabase/config";
 import {
   AuthModal,
   type AuthModalState,
@@ -20,7 +21,13 @@ type Step = "email" | "password";
 const STEPS: Step[] = ["email", "password"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
-export function SignInFlow() {
+export function SignInFlow({
+  next = "/",
+  accountConfirmed = false,
+}: {
+  next?: string;
+  accountConfirmed?: boolean;
+}) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
 
@@ -49,11 +56,11 @@ export function SignInFlow() {
   // Real Supabase call; until Google is enabled in the Supabase dashboard
   // this returns "provider is not enabled" and is shown honestly.
   const handleGoogle = async () => {
-    const supabase = createClient();
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=/protected` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
       });
       if (error) throw error;
     } catch (error: unknown) {
@@ -68,16 +75,31 @@ export function SignInFlow() {
     e.preventDefault();
     setModal({ status: "loading", messages: ["Logging you in..."] });
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setModal({ status: "error", message: error.message });
-      return;
+      if (error) {
+        setModal({ status: "error", message: error.message });
+        return;
+      }
+
+      // No confetti here — members logging in want speed, not a flourish.
+      router.push(next);
+    } catch (error: unknown) {
+      const message =
+        error instanceof SupabaseConfigError
+          ? error.message
+          : error instanceof TypeError
+            ? "Cannot reach the configured Supabase service. If you are working locally, start Supabase and run npm run dev:local."
+            : error instanceof Error
+              ? error.message
+              : "Could not log in.";
+      setModal({ status: "error", message });
     }
-
-    // No confetti here — members logging in want speed, not a flourish.
-    router.push("/protected");
   };
 
   const closeModal = () => setModal({ status: "idle" });
@@ -116,6 +138,11 @@ export function SignInFlow() {
                     Welcome back
                   </h1>
                   <p className="mt-2 text-muted-foreground">Log in to your member portal</p>
+                  {accountConfirmed && (
+                    <p className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200" role="status">
+                      Account confirmed. You can log in now.
+                    </p>
+                  )}
                 </BlurFade>
 
                 <div className="mt-8 flex flex-col items-center gap-4">
@@ -217,8 +244,8 @@ export function SignInFlow() {
 
           <p className="text-center text-sm text-muted-foreground">
             New to CFA?{" "}
-            <Link href="/auth/sign-up" className="font-medium text-foreground underline underline-offset-4">
-              Create an account
+            <Link href={`/auth/sign-up?next=${encodeURIComponent(next)}`} className="font-medium text-foreground underline underline-offset-4">
+              Create a guest account
             </Link>
           </p>
         </fieldset>

@@ -11,14 +11,17 @@ import { FaqSection } from "@/components/landing/faq-section";
 import { ContactFooter } from "@/components/landing/contact-footer";
 
 // Full public landing page: cinematic full-viewport hero followed by the
-// scrollable landing sections (hero nav links anchor to their ids).
+// scrollable landing sections. The primary menu links only to separate pages.
 // The page stays a Server Component — all interactivity lives inside
-// CinematicHero ("use client") and the individual sections. This page is
-// deliberately always-dark (cinematic), so the ThemeSwitcher is not shown
-// here; theming still works everywhere else in the app.
+// CinematicHero ("use client") and the individual sections. The hero itself
+// (and the persistent nav capsule inside it) stays permanently dark by
+// design — a video background with unpredictable brightness needs fixed
+// white text regardless of theme, same treatment as any photo/video hero.
+// Everything below the hero is theme-aware; the ThemeToggle lives in the
+// nav capsule (rendered by CinematicHero -> PublicNavigation).
 export default function Home() {
   return (
-    <main className="bg-black text-white">
+    <main className="bg-background text-foreground">
       {/* HeroAuth reads the auth cookie (uncached data), so it must render
           inside Suspense to keep the rest of the page statically streamable —
           same pattern the interim landing used for AuthButton. */}

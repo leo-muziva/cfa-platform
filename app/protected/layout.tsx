@@ -1,49 +1,36 @@
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
-import { Suspense } from "react";
+import { EnvVarWarning } from '@/components/env-var-warning'
+import { AuthButton } from '@/components/auth-button'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { hasEnvVars } from '@/lib/utils'
+import { getCurrentAccountContext } from '@/lib/services/MemberService'
+import { Suspense } from 'react'
+import { PortalNavigation, type PortalNavigationLink } from '@/components/portal/portal-navigation'
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const context = await getCurrentAccountContext()
+  const capabilities = 'error' in context ? null : context.capabilities
+  const links: PortalNavigationLink[] = [
+    { href: '/protected', label: 'Profile' },
+    { href: '/protected/book', label: 'Book' },
+    { href: '/protected/lessons', label: 'Lessons' },
+    { href: '/protected/family', label: 'Family' },
+    ...(capabilities?.canSeeHouseholdMoney ? [{ href: '/protected/billing', label: 'Billing' }] : []),
+    ...(capabilities?.isCoach ? [{ href: '/protected/coach', label: 'Coach' }] : []),
+    ...(capabilities?.canManageStaffArea ? [{ href: '/protected/admin', label: 'Admin' }] : []),
+  ]
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href="/protected">Cape Fencing Academy</Link>
-              <Link
-                href="/protected/admin/members"
-                className="text-muted-foreground font-normal hover:text-foreground transition-colors"
-              >
-                Members
-              </Link>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_hsl(var(--cfa-purple)/0.30),_transparent_34%),radial-gradient(circle_at_bottom_left,_hsl(var(--cfa-gold)/0.14),_transparent_32%),hsl(var(--background))] text-foreground">
+      <div className="flex min-h-screen w-full flex-col">
+        <PortalNavigation links={links} authSlot={!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>} />
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-8 sm:py-10">
+          <div className="rounded-[2rem] border border-border bg-card/[0.96] p-5 text-card-foreground shadow-[0_28px_90px_rgba(0,0,0,0.30)] backdrop-blur-2xl sm:p-8">
+            {children}
           </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          {children}
         </div>
-
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p className="text-muted-foreground">
-            &copy; 2026 Cape Fencing Academy
-          </p>
-          <ThemeSwitcher />
+        <footer className="mx-auto flex w-full max-w-7xl items-center justify-between border-t border-border px-5 py-8 text-xs text-muted-foreground sm:px-8">
+          <p>&copy; 2026 Cape Fencing Academy</p><ThemeToggle />
         </footer>
       </div>
     </main>
-  );
+  )
 }

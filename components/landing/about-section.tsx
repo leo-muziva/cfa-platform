@@ -28,16 +28,16 @@ export function AboutSection() {
   return (
     <section
       id="about"
-      className="relative bg-black text-white px-4 sm:px-6 md:px-12 py-20 md:py-28"
+      className="relative bg-background text-primary px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm uppercase tracking-widest text-gray-400 mb-3">
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
           The Club
         </p>
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
           Cape Town&rsquo;s home of fencing since 1997.
         </h2>
-        <p className="text-gray-400 max-w-2xl mb-12 md:mb-16">
+        <p className="text-muted-foreground max-w-2xl mb-12 md:mb-16">
           South Africa&rsquo;s premier fencing club, training at the Belvedere
           Community Centre in Rondebosch — from first-time beginners to
           national champions.
@@ -61,11 +61,11 @@ export function AboutSection() {
                 }
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
-                className="liquid-glass rounded-2xl p-6"
+                className="cfa-light-card rounded-2xl p-6"
               >
-                <Icon size={28} className="mb-4" aria-hidden="true" />
+                <Icon size={28} className="mb-4 text-cfa-purple" aria-hidden="true" />
                 <h3 className="text-xl font-medium mb-2">{weapon.name}</h3>
-                <p className="text-gray-400">{weapon.description}</p>
+                <p className="text-muted-foreground">{weapon.description}</p>
               </motion.div>
             );
           })}
