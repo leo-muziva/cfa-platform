@@ -41,19 +41,4 @@ create policy "anyone can read active products"
   for select
   using (is_active = true);
 
-  -- ============================================================
--- 3. Seed catalogue (placeholder until CFA supplies the spreadsheet)
--- ============================================================
-insert into public.products (item_code, name, description, price) values
-  ('EF101', 'Fencing Mask - Senior', 'FIE-certified 1600N fencing mask, senior sizing', 1850.00),
-  ('EF102', 'Fencing Mask - Junior', 'Junior 350N training mask', 950.00),
-  ('EF103', 'Foil Blade - Size 5', 'Standard size 5 foil blade, non-electric', 420.00),
-  ('EF104', 'Epee Blade - Size 5', 'Standard size 5 epee blade, non-electric', 480.00),
-  ('EF106', 'Fencing Jacket - Senior', '800N fencing jacket, right-handed', 1250.00),
-  ('EF107', 'Fencing Jacket - Junior', '350N training jacket', 780.00),
-  ('EF108', 'Chest Protector', 'Moulded chest protector, sizes S-XL', 390.00),
-  ('EF109', 'Fencing Glove', 'Padded fencing glove, right hand', 285.00),
-  ('EF110', 'Body Wire - Foil', '2m foil body wire', 220.00),
-  ('EF111', 'Fencing Breeches', '350N breeches with knee padding', 890.00),
-  ('EF112', 'Fencing Shoes', 'Lateral-support fencing shoes', 1450.00),
-  ('EF113', 'Equipment Bag', 'Rolling equipment bag, 3-weapon capacity', 1100.00);
+  
