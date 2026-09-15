@@ -1,4 +1,7 @@
+
 import { createClient } from "@/lib/supabase/server";
+import { getCartCount } from "./actions/cart";
+
 
 // The four ways products can be sorted.
 // The key (e.g. "price-low") is what appears in the URL.
@@ -18,8 +21,9 @@ export default async function ShopPage({
   // e.g. /shop?q=mask&category=Masks&sort=price-low
   searchParams: Promise<{ q?: string; category?: string; sort?: string }>;
 }) {
-  const sp = await searchParams;
+  const sp = await searchParams; 
   const supabase = await createClient();
+  const cartCount = await getCartCount();
 
   // Read the three URL values. If one is missing, use a sensible default.
   // The .replace strips characters that would confuse the database filter.
@@ -142,7 +146,21 @@ export default async function ShopPage({
 
   return (
     <main className="mx-auto max-w-6xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Equipment Catalogue</h1>
+            <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Equipment Catalogue</h1>
+        <div className="flex items-center gap-4 text-sm">
+          <a href="/shop/orders" className="underline">
+            My orders
+          </a>
+          <a
+            href="/shop/cart"
+            className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+          >
+            Order ({cartCount})
+          </a>
+        </div>
+      </div>
+
 
       {/* A plain HTML form. Submitting it puts "?q=whatever" in the URL,
           which reruns this whole page with the search applied. No JavaScript needed. */}
