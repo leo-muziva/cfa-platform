@@ -39,7 +39,9 @@ export default function Home() {
       <AboutSection />
       <CoachesSection />
       <ScheduleSection />
-      <MembershipSection />
+      <Suspense fallback={<section id="membership" className="bg-background px-4 py-20 text-primary sm:px-6 md:px-12 md:py-28"><div className="mx-auto max-w-6xl"><h2 className="text-3xl md:text-5xl">Choose how you fence.</h2><p className="mt-8 text-muted-foreground">Loading membership options...</p></div></section>}>
+        <MembershipSection />
+      </Suspense>
       <FaqSection />
       <ContactFooter />
     </main>
