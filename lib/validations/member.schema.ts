@@ -8,6 +8,7 @@ export const profileUpdateSchema = z.object({
   date_of_birth: z.iso.date().optional().nullable().or(z.literal('')),
   emergency_contact_name: z.string().trim().max(100).optional().nullable(),
   emergency_contact_phone: phone.optional().nullable().or(z.literal('')),
+  reminder_preference: z.enum(['email', 'whatsapp', 'both']).optional(),
 })
 
 export const adminProfileUpdateSchema = profileUpdateSchema.extend({

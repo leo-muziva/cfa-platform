@@ -83,6 +83,20 @@ export function ProfileForm({ profile }: { profile: Profile }) {
                 defaultValue={profile.date_of_birth ?? ''}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="reminder_preference">Lesson reminders</Label>
+              <select
+                id="reminder_preference"
+                name="reminder_preference"
+                defaultValue={profile.reminder_preference ?? 'email'}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="both">Email and WhatsApp</option>
+              </select>
+              <p className="text-xs text-muted-foreground">WhatsApp reminders remain unavailable until CFA enables an approved provider.</p>
+            </div>
 
             {state.error && (
               <p className="text-sm text-destructive">{state.error}</p>

@@ -13,6 +13,7 @@ export type HouseholdRole = 'payer' | 'dependent'
 export type StaffType = 'admin' | 'coach'
 export type PaymentPreference = 'manual' | 'recurring_card'
 export type PaymentOption = 'pay_now' | 'pay_later'
+export type ReminderPreference = 'email' | 'whatsapp' | 'both'
 export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
 export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
 export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee'
@@ -48,6 +49,7 @@ export interface Profile {
   terms_accepted_at: string | null
   privacy_accepted_at: string | null
   profile_completed_at: string | null
+  reminder_preference: ReminderPreference
   created_at: string
   updated_at: string
 }
@@ -372,17 +374,40 @@ export interface AvailableLessonTime {
   endsAt: string
 }
 
+/** A coach-offered 30-minute occurrence, with availability intentionally reason-free. */
+export interface LessonTimeOption extends AvailableLessonTime {
+  isAvailable: boolean
+}
+
 /** Pricing is deliberately isolated from availability and booking DTOs. */
 export interface LessonQuote {
   participantCount: 1 | 2
-  totalCents: number
+  totalCents: string
   currency: 'ZAR'
+}
+
+/** Payer-only booking warning. It deliberately contains no balance or amount. */
+export interface LessonArrearsWarning {
+  shouldWarn: boolean
+}
+
+/** Staff-finance-only record. Never add this to coach or dependent DTOs. */
+export interface LessonBookingAllocation {
+  id: string
+  bookingId: string
+  participantId: string
+  coachId: string
+  productCode: 'standard_30' | 'intro' | 'beginner_package'
+  coachPayableCents: string
+  clubAllocationCents: string
+  status: 'pending' | 'payable' | 'voided'
 }
 
 export interface LessonParticipant {
   id: string
   fullName: string
   isSelf?: boolean
+  membershipStatus?: MembershipStatus
 }
 
 /** Financially safe lesson DTO for members, dependents, coaches, and admins. */

@@ -9,7 +9,7 @@ import type {
 const PROFILE_SELECT = `
   id,email,full_name,phone,date_of_birth,emergency_contact_name,emergency_contact_phone,
   membership_status,membership_type_id,is_staff,staff_type,is_active,terms_accepted_at,
-  privacy_accepted_at,profile_completed_at,created_at,updated_at,
+  privacy_accepted_at,profile_completed_at,reminder_preference,created_at,updated_at,
   membership_type:membership_types(id,code,name)
 `
 

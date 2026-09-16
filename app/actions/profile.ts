@@ -16,6 +16,7 @@ export async function updateProfileAction(
     full_name: formData.get('full_name') as string,
     phone: (formData.get('phone') as string) || undefined,
     date_of_birth: (formData.get('date_of_birth') as string) || null,
+    reminder_preference: formData.get('reminder_preference') as string,
   }
 
   const result = await updateCurrentProfile(rawData)
