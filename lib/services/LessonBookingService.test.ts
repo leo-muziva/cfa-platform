@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }))
-import { calculateOutstandingBalance } from '@/lib/repositories/PlatformRepository'
+import { calculateOutstandingBalance, outstandingChargeLabel } from '@/lib/repositories/PlatformRepository'
 import { lessonBookingErrorCode, mapSafeLessonBooking } from '@/lib/repositories/LessonBookingRepository'
 import { eligibleParticipantsForActor } from '@/lib/services/LessonBookingService'
 
@@ -31,6 +31,12 @@ describe('financial privacy', () => {
   it('excludes pending charges from balance and applies ledger credits', () => {
     expect(calculateOutstandingBalance([{ amount: 600 }, { amount: '300.00' }], [{ amount: 250 }])).toBe(650)
     expect(calculateOutstandingBalance([{ amount: 100 }], [{ amount: 200 }])).toBe(0)
+  })
+
+  it('uses member-friendly labels for finalised outstanding items', () => {
+    expect(outstandingChargeLabel('membership', null)).toBe('Membership fee')
+    expect(outstandingChargeLabel('lesson', 'attended')).toBe('Completed private lesson')
+    expect(outstandingChargeLabel('lesson', 'cancelled')).toBe('Late lesson cancellation')
   })
 })
 

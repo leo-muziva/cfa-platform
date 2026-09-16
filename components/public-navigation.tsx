@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const FOCUS_RING =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70";
@@ -17,7 +18,11 @@ export function PublicNavigation({ authSlot }: { authSlot: React.ReactNode }) {
 
   return (
     <nav className="fixed inset-x-3 top-3 z-50 md:inset-x-8" aria-label="Public navigation">
-      <div className="flex items-center justify-between gap-4">
+      {/* Permanent dark glass capsule — this nav stays pinned over the whole
+          page as you scroll, not just the always-dark hero, so it needs its
+          own fixed dark background rather than relying on the page's theme
+          (which is light-mode-capable below the fold). */}
+      <div className="liquid-glass flex items-center justify-between gap-4 rounded-full bg-black/50 px-4 py-2 md:px-6">
         <Link
           href="/"
           className={`flex h-8 items-center gap-3 text-sm font-semibold uppercase tracking-widest text-white md:text-base ${FOCUS_RING}`}
@@ -34,6 +39,7 @@ export function PublicNavigation({ authSlot }: { authSlot: React.ReactNode }) {
         </Link>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <div className="hidden sm:flex">{authSlot}</div>
           <button
             type="button"

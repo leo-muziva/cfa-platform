@@ -11,13 +11,15 @@ import {
   createLessonBooking,
   deleteCoachAvailabilityException,
   deleteCoachAvailabilityRule,
+  previewClubClosureForAdmin,
+  previewCoachAvailabilityExceptionForCoach,
   recordLessonOutcome,
   rescheduleLessonBooking,
   setCoachLessonProfileForAdmin,
   updateLessonSettingsForAdmin,
   waiveLessonChargesForAdmin,
 } from '@/lib/services/LessonBookingService'
-import type { LessonBookingErrorCode } from '@/types/domain'
+import type { ClosureAffectedBooking, LessonBookingErrorCode } from '@/types/domain'
 import { capeTownDateTimeToIso } from '@/lib/cape-town-time'
 
 export type LessonActionState = {
@@ -30,6 +32,23 @@ type OperationResult = { success: true; data: unknown } | { success: false; erro
 
 function actionResult(result: OperationResult, success: string): LessonActionState {
   return result.success ? { success } : { error: result.error, errorCode: result.errorCode }
+}
+
+// Preview actions return the affected-bookings list itself, not a status
+// string, so they don't fit the useActionState (prevState, formData) shape
+// the rest of this file uses. Called directly from a client component.
+export type PreviewActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string; errorCode: LessonBookingErrorCode }
+
+export async function previewClosureImpactAction(raw: { startsOn: string; endsOn: string }): Promise<PreviewActionResult<ClosureAffectedBooking[]>> {
+  const result = await previewClubClosureForAdmin(raw)
+  return result.success ? { success: true, data: result.data } : { success: false, error: result.error, errorCode: result.errorCode }
+}
+
+export async function previewCoachAvailabilityExceptionImpactAction(raw: { coachId: string; startsAt: string; endsAt: string }): Promise<PreviewActionResult<ClosureAffectedBooking[]>> {
+  const result = await previewCoachAvailabilityExceptionForCoach(raw)
+  return result.success ? { success: true, data: result.data } : { success: false, error: result.error, errorCode: result.errorCode }
 }
 
 function value(formData: FormData, camelName: string, snakeName?: string) {

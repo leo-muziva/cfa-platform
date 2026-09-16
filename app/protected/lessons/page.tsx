@@ -39,13 +39,13 @@ export default async function LessonsPage() {
     <div className="space-y-8">
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div className="max-w-3xl">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
             Member Portal
           </p>
-          <h1 className="font-serif text-4xl font-light tracking-tight text-slate-950 sm:text-5xl">
+          <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
             Your lessons
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
             Review upcoming lessons, make a time change, or see your fencing history.
             This page never includes billing information.
           </p>

@@ -9,10 +9,19 @@ const weaponLabels = {
   sabre: "Sabre",
 } as const;
 
-const coachPhotos: Record<string, string> = {
-  "Dr. Misha Galukhin": "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=85&w=1200&auto=format&fit=crop",
-  "Jacques Viljoen": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=85&w=1200&auto=format&fit=crop",
-  "Jeremy Saner": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=85&w=1200&auto=format&fit=crop",
+const coachPhotos: Record<string, { url: string; position: string }> = {
+  "Dr. Misha Galukhin": {
+    url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=85&w=1200&auto=format&fit=crop",
+    position: "center 24%",
+  },
+  "Jacques Viljoen": {
+    url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=85&w=1200&auto=format&fit=crop",
+    position: "center 24%",
+  },
+  "Jeremy Saner": {
+    url: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=85&w=1200&auto=format&fit=crop",
+    position: "center 24%",
+  },
 };
 
 const fallbackCoachPhoto = coachPhotos["Dr. Misha Galukhin"];
@@ -44,8 +53,8 @@ export function CoachDirectory({ coaches }: { coaches: LessonCoachDirectoryEntry
               <div className="relative h-44 overflow-hidden bg-[#2d176b]">
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                  style={{ backgroundImage: `url("${photo}")` }}
+                  className="absolute inset-0 bg-cover transition-transform duration-500 group-hover:scale-105"
+                  style={{ backgroundImage: `url("${photo.url}")`, backgroundPosition: photo.position }}
                 />
                 <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(120deg,rgba(37,20,92,0.78),rgba(37,20,92,0.12))]" />
                 <p className="absolute bottom-5 left-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">

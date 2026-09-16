@@ -37,8 +37,9 @@ import {
   cancelCoachFutureBookingsSchema,
   cancelLessonBookingSchema,
   clubClosureSchema,
+  clubClosurePreviewSchema,
   coachAvailabilityExceptionSchema,
-  coachAvailabilityExceptionPreviewSchema,
+  coachAvailabilityExceptionPreviewWithCoachSchema,
   coachAvailabilityRuleSchema,
   coachLessonProfileSchema,
   createLessonBookingSchema,
@@ -160,7 +161,7 @@ export async function getCoachLessonsPageData() {
   return lessons.success ? { profile, lessons: lessons.data } : pageError(lessons)
 }
 
-export async function getCoachAvailabilityPageData(rawPreview?: unknown) {
+export async function getCoachAvailabilityPageData() {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   if (!profile.is_staff || profile.staff_type !== 'coach') return { error: 'Forbidden' }
@@ -169,13 +170,20 @@ export async function getCoachAvailabilityPageData(rawPreview?: unknown) {
   ])
   if (!rules.success) return pageError(rules)
   if (!exceptions.success) return pageError(exceptions)
-  if (rawPreview === undefined) return { profile, rules: rules.data, exceptions: exceptions.data, affectedBookings: [] }
-  const previewInput = coachAvailabilityExceptionPreviewSchema.safeParse(rawPreview)
-  if (!previewInput.success) return { profile, rules: rules.data, exceptions: exceptions.data, affectedBookings: [] }
-  const preview = await previewCoachAvailabilityException(profile.id, previewInput.data.startsAt, previewInput.data.endsAt)
-  return preview.success
-    ? { profile, rules: rules.data, exceptions: exceptions.data, affectedBookings: preview.data }
-    : pageError(preview)
+  return { profile, rules: rules.data, exceptions: exceptions.data }
+}
+
+// Self-guarded, standalone preview used by the "preview affected lessons"
+// popup — unlike getCoachAvailabilityPageData above, this isn't tied to a
+// full page load, so it validates and authorizes the coachId itself instead
+// of trusting the caller's session-derived profile.id.
+export async function previewCoachAvailabilityExceptionForCoach(raw: unknown) {
+  const parsed = coachAvailabilityExceptionPreviewWithCoachSchema.safeParse(raw)
+  if (!parsed.success) return invalid()
+  const guard = await requireCoachOrAdmin(parsed.data.coachId)
+  return guard.allowed
+    ? previewCoachAvailabilityException(parsed.data.coachId, parsed.data.startsAt, parsed.data.endsAt)
+    : guard.result
 }
 
 export async function recordLessonOutcome(raw: unknown) {
@@ -245,14 +253,11 @@ export async function getAdminCoachSetupPageData() {
   return coaches.success ? { coaches: coaches.data } : pageError(coaches)
 }
 
-export async function getAdminClosuresPageData(rawPreview?: unknown) {
+export async function getAdminClosuresPageData() {
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const closures = await listClubClosures()
-  if (!closures.success) return pageError(closures)
-  if (rawPreview === undefined) return { closures: closures.data, affectedBookings: [] }
-  const preview = await previewClubClosureForAdmin(rawPreview)
-  return preview.success ? { closures: closures.data, affectedBookings: preview.data } : pageError(preview)
+  return closures.success ? { closures: closures.data } : pageError(closures)
 }
 
 export async function getLessonSettingsForAdmin() {
@@ -277,7 +282,7 @@ export async function setCoachLessonProfileForAdmin(raw: unknown) {
 }
 
 export async function previewClubClosureForAdmin(raw: unknown) {
-  const parsed = clubClosureSchema.pick({ startsOn: true, endsOn: true }).strict().safeParse(raw)
+  const parsed = clubClosurePreviewSchema.safeParse(raw)
   if (!parsed.success) return invalid()
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : previewClubClosure(parsed.data.startsOn, parsed.data.endsOn)

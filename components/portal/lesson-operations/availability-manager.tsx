@@ -1,9 +1,9 @@
-import { CalendarClock, CirclePlus, ShieldAlert, Trash2 } from "lucide-react";
+import { CalendarClock, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OperationForm, type LessonOperationState } from "./operation-form";
-import type { ClosureAffectedBooking } from "@/types/domain";
+import { ExceptionPreviewCard } from "./exception-preview-card";
 
 export interface AvailabilityRuleView {
   id: string;
@@ -40,7 +40,6 @@ export function AvailabilityManager({
   coachId,
   rules,
   exceptions,
-  affectedBookings,
   createRuleAction,
   deleteRuleAction,
   createExceptionAction,
@@ -49,7 +48,6 @@ export function AvailabilityManager({
   coachId: string;
   rules: AvailabilityRuleView[];
   exceptions: AvailabilityExceptionView[];
-  affectedBookings: ClosureAffectedBooking[];
   createRuleAction: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;
   deleteRuleAction: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;
   createExceptionAction: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;
@@ -126,28 +124,7 @@ export function AvailabilityManager({
           </div>
         </section>
 
-        <Card className="h-fit border-teal-200 bg-teal-50/40">
-          <CardHeader><CardTitle className="flex items-center gap-2"><CirclePlus className="h-5 w-5" aria-hidden="true" />Add exception</CardTitle><CardDescription>A blocking range may overlap booked lessons.</CardDescription></CardHeader>
-          <CardContent>
-            <form method="get" className="mb-5 space-y-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-              <input type="hidden" name="preview" value="true" />
-              <p className="text-sm font-medium text-amber-950">Preview a blocking range before confirming cancellations.</p>
-              <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label htmlFor="preview-start">Starts</Label><Input id="preview-start" name="startsAt" type="datetime-local" step="1800" required /></div><div className="space-y-1"><Label htmlFor="preview-end">Ends</Label><Input id="preview-end" name="endsAt" type="datetime-local" step="1800" required /></div></div>
-              <button type="submit" className="min-h-10 rounded-md border border-amber-400 bg-white px-3 text-sm font-medium text-amber-950">Preview affected lessons</button>
-            </form>
-            {affectedBookings.length > 0 && <div role="status" className="mb-5 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><strong>{affectedBookings.length} affected lesson{affectedBookings.length === 1 ? "" : "s"}</strong><ul className="mt-2 space-y-1">{affectedBookings.map((booking) => <li key={booking.bookingId}>{localDateTime(booking.startsAt)} - {booking.participantNames.join(", ")}</li>)}</ul><p className="mt-2">Review these lessons, then use the cancellation confirmation below for the same range.</p></div>}
-            <OperationForm action={createExceptionAction} submitLabel="Add exception">
-              <input type="hidden" name="coachId" value={coachId} />
-              <div className="space-y-2"><Label htmlFor="exceptionType">Change type</Label><select id="exceptionType" name="exceptionType" required className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="extra">Add extra hours</option><option value="block">Block availability</option></select></div>
-              <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="startsAt">Starts</Label><Input id="startsAt" name="startsAt" type="datetime-local" step="1800" required /></div><div className="space-y-2"><Label htmlFor="endsAt">Ends</Label><Input id="endsAt" name="endsAt" type="datetime-local" step="1800" required /></div></div>
-              <div className="space-y-2"><Label htmlFor="reason">Reason (optional)</Label><Input id="reason" name="reason" maxLength={240} /></div>
-              <label className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-                <input type="checkbox" name="cancelAffected" value="true" className="mt-1 h-4 w-4" />
-                <span><strong className="flex items-center gap-1"><ShieldAlert className="h-4 w-4" aria-hidden="true" />Confirm affected cancellations</strong>For a block, cancel overlapping future bookings at no charge. Leave unchecked to preserve bookings and receive an affected-booking warning.</span>
-              </label>
-            </OperationForm>
-          </CardContent>
-        </Card>
+        <ExceptionPreviewCard coachId={coachId} createExceptionAction={createExceptionAction} />
       </div>
     </div>
   );

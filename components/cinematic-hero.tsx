@@ -46,7 +46,7 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
         muted
         playsInline
         aria-hidden="true"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260406_094145_4a271a6c-3869-4f1c-8aa7-aeb0cb227994.mp4"
+        src="/hero-video.mp4"
       />
       <div
         className="pointer-events-none absolute inset-0 z-[1] backdrop-blur-xl"
@@ -55,6 +55,14 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
           maskImage: "linear-gradient(to top, black 0%, transparent 45%)",
           WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 45%)",
         }}
+      />
+      {/* Readability scrim behind the text block — independent of the blur
+          mask above (that one blurs, this one darkens). Tune the from-black
+          opacity to taste; delete this div entirely to revert to the
+          blur-only look. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[70%] bg-gradient-to-t from-black/80 via-black/35 to-transparent"
+        aria-hidden="true"
       />
 
       <PublicNavigation authSlot={authSlot} />

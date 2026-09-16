@@ -113,6 +113,22 @@
     transform: translateY(-3px);
   }
 
+  /* Dark-mode counterpart — keeps the same gradient-sheen signature rather
+     than flattening it to plain tokens, just re-pitched for a dark surface. */
+  .dark .cfa-light-card {
+    border-color: hsl(var(--border));
+    background: linear-gradient(145deg, hsl(var(--card) / 0.97), hsl(var(--card) / 0.85));
+    box-shadow: 0 20px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 hsl(var(--foreground) / 0.06);
+  }
+  .dark .cfa-light-card::after {
+    background: rgb(255 210 28 / 0.1);
+  }
+  .dark .cfa-light-card:hover,
+  .dark .cfa-light-card:focus-within {
+    border-color: rgb(255 210 28 / 0.5);
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(255 210 28 / 0.14);
+  }
+
   .liquid-glass {
     background: rgba(255, 255, 255, 0.01);
     background-blend-mode: luminosity;
