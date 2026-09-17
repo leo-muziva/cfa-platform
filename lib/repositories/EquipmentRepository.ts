@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { EquipmentItem, EquipmentType } from '@/types/domain'
+import type { EquipmentItem, EquipmentMemberOption, EquipmentType } from '@/types/domain'
 import type { EquipmentItemInput } from '@/lib/validations/equipment.schema'
 
 const EQUIPMENT_TYPE_SELECT = 'id,name,code_prefix,category,requires_size,requires_hand,sort_order'
@@ -24,6 +24,14 @@ export async function getEquipmentTypeById(id: string): Promise<EquipmentType | 
   const supabase = await createClient()
   const { data, error } = await supabase.from('equipment_types').select(EQUIPMENT_TYPE_SELECT).eq('id', id).single()
   return error || !data ? null : data as EquipmentType
+}
+
+// Goes through the RPC rather than selecting profiles: coaches have no read
+// policy on that table, so a direct join would come back empty for them.
+export async function listEquipmentMemberOptions(): Promise<EquipmentMemberOption[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('equipment_member_options')
+  return error || !data ? [] : data as EquipmentMemberOption[]
 }
 
 export async function listEquipmentItems(): Promise<EquipmentItem[]> {

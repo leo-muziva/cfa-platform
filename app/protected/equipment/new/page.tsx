@@ -22,6 +22,7 @@ export default async function NewEquipmentItemPage() {
       <EquipmentForm
         types={result.types}
         existingCodes={result.items.map((item) => item.code)}
+        members={result.members}
         action={createEquipmentItemAction}
         submitLabel="Add item"
       />

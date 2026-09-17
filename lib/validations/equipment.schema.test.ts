@@ -36,9 +36,14 @@ describe('equipmentItemSchema', () => {
     expect(equipmentItemSchema.safeParse(form({ condition: 'Good' })).success).toBe(false)
   })
 
-  it('ignores assigned_to coming from a form', () => {
-    const parsed = equipmentItemSchema.parse(form({ assigned_to: 'someone-elses-id' }))
-    expect(parsed).not.toHaveProperty('assigned_to')
+  it('accepts a member id for the holder, and blank means nobody recorded', () => {
+    const member = '22222222-2222-4222-8222-222222222222'
+    expect(equipmentItemSchema.parse(form({ assigned_to: member })).assigned_to).toBe(member)
+    expect(equipmentItemSchema.parse(form({ assigned_to: '' })).assigned_to).toBeNull()
+  })
+
+  it('rejects a holder that is not a member id', () => {
+    expect(equipmentItemSchema.safeParse(form({ assigned_to: 'Fiona Fencer' })).success).toBe(false)
   })
 })
 
@@ -77,5 +82,15 @@ describe('applyTypeRules', () => {
     const input = equipmentItemSchema.parse(form({ size: 'M', hand: 'left' }))
     expect(applyTypeRules(input, neither)).toMatchObject({ data: { size: null, hand: null } })
     expect(applyTypeRules(input, sized)).toMatchObject({ data: { size: 'M', hand: null } })
+  })
+
+  it('only keeps a holder while the item is actually with a member', () => {
+    const member = '22222222-2222-4222-8222-222222222222'
+    const out = equipmentItemSchema.parse(form({ status: 'with_member', assigned_to: member }))
+    expect(applyTypeRules(out, neither)).toMatchObject({ data: { assigned_to: member } })
+
+    // Returned to storage — the holder goes with it, rather than lingering.
+    const back = equipmentItemSchema.parse(form({ status: 'in_storage', assigned_to: member }))
+    expect(applyTypeRules(back, neither)).toMatchObject({ data: { assigned_to: null } })
   })
 })

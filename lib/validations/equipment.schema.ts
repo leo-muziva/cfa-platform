@@ -20,6 +20,7 @@ export const equipmentItemSchema = z.object({
   condition: z.enum(['good', 'fair', 'poor', 'broken']),
   status: z.enum(['in_storage', 'with_member', 'awaiting_repair']),
   notes: blankToNull(z.string().trim().max(500)),
+  assigned_to: blankToNull(z.uuid('Pick a member from the list')),
 })
 
 export type EquipmentItemInput = z.infer<typeof equipmentItemSchema>
@@ -39,6 +40,8 @@ export function applyTypeRules(
       ...input,
       size: type.requires_size ? input.size : null,
       hand: type.requires_hand ? input.hand : null,
+      // A holder only means anything while the item is actually out.
+      assigned_to: input.status === 'with_member' ? input.assigned_to : null,
     },
   }
 }

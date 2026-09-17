@@ -18,6 +18,7 @@ const itemFields = (formData: FormData) => ({
   condition: String(formData.get('condition') ?? ''),
   status: String(formData.get('status') ?? ''),
   notes: String(formData.get('notes') ?? ''),
+  assigned_to: String(formData.get('assigned_to') ?? ''),
 })
 
 export async function createEquipmentItemAction(

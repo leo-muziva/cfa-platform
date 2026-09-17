@@ -313,6 +313,13 @@ export interface EquipmentItem {
   updated_at: string
 }
 
+/** Id and display name only — all the equipment register is allowed to know
+ *  about a member, so coaches never need broader access to profiles. */
+export interface EquipmentMemberOption {
+  id: string
+  full_name: string
+}
+
 export interface EquipmentListFilters {
   search?: string
   status?: EquipmentStatus

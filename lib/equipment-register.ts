@@ -61,13 +61,20 @@ export function itemDetail(item: EquipmentItem): string {
   return parts.join(' · ')
 }
 
-export function matchesEquipmentFilter(item: EquipmentItem, filters: EquipmentListFilters): boolean {
+export function matchesEquipmentFilter(
+  item: EquipmentItem,
+  filters: EquipmentListFilters,
+  holders: Record<string, string> = {},
+): boolean {
   if (filters.status && item.status !== filters.status) return false
   if (filters.condition && item.condition !== filters.condition) return false
   if (!filters.search) return true
   const term = fold(filters.search.trim())
   if (!term) return true
-  const haystack = [item.code, item.equipment_type?.name ?? '', item.notes ?? '', itemDetail(item)]
+  const haystack = [
+    item.code, item.equipment_type?.name ?? '', item.notes ?? '', itemDetail(item),
+    item.assigned_to ? holders[item.assigned_to] ?? '' : '',
+  ]
   return haystack.some((value) => fold(value).includes(term))
 }
 

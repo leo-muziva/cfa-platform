@@ -22,12 +22,13 @@ const CONDITION_VARIANT: Record<EquipmentCondition, 'secondary' | 'outline' | 'd
   good: 'secondary', fair: 'outline', poor: 'destructive', broken: 'destructive',
 }
 
-function StatusCell({ item }: { item: EquipmentItem }) {
+function StatusCell({ item, holders }: { item: EquipmentItem; holders: Record<string, string> }) {
+  const holder = item.assigned_to ? holders[item.assigned_to] : null
   return (
     <span className="inline-flex items-center gap-2">
       <Badge variant={STATUS_VARIANT[item.status]}>{STATUS_LABELS[item.status]}</Badge>
-      {item.status === 'with_member' && !item.assigned_to && (
-        <span className="text-xs text-muted-foreground">not recorded</span>
+      {item.status === 'with_member' && (
+        <span className="text-xs text-muted-foreground">{holder ?? 'not recorded'}</span>
       )}
     </span>
   )
@@ -50,7 +51,7 @@ export default async function EquipmentRegisterPage({
     redirect('/protected')
   }
 
-  const { items, filters, total } = result
+  const { items, filters, total, holders } = result
   const hasFilters = Boolean(filters.search || filters.status || filters.condition)
   const summary = summariseRegister(items)
   const categories = groupItemsByCategory(items)
@@ -85,7 +86,7 @@ export default async function EquipmentRegisterPage({
       <form method="GET" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
         <div className="grid gap-2">
           <Label htmlFor="search">Search</Label>
-          <Input id="search" name="search" type="search" placeholder="Code, type or notes"
+          <Input id="search" name="search" type="search" placeholder="Code, type, member or notes"
             defaultValue={filters.search ?? ''} maxLength={100} />
         </div>
         <div className="grid gap-2">
@@ -177,7 +178,7 @@ export default async function EquipmentRegisterPage({
                           <td className="py-3 px-4">
                             <Badge variant={CONDITION_VARIANT[item.condition]}>{CONDITION_LABELS[item.condition]}</Badge>
                           </td>
-                          <td className="py-3 px-4"><StatusCell item={item} /></td>
+                          <td className="py-3 px-4"><StatusCell item={item} holders={holders} /></td>
                           <td className="py-3 px-4 text-muted-foreground">{item.notes || '—'}</td>
                         </tr>
                       ))}

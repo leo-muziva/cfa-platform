@@ -4,6 +4,7 @@ vi.mock('server-only', () => ({}))
 const repository = vi.hoisted(() => ({
   listEquipmentItems: vi.fn(),
   listEquipmentTypes: vi.fn(),
+  listEquipmentMemberOptions: vi.fn(),
   getEquipmentItemById: vi.fn(),
   getEquipmentTypeById: vi.fn(),
   insertEquipmentItem: vi.fn(),
@@ -21,6 +22,7 @@ import {
 import type { EquipmentItem, EquipmentType } from '@/types/domain'
 
 const TYPE_ID = '11111111-1111-4111-8111-111111111111'
+const MEMBER_ID = '22222222-2222-4222-8222-222222222222'
 
 const foil: EquipmentType = {
   id: TYPE_ID, name: 'Foil', code_prefix: 'WF', category: 'weapons',
@@ -53,6 +55,9 @@ const asMember = () => {
 beforeEach(() => {
   vi.clearAllMocks()
   repository.listEquipmentTypes.mockResolvedValue([foil])
+  repository.listEquipmentMemberOptions.mockResolvedValue([
+    { id: MEMBER_ID, full_name: 'Fiona Fencer' },
+  ])
   repository.listEquipmentItems.mockResolvedValue([item('WF001')])
   repository.getEquipmentTypeById.mockResolvedValue(foil)
   repository.insertEquipmentItem.mockResolvedValue({ item: item('WF011') })

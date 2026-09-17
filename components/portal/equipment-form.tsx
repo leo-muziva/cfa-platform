@@ -9,15 +9,16 @@ import {
   HAND_LABELS, STATUS_LABELS, nextItemCode,
 } from '@/lib/equipment-register'
 import type { EquipmentActionState } from '@/app/actions/equipment'
-import type { EquipmentItem, EquipmentType } from '@/types/domain'
+import type { EquipmentItem, EquipmentMemberOption, EquipmentType } from '@/types/domain'
 
 const selectClasses =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 export function EquipmentForm({
-  types, existingCodes, item, action, submitLabel,
+  types, existingCodes, members, item, action, submitLabel,
 }: {
   types: EquipmentType[]
+  members: EquipmentMemberOption[]
   /** Every code already on the register, so a new item can be offered the next
    *  free one for its type. Only a suggestion — the server checks on save. */
   existingCodes: string[]
@@ -30,6 +31,8 @@ export function EquipmentForm({
   const [code, setCode] = useState(item?.code ?? '')
   const [size, setSize] = useState<string>(item?.size ?? '')
   const [hand, setHand] = useState<string>(item?.hand ?? '')
+  const [status, setStatus] = useState<string>(item?.status ?? 'in_storage')
+  const [assignedTo, setAssignedTo] = useState<string>(item?.assigned_to ?? '')
 
   const selectedType = types.find((type) => type.id === typeId)
 
@@ -110,13 +113,30 @@ export function EquipmentForm({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
-              <select id="status" name="status" defaultValue={item?.status ?? 'in_storage'} className={selectClasses}>
+              <select id="status" name="status" value={status} className={selectClasses}
+                onChange={(event) => setStatus(event.target.value)}>
                 {EQUIPMENT_STATUSES.map((option) => (
                   <option key={option} value={option}>{STATUS_LABELS[option]}</option>
                 ))}
               </select>
             </div>
           </div>
+
+          {status === 'with_member' && (
+            <div className="grid gap-2">
+              <Label htmlFor="assigned_to">Who has it</Label>
+              <select id="assigned_to" name="assigned_to" value={assignedTo} className={selectClasses}
+                onChange={(event) => setAssignedTo(event.target.value)}>
+                <option value="">Not recorded</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>{member.full_name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Optional — older entries predate the register recording who took an item out.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes</Label>

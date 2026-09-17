@@ -17,7 +17,7 @@ export default async function EditEquipmentItemPage({
     redirect('/protected/equipment')
   }
 
-  const { item, types, items, canDelete } = result
+  const { item, types, items, canDelete, members } = result
   if (!item) redirect('/protected/equipment')
 
   return (
@@ -32,6 +32,7 @@ export default async function EditEquipmentItemPage({
       <EquipmentForm
         types={types}
         existingCodes={items.map((existing) => existing.code)}
+        members={members}
         item={item}
         action={updateEquipmentItemAction}
         submitLabel="Save changes"

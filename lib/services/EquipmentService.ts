@@ -1,15 +1,17 @@
 import 'server-only'
 import {
   deleteEquipmentItem, getEquipmentItemById, getEquipmentTypeById,
-  insertEquipmentItem, listEquipmentItems, listEquipmentTypes, updateEquipmentItem,
-  type EquipmentWriteResult,
+  insertEquipmentItem, listEquipmentItems, listEquipmentMemberOptions, listEquipmentTypes,
+  updateEquipmentItem, type EquipmentWriteResult,
 } from '@/lib/repositories/EquipmentRepository'
 import { requireAdmin, requireCoachOrAdmin } from '@/lib/services/MemberService'
 import {
   applyTypeRules, equipmentItemSchema, equipmentListFiltersSchema, type EquipmentItemInput,
 } from '@/lib/validations/equipment.schema'
 import { matchesEquipmentFilter } from '@/lib/equipment-register'
-import type { EquipmentItem, EquipmentListFilters, EquipmentType } from '@/types/domain'
+import type {
+  EquipmentItem, EquipmentListFilters, EquipmentMemberOption, EquipmentType,
+} from '@/types/domain'
 
 const WRITE_ERRORS = {
   duplicate_code: 'That code is already in use. Pick another.',
@@ -17,25 +19,39 @@ const WRITE_ERRORS = {
 } as const
 
 export async function getEquipmentRegister(rawFilters: unknown = {}): Promise<
-  { items: EquipmentItem[]; types: EquipmentType[]; filters: EquipmentListFilters; total: number } | { error: string }
+  {
+    items: EquipmentItem[]; types: EquipmentType[]; filters: EquipmentListFilters
+    total: number; holders: Record<string, string>
+  } | { error: string }
 > {
   const guard = await requireCoachOrAdmin()
   if ('error' in guard) return guard
   const filters = equipmentListFiltersSchema.parse(rawFilters)
-  const [items, types] = await Promise.all([listEquipmentItems(), listEquipmentTypes()])
-  return { items: items.filter((item) => matchesEquipmentFilter(item, filters)), types, filters, total: items.length }
+  const [items, types, members] = await Promise.all([
+    listEquipmentItems(), listEquipmentTypes(), listEquipmentMemberOptions(),
+  ])
+  const holders = Object.fromEntries(members.map((member) => [member.id, member.full_name]))
+  return {
+    items: items.filter((item) => matchesEquipmentFilter(item, filters, holders)),
+    types, filters, total: items.length, holders,
+  }
 }
 
 export async function getEquipmentFormData(itemId?: string): Promise<
-  { types: EquipmentType[]; items: EquipmentItem[]; item: EquipmentItem | null; canDelete: boolean } | { error: string }
+  {
+    types: EquipmentType[]; items: EquipmentItem[]; item: EquipmentItem | null
+    canDelete: boolean; members: EquipmentMemberOption[]
+  } | { error: string }
 > {
   const guard = await requireCoachOrAdmin()
   if ('error' in guard) return guard
-  const [types, items] = await Promise.all([listEquipmentTypes(), listEquipmentItems()])
-  if (!itemId) return { types, items, item: null, canDelete: false }
+  const [types, items, members] = await Promise.all([
+    listEquipmentTypes(), listEquipmentItems(), listEquipmentMemberOptions(),
+  ])
+  if (!itemId) return { types, items, item: null, canDelete: false, members }
   const item = await getEquipmentItemById(itemId)
   if (!item) return { error: 'Equipment item not found' }
-  return { types, items, item, canDelete: guard.profile.staff_type === 'admin' }
+  return { types, items, item, canDelete: guard.profile.staff_type === 'admin', members }
 }
 
 async function writeItem(
