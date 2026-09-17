@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
+
 // Friendly labels for the status values stored in the database.
 const STATUS_LABELS: Record<string, string> = {
   submitted: "Waiting for next bulk order",

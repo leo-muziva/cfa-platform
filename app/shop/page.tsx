@@ -1,6 +1,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCartCount } from "./actions/cart";
+import { BulkOrderProgress } from "./components/BulkOrderProgress";
 
 
 // The four ways products can be sorted.
@@ -160,7 +161,10 @@ export default async function ShopPage({
           </a>
         </div>
       </div>
+    
+     <BulkOrderProgress />
 
+    
 
       {/* A plain HTML form. Submitting it puts "?q=whatever" in the URL,
           which reruns this whole page with the search applied. No JavaScript needed. */}

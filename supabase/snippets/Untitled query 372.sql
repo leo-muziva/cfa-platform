@@ -1,1 +1,1 @@
-select count(*) from public.products;
+update public.bulk_orders set threshold = 500 where status = 'collecting';
