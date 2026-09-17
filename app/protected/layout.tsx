@@ -16,6 +16,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     { href: '/protected/family', label: 'Family' },
     ...(capabilities?.canSeeHouseholdMoney ? [{ href: '/protected/billing', label: 'Billing' }] : []),
     ...(capabilities?.isCoach ? [{ href: '/protected/coach', label: 'Coach' }] : []),
+    ...(capabilities?.canManageEquipment ? [{ href: '/protected/equipment', label: 'Equipment' }] : []),
     ...(capabilities?.canManageStaffArea ? [{ href: '/protected/admin', label: 'Admin' }] : []),
   ]
   return (

@@ -28,6 +28,17 @@ export async function requireAdmin(): Promise<{ profile: Profile } | { error: st
   return { profile }
 }
 
+// Matches the SQL predicate current_user_is_coach_or_admin() used by the
+// equipment register's RLS policies. LessonBookingService has its own private
+// copy of this rule with a different result shape; the two want collapsing into
+// one helper, but booking code is owned by another branch.
+export async function requireCoachOrAdmin(): Promise<{ profile: Profile } | { error: string }> {
+  const profile = await getCurrentProfile()
+  if (!profile) return { error: 'Not authenticated' }
+  if (!profile.is_staff || !['admin', 'coach'].includes(profile.staff_type ?? '')) return { error: 'Forbidden' }
+  return { profile }
+}
+
 export function deriveCapabilities(profile: Profile, household: HouseholdMember, effectivePayerId: string | null): Capabilities {
   const isAdmin = profile.is_staff && profile.staff_type === 'admin'
   const isCoach = profile.is_staff && profile.staff_type === 'coach'
@@ -42,6 +53,7 @@ export function deriveCapabilities(profile: Profile, household: HouseholdMember,
     canTriggerPayment: isAdmin || (isPayer && !isCoach),
     canManageDependents: isPayer || isAdmin,
     canManageStaffArea: isAdmin,
+    canManageEquipment: isAdmin || isCoach,
   }
 }
 

@@ -17,6 +17,12 @@ export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
 export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
 export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee'
 export type FinancialStatus = 'unpaid' | 'paid' | 'overdue'
+export type EquipmentCategory =
+  | 'weapons' | 'masks' | 'lames' | 'clothing' | 'gloves' | 'wires' | 'accessories'
+export type EquipmentCondition = 'good' | 'fair' | 'poor' | 'broken'
+export type EquipmentStatus = 'in_storage' | 'with_member' | 'awaiting_repair'
+export type EquipmentHand = 'left' | 'right'
+export type EquipmentSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'
 
 export interface MembershipType {
   id: string
@@ -277,6 +283,40 @@ export interface Capabilities {
   canTriggerPayment: boolean
   canManageDependents: boolean
   canManageStaffArea: boolean
+  canManageEquipment: boolean
+}
+
+export interface EquipmentType {
+  id: string
+  name: string
+  code_prefix: string
+  category: EquipmentCategory
+  requires_size: boolean
+  requires_hand: boolean
+  sort_order: number
+}
+
+export interface EquipmentItem {
+  id: string
+  type_id: string
+  equipment_type?: EquipmentType | null
+  code: string
+  hand: EquipmentHand | null
+  size: EquipmentSize | null
+  condition: EquipmentCondition
+  status: EquipmentStatus
+  notes: string | null
+  /** Who currently holds a 'with_member' item. Null on the seeded rows, whose
+   *  holder was never recorded — there is no picker for it yet. */
+  assigned_to: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EquipmentListFilters {
+  search?: string
+  status?: EquipmentStatus
+  condition?: EquipmentCondition
 }
 
 export interface MemberListFilters {

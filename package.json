@@ -7,7 +7,8 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest",
-    "test:db-workflows": "npx supabase test db supabase/tests/database/member-workflows.test.sql supabase/tests/database/lesson-booking-demo.test.sql"
+    "test:db-workflows": "npx supabase test db supabase/tests/database/member-workflows.test.sql supabase/tests/database/lesson-booking-demo.test.sql",
+    "test:db-equipment": "npx supabase test db supabase/tests/database/equipment-register.test.sql"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.20",
