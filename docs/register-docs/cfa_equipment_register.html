@@ -1,0 +1,2457 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CFA Equipment Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f4f2ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        color: #1a1a2e;
+      }
+      .group-header:hover {
+        background: #f0ece3;
+      }
+      .ledger-row {
+        border-bottom: 1px solid #eae6df;
+      }
+      .ledger-row:hover {
+        background: #f7f4ee;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #c49a1c !important;
+        box-shadow: 0 0 0 3px rgba(196, 154, 28, 0.18);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <p style="padding: 2rem; color: #888; font-size: 14px">
+        Loading register…
+      </p>
+    </div>
+    <script
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      const TYPES = {
+        Foil: { prefix: "WF", size: false, hand: true },
+        Épée: { prefix: "WE", size: false, hand: true },
+        Sabre: { prefix: "WS", size: false, hand: true },
+        "Foil Mask": { prefix: "MF", size: true, hand: false },
+        "Épée Mask": { prefix: "ME", size: true, hand: false },
+        "Sabre Mask": { prefix: "MS", size: true, hand: false },
+        "Foil Lamé": { prefix: "LF", size: true, hand: false },
+        "Sabre Lamé": { prefix: "LS", size: true, hand: false },
+        Jacket: { prefix: "JK", size: true, hand: false },
+        Plastron: { prefix: "PT", size: true, hand: true },
+        "Chest Protector": { prefix: "CP", size: true, hand: false },
+        Breeches: { prefix: "BR", size: true, hand: false },
+        Glove: { prefix: "GL", size: true, hand: true },
+        Manchette: { prefix: "MN", size: false, hand: true },
+        "Foil Wire": { prefix: "FW", size: false, hand: false },
+        "Épée Wire": { prefix: "EW", size: false, hand: false },
+        "Mask Clip": { prefix: "MC", size: false, hand: false },
+      };
+
+      const CATEGORIES = [
+        { label: "Weapons", types: ["Foil", "Épée", "Sabre"] },
+        { label: "Masks", types: ["Foil Mask", "Épée Mask", "Sabre Mask"] },
+        { label: "Lamés", types: ["Foil Lamé", "Sabre Lamé"] },
+        {
+          label: "Clothing",
+          types: ["Jacket", "Plastron", "Chest Protector", "Breeches"],
+        },
+        { label: "Gloves", types: ["Glove", "Manchette"] },
+        { label: "Wires", types: ["Foil Wire", "Épée Wire"] },
+        { label: "Accessories", types: ["Mask Clip"] },
+      ];
+
+      const TYPE_ORDER = CATEGORIES.flatMap((c) => c.types);
+      const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+      const CONDITIONS = ["Good", "Fair", "Poor", "Broken"];
+      const STATUSES = ["In Storage", "With Member", "Awaiting Repair"];
+
+      const STATUS_COLOR = {
+        "In Storage": "#15803D",
+        "With Member": "#B45309",
+        "Awaiting Repair": "#B91C1C",
+      };
+      const COND_COLOR = {
+        Good: "#15803D",
+        Fair: "#A16207",
+        Poor: "#C2410C",
+        Broken: "#B91C1C",
+      };
+
+      const SEED = [
+        // Weapons — Foil
+        {
+          id: 1,
+          type: "Foil",
+          code: "WF001",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 2,
+          type: "Foil",
+          code: "WF002",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 3,
+          type: "Foil",
+          code: "WF003",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 4,
+          type: "Foil",
+          code: "WF004",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 5,
+          type: "Foil",
+          code: "WF005",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 6,
+          type: "Foil",
+          code: "WF006",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "Grip worn",
+        },
+        {
+          id: 7,
+          type: "Foil",
+          code: "WF007",
+          hand: "Right",
+          size: "",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Blade cracked",
+        },
+        {
+          id: 8,
+          type: "Foil",
+          code: "WF008",
+          hand: "Left",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 9,
+          type: "Foil",
+          code: "WF009",
+          hand: "Left",
+          size: "",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 10,
+          type: "Foil",
+          code: "WF010",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "Junior size",
+        },
+        // Weapons — Épée
+        {
+          id: 11,
+          type: "Épée",
+          code: "WE001",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 12,
+          type: "Épée",
+          code: "WE002",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 13,
+          type: "Épée",
+          code: "WE003",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 14,
+          type: "Épée",
+          code: "WE004",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "Point spring weak",
+        },
+        {
+          id: 15,
+          type: "Épée",
+          code: "WE005",
+          hand: "Left",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 16,
+          type: "Épée",
+          code: "WE006",
+          hand: "Right",
+          size: "",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Blade bent",
+        },
+        // Weapons — Sabre
+        {
+          id: 17,
+          type: "Sabre",
+          code: "WS001",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 18,
+          type: "Sabre",
+          code: "WS002",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 19,
+          type: "Sabre",
+          code: "WS003",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 20,
+          type: "Sabre",
+          code: "WS004",
+          hand: "Left",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        // Masks — Foil
+        {
+          id: 21,
+          type: "Foil Mask",
+          code: "MF001",
+          hand: "",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 22,
+          type: "Foil Mask",
+          code: "MF002",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 23,
+          type: "Foil Mask",
+          code: "MF003",
+          hand: "",
+          size: "S",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 24,
+          type: "Foil Mask",
+          code: "MF004",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 25,
+          type: "Foil Mask",
+          code: "MF005",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 26,
+          type: "Foil Mask",
+          code: "MF006",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 27,
+          type: "Foil Mask",
+          code: "MF007",
+          hand: "",
+          size: "L",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 28,
+          type: "Foil Mask",
+          code: "MF008",
+          hand: "",
+          size: "L",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Mesh damaged",
+        },
+        // Masks — Épée
+        {
+          id: 29,
+          type: "Épée Mask",
+          code: "ME001",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 30,
+          type: "Épée Mask",
+          code: "ME002",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 31,
+          type: "Épée Mask",
+          code: "ME003",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 32,
+          type: "Épée Mask",
+          code: "ME004",
+          hand: "",
+          size: "L",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 33,
+          type: "Épée Mask",
+          code: "ME005",
+          hand: "",
+          size: "L",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "Padding worn",
+        },
+        // Masks — Sabre
+        {
+          id: 34,
+          type: "Sabre Mask",
+          code: "MS001",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 35,
+          type: "Sabre Mask",
+          code: "MS002",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 36,
+          type: "Sabre Mask",
+          code: "MS003",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        // Lamés — Foil
+        {
+          id: 37,
+          type: "Foil Lamé",
+          code: "LF001",
+          hand: "",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 38,
+          type: "Foil Lamé",
+          code: "LF002",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 39,
+          type: "Foil Lamé",
+          code: "LF003",
+          hand: "",
+          size: "S",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 40,
+          type: "Foil Lamé",
+          code: "LF004",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 41,
+          type: "Foil Lamé",
+          code: "LF005",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "Conductivity patchy",
+        },
+        {
+          id: 42,
+          type: "Foil Lamé",
+          code: "LF006",
+          hand: "",
+          size: "L",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        // Lamés — Sabre
+        {
+          id: 43,
+          type: "Sabre Lamé",
+          code: "LS001",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 44,
+          type: "Sabre Lamé",
+          code: "LS002",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 45,
+          type: "Sabre Lamé",
+          code: "LS003",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 46,
+          type: "Sabre Lamé",
+          code: "LS004",
+          hand: "",
+          size: "L",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Conductivity failing",
+        },
+        // Clothing — Jacket
+        {
+          id: 47,
+          type: "Jacket",
+          code: "JK001",
+          hand: "",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "Kids",
+        },
+        {
+          id: 48,
+          type: "Jacket",
+          code: "JK002",
+          hand: "",
+          size: "XS",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "Kids",
+        },
+        {
+          id: 49,
+          type: "Jacket",
+          code: "JK003",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 50,
+          type: "Jacket",
+          code: "JK004",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 51,
+          type: "Jacket",
+          code: "JK005",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 52,
+          type: "Jacket",
+          code: "JK006",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 53,
+          type: "Jacket",
+          code: "JK007",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 54,
+          type: "Jacket",
+          code: "JK008",
+          hand: "",
+          size: "L",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 55,
+          type: "Jacket",
+          code: "JK009",
+          hand: "",
+          size: "L",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 56,
+          type: "Jacket",
+          code: "JK010",
+          hand: "",
+          size: "XL",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 57,
+          type: "Jacket",
+          code: "JK011",
+          hand: "",
+          size: "M",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Zip broken",
+        },
+        // Clothing — Plastron
+        {
+          id: 58,
+          type: "Plastron",
+          code: "PT001",
+          hand: "Right",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "Kids",
+        },
+        {
+          id: 59,
+          type: "Plastron",
+          code: "PT002",
+          hand: "Right",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 60,
+          type: "Plastron",
+          code: "PT003",
+          hand: "Right",
+          size: "S",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 61,
+          type: "Plastron",
+          code: "PT004",
+          hand: "Right",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 62,
+          type: "Plastron",
+          code: "PT005",
+          hand: "Right",
+          size: "M",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 63,
+          type: "Plastron",
+          code: "PT006",
+          hand: "Right",
+          size: "L",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 64,
+          type: "Plastron",
+          code: "PT007",
+          hand: "Left",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        // Clothing — Chest Protector
+        {
+          id: 65,
+          type: "Chest Protector",
+          code: "CP001",
+          hand: "",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 66,
+          type: "Chest Protector",
+          code: "CP002",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 67,
+          type: "Chest Protector",
+          code: "CP003",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 68,
+          type: "Chest Protector",
+          code: "CP004",
+          hand: "",
+          size: "L",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        // Clothing — Breeches
+        {
+          id: 69,
+          type: "Breeches",
+          code: "BR001",
+          hand: "",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "Kids",
+        },
+        {
+          id: 70,
+          type: "Breeches",
+          code: "BR002",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 71,
+          type: "Breeches",
+          code: "BR003",
+          hand: "",
+          size: "S",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 72,
+          type: "Breeches",
+          code: "BR004",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 73,
+          type: "Breeches",
+          code: "BR005",
+          hand: "",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 74,
+          type: "Breeches",
+          code: "BR006",
+          hand: "",
+          size: "M",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 75,
+          type: "Breeches",
+          code: "BR007",
+          hand: "",
+          size: "L",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 76,
+          type: "Breeches",
+          code: "BR008",
+          hand: "",
+          size: "XL",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        // Gloves
+        {
+          id: 77,
+          type: "Glove",
+          code: "GL001",
+          hand: "Right",
+          size: "XS",
+          condition: "Good",
+          status: "In Storage",
+          notes: "Kids",
+        },
+        {
+          id: 78,
+          type: "Glove",
+          code: "GL002",
+          hand: "Right",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 79,
+          type: "Glove",
+          code: "GL003",
+          hand: "Right",
+          size: "S",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 80,
+          type: "Glove",
+          code: "GL004",
+          hand: "Right",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 81,
+          type: "Glove",
+          code: "GL005",
+          hand: "Right",
+          size: "M",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 82,
+          type: "Glove",
+          code: "GL006",
+          hand: "Right",
+          size: "L",
+          condition: "Fair",
+          status: "Awaiting Repair",
+          notes: "Stitching loose",
+        },
+        {
+          id: 83,
+          type: "Glove",
+          code: "GL007",
+          hand: "Left",
+          size: "S",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 84,
+          type: "Glove",
+          code: "GL008",
+          hand: "Left",
+          size: "M",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        // Manchette
+        {
+          id: 85,
+          type: "Manchette",
+          code: "MN001",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 86,
+          type: "Manchette",
+          code: "MN002",
+          hand: "Right",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 87,
+          type: "Manchette",
+          code: "MN003",
+          hand: "Right",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 88,
+          type: "Manchette",
+          code: "MN004",
+          hand: "Left",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        // Wires — Foil
+        {
+          id: 89,
+          type: "Foil Wire",
+          code: "FW001",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 90,
+          type: "Foil Wire",
+          code: "FW002",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 91,
+          type: "Foil Wire",
+          code: "FW003",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 92,
+          type: "Foil Wire",
+          code: "FW004",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 93,
+          type: "Foil Wire",
+          code: "FW005",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 94,
+          type: "Foil Wire",
+          code: "FW006",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 95,
+          type: "Foil Wire",
+          code: "FW007",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 96,
+          type: "Foil Wire",
+          code: "FW008",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 97,
+          type: "Foil Wire",
+          code: "FW009",
+          hand: "",
+          size: "",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Prong bent",
+        },
+        {
+          id: 98,
+          type: "Foil Wire",
+          code: "FW010",
+          hand: "",
+          size: "",
+          condition: "Broken",
+          status: "Awaiting Repair",
+          notes: "Internal break",
+        },
+        {
+          id: 99,
+          type: "Foil Wire",
+          code: "FW011",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 100,
+          type: "Foil Wire",
+          code: "FW012",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        // Wires — Épée
+        {
+          id: 101,
+          type: "Épée Wire",
+          code: "EW001",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 102,
+          type: "Épée Wire",
+          code: "EW002",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 103,
+          type: "Épée Wire",
+          code: "EW003",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 104,
+          type: "Épée Wire",
+          code: "EW004",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 105,
+          type: "Épée Wire",
+          code: "EW005",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 106,
+          type: "Épée Wire",
+          code: "EW006",
+          hand: "",
+          size: "",
+          condition: "Poor",
+          status: "Awaiting Repair",
+          notes: "Prong loose",
+        },
+        {
+          id: 107,
+          type: "Épée Wire",
+          code: "EW007",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        // Accessories — Mask Clip
+        {
+          id: 108,
+          type: "Mask Clip",
+          code: "MC001",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 109,
+          type: "Mask Clip",
+          code: "MC002",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 110,
+          type: "Mask Clip",
+          code: "MC003",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 111,
+          type: "Mask Clip",
+          code: "MC004",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "With Member",
+          notes: "",
+        },
+        {
+          id: 112,
+          type: "Mask Clip",
+          code: "MC005",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 113,
+          type: "Mask Clip",
+          code: "MC006",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 114,
+          type: "Mask Clip",
+          code: "MC007",
+          hand: "",
+          size: "",
+          condition: "Poor",
+          status: "In Storage",
+          notes: "Spring weak",
+        },
+        {
+          id: 115,
+          type: "Mask Clip",
+          code: "MC008",
+          hand: "",
+          size: "",
+          condition: "Broken",
+          status: "Awaiting Repair",
+          notes: "Spring broken",
+        },
+        {
+          id: 116,
+          type: "Mask Clip",
+          code: "MC009",
+          hand: "",
+          size: "",
+          condition: "Good",
+          status: "In Storage",
+          notes: "",
+        },
+        {
+          id: 117,
+          type: "Mask Clip",
+          code: "MC010",
+          hand: "",
+          size: "",
+          condition: "Fair",
+          status: "In Storage",
+          notes: "",
+        },
+      ];
+
+      function itemDetail(item) {
+        const t = TYPES[item.type];
+        if (!t) return "—";
+        const parts = [];
+        if (t.size && item.size) parts.push(item.size);
+        if (t.hand && item.hand) parts.push(item.hand);
+        return parts.join(" · ") || "—";
+      }
+
+      function nextCode(typeName, items) {
+        const prefix = TYPES[typeName]?.prefix;
+        if (!prefix) return "";
+        const nums = items
+          .filter((i) => i.code.startsWith(prefix))
+          .map((i) => parseInt(i.code.slice(prefix.length)) || 0);
+        return (
+          prefix +
+          String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0")
+        );
+      }
+
+      function exportCSV(items) {
+        const header = [
+          "Code",
+          "Type",
+          "Size",
+          "Hand",
+          "Condition",
+          "Status",
+          "Notes",
+        ];
+        const rows = items.map((i) => [
+          i.code,
+          i.type,
+          i.size || "",
+          i.hand || "",
+          i.condition,
+          i.status,
+          (i.notes || "").replace(/,/g, ";"),
+        ]);
+        const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+        const a = document.createElement("a");
+        a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+        a.download = "cfa-equipment.csv";
+        a.click();
+      }
+
+      const BLANK = {
+        type: "",
+        code: "",
+        hand: "",
+        size: "",
+        condition: "Good",
+        status: "In Storage",
+        notes: "",
+      };
+      const STORE_KEY = "cfa-equipment-register-v2";
+
+      function Dot({ color }) {
+        return (
+          <span
+            style={{
+              display: "inline-block",
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: color,
+              marginRight: 5,
+              flexShrink: 0,
+              verticalAlign: "middle",
+            }}
+          />
+        );
+      }
+
+      const S = {
+        th: {
+          textAlign: "left",
+          padding: "8px 14px",
+          fontSize: 11,
+          fontWeight: 700,
+          color: "#7A7265",
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+        },
+        td: { padding: "9px 14px", verticalAlign: "middle" },
+        label: {
+          display: "block",
+          fontSize: 11,
+          fontWeight: 700,
+          color: "#4A4033",
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          marginBottom: 6,
+        },
+        input: {
+          width: "100%",
+          border: "1px solid #D5CFC5",
+          borderRadius: 2,
+          padding: "8px 10px",
+          fontSize: 13,
+          color: "#1A1A2E",
+          background: "white",
+        },
+        btnGold: {
+          background: "#C49A1C",
+          border: "none",
+          color: "white",
+          padding: "7px 18px",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          borderRadius: 2,
+        },
+        btnOut: {
+          background: "none",
+          border: "1px solid #C5BFB5",
+          color: "#5A5248",
+          padding: "7px 14px",
+          cursor: "pointer",
+          fontSize: 13,
+          borderRadius: 2,
+        },
+        btnGh: {
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+          padding: "2px 0",
+        },
+      };
+
+      function App() {
+        const [items, setItems] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [expanded, setExpanded] = useState(new Set());
+        const [modal, setModal] = useState(false);
+        const [editing, setEditing] = useState(null);
+        const [form, setForm] = useState(BLANK);
+        const [formErr, setFormErr] = useState("");
+        const [delTarget, setDelTarget] = useState(null);
+        const [filters, setFilters] = useState({
+          q: "",
+          status: "",
+          condition: "",
+        });
+
+        useEffect(() => {
+          try {
+            const s = localStorage.getItem(STORE_KEY);
+            setItems(s ? JSON.parse(s) : SEED);
+            if (!s) localStorage.setItem(STORE_KEY, JSON.stringify(SEED));
+          } catch {
+            setItems(SEED);
+          }
+          setLoading(false);
+        }, []);
+
+        function persist(next) {
+          setItems(next);
+          try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(next));
+          } catch {}
+        }
+
+        const anyFilter = !!(filters.q || filters.status || filters.condition);
+
+        const filteredItems = useMemo(() => {
+          if (!items) return [];
+          return items.filter((i) => {
+            const q = filters.q.toLowerCase();
+            if (
+              q &&
+              !i.code.toLowerCase().includes(q) &&
+              !i.type.toLowerCase().includes(q) &&
+              !itemDetail(i).toLowerCase().includes(q) &&
+              !(i.notes || "").toLowerCase().includes(q)
+            )
+              return false;
+            if (filters.status && i.status !== filters.status) return false;
+            if (filters.condition && i.condition !== filters.condition)
+              return false;
+            return true;
+          });
+        }, [items, filters]);
+
+        const activeTypes = useMemo(
+          () =>
+            TYPE_ORDER.filter((n) => (items || []).some((i) => i.type === n)),
+          [items],
+        );
+        const allExpanded =
+          !anyFilter &&
+          activeTypes.length > 0 &&
+          activeTypes.every((n) => expanded.has(n));
+
+        const visibleCategories = useMemo(
+          () =>
+            CATEGORIES.map((cat) => ({
+              ...cat,
+              types: cat.types.filter((t) => {
+                const d = anyFilter
+                  ? filteredItems.filter((i) => i.type === t)
+                  : (items || []).filter((i) => i.type === t);
+                return d.length > 0;
+              }),
+            })).filter((cat) => cat.types.length > 0),
+          [items, filteredItems, anyFilter],
+        );
+
+        const totals = useMemo(
+          () => ({
+            all: (items || []).length,
+            storage: (items || []).filter((i) => i.status === "In Storage")
+              .length,
+            member: (items || []).filter((i) => i.status === "With Member")
+              .length,
+            repair: (items || []).filter((i) => i.status === "Awaiting Repair")
+              .length,
+          }),
+          [items],
+        );
+
+        const tinfo = form.type ? TYPES[form.type] : null;
+
+        function openAdd() {
+          setEditing(null);
+          setForm(BLANK);
+          setFormErr("");
+          setModal(true);
+        }
+        function openEdit(it) {
+          setEditing(it);
+          setForm({ ...it });
+          setFormErr("");
+          setModal(true);
+        }
+        function closeModal() {
+          setModal(false);
+          setEditing(null);
+        }
+
+        function changeType(type) {
+          setForm((f) => ({
+            ...BLANK,
+            type,
+            code: type ? nextCode(type, items) : "",
+          }));
+          setFormErr("");
+        }
+
+        function save() {
+          if (!form.type || !form.code.trim()) {
+            setFormErr("Type and code are required.");
+            return;
+          }
+          const t = TYPES[form.type];
+          if (t.size && !form.size) {
+            setFormErr("Select a size.");
+            return;
+          }
+          if (t.hand && !form.hand) {
+            setFormErr("Select handedness.");
+            return;
+          }
+          const code = form.code.trim().toUpperCase();
+          if (items.some((i) => i.code === code && i.id !== editing?.id)) {
+            setFormErr(`Code "${code}" is already in use.`);
+            return;
+          }
+          const item = { ...form, code, id: editing?.id ?? Date.now() };
+          persist(
+            editing
+              ? items.map((i) => (i.id === editing.id ? item : i))
+              : [...items, item],
+          );
+          closeModal();
+        }
+
+        function del(id) {
+          persist(items.filter((i) => i.id !== id));
+          setDelTarget(null);
+        }
+
+        if (loading)
+          return (
+            <div style={{ padding: "2rem", color: "#888", fontSize: 14 }}>
+              Loading…
+            </div>
+          );
+
+        return (
+          <div style={{ minHeight: "100vh" }}>
+            {/* HEADER */}
+            <header
+              style={{ background: "#0B1F3A", padding: "16px 24px 14px" }}
+            >
+              <div style={{ maxWidth: 980, margin: "0 auto" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        letterSpacing: "0.2em",
+                        color: "#C49A1C",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Cape Fencing Academy
+                    </div>
+                    <h1
+                      style={{
+                        margin: 0,
+                        fontSize: 21,
+                        fontWeight: 700,
+                        color: "white",
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      Equipment Register
+                    </h1>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      paddingTop: 2,
+                    }}
+                  >
+                    <button
+                      onClick={() => exportCSV(items)}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        color: "rgba(255,255,255,0.65)",
+                        padding: "6px 14px",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        borderRadius: 2,
+                      }}
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      onClick={openAdd}
+                      style={{
+                        background: "#C49A1C",
+                        border: "none",
+                        color: "white",
+                        padding: "7px 16px",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        borderRadius: 2,
+                      }}
+                    >
+                      + Add item
+                    </button>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 20,
+                    marginTop: 12,
+                    fontSize: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span style={{ color: "rgba(255,255,255,0.4)" }}>
+                    {totals.all} items
+                  </span>
+                  {[
+                    ["In Storage", totals.storage, "#4ADE80"],
+                    ["With Member", totals.member, "#FCD34D"],
+                    ["Awaiting Repair", totals.repair, "#F87171"],
+                  ].map(
+                    ([l, n, c]) =>
+                      n > 0 && (
+                        <span
+                          key={l}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            color: c,
+                          }}
+                        >
+                          <Dot color={c} />
+                          {n} {l}
+                        </span>
+                      ),
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {/* MAIN */}
+            <main
+              style={{
+                maxWidth: 980,
+                margin: "0 auto",
+                padding: "20px 24px 48px",
+              }}
+            >
+              {/* Controls */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginBottom: 16,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Search code, type, notes…"
+                  value={filters.q}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, q: e.target.value }))
+                  }
+                  style={{ ...S.input, flex: "1 1 200px", padding: "7px 11px" }}
+                />
+                {[
+                  ["status", STATUSES, "All statuses"],
+                  ["condition", CONDITIONS, "All conditions"],
+                ].map(([key, opts, ph]) => (
+                  <select
+                    key={key}
+                    value={filters[key]}
+                    onChange={(e) =>
+                      setFilters((f) => ({ ...f, [key]: e.target.value }))
+                    }
+                    style={{
+                      ...S.input,
+                      width: "auto",
+                      padding: "7px 10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="">{ph}</option>
+                    {opts.map((o) => (
+                      <option key={o}>{o}</option>
+                    ))}
+                  </select>
+                ))}
+                {anyFilter && (
+                  <button
+                    onClick={() =>
+                      setFilters({ q: "", status: "", condition: "" })
+                    }
+                    style={{
+                      ...S.btnGh,
+                      color: "#C49A1C",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+                {!anyFilter && activeTypes.length > 0 && (
+                  <button
+                    onClick={
+                      allExpanded
+                        ? () => setExpanded(new Set())
+                        : () => setExpanded(new Set(activeTypes))
+                    }
+                    style={{ ...S.btnGh, color: "#7A7265", marginLeft: "auto" }}
+                  >
+                    {allExpanded ? "Collapse all" : "Expand all"}
+                  </button>
+                )}
+              </div>
+
+              {/* Categories */}
+              {visibleCategories.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "4rem",
+                    color: "#9CA3AF",
+                    fontSize: 14,
+                  }}
+                >
+                  {(items || []).length === 0
+                    ? "No equipment logged yet. Add your first item above."
+                    : "No items match the current filters."}
+                </div>
+              ) : (
+                visibleCategories.map((cat, catIdx) => (
+                  <div key={cat.label}>
+                    {/* Category label */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginTop: catIdx === 0 ? 0 : 20,
+                        marginBottom: 6,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: "#C49A1C",
+                          letterSpacing: "0.18em",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {cat.label.toUpperCase()}
+                      </span>
+                      <div
+                        style={{ flex: 1, height: 1, background: "#DDD8D0" }}
+                      />
+                    </div>
+
+                    {/* Type groups within category */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 3,
+                      }}
+                    >
+                      {cat.types.map((typeName) => {
+                        const allOfType = (items || []).filter(
+                          (i) => i.type === typeName,
+                        );
+                        const displayItems = anyFilter
+                          ? filteredItems.filter((i) => i.type === typeName)
+                          : allOfType;
+                        const isExpanded = anyFilter
+                          ? true
+                          : expanded.has(typeName);
+                        const byS = {
+                          s: displayItems.filter(
+                            (i) => i.status === "In Storage",
+                          ).length,
+                          m: displayItems.filter(
+                            (i) => i.status === "With Member",
+                          ).length,
+                          r: displayItems.filter(
+                            (i) => i.status === "Awaiting Repair",
+                          ).length,
+                        };
+                        return (
+                          <div
+                            key={typeName}
+                            style={{
+                              background: "white",
+                              border: "1px solid #E5E0D8",
+                              borderLeft: "3px solid #C49A1C",
+                            }}
+                          >
+                            {/* Group header */}
+                            <div
+                              className="group-header"
+                              onClick={() =>
+                                !anyFilter &&
+                                setExpanded((prev) => {
+                                  const n = new Set(prev);
+                                  n.has(typeName)
+                                    ? n.delete(typeName)
+                                    : n.add(typeName);
+                                  return n;
+                                })
+                              }
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "10px 14px",
+                                cursor: anyFilter ? "default" : "pointer",
+                                userSelect: "none",
+                                gap: 10,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {!anyFilter && (
+                                <span
+                                  style={{
+                                    color: "#C49A1C",
+                                    fontSize: 10,
+                                    width: 12,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {isExpanded ? "▼" : "▶"}
+                                </span>
+                              )}
+                              <span
+                                style={{
+                                  color: "#0B1F3A",
+                                  fontWeight: 700,
+                                  fontSize: 13,
+                                  letterSpacing: "0.07em",
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {typeName}
+                              </span>
+                              <span style={{ color: "#A89880", fontSize: 12 }}>
+                                ({displayItems.length}
+                                {anyFilter &&
+                                displayItems.length !== allOfType.length
+                                  ? ` of ${allOfType.length}`
+                                  : ""}
+                                )
+                              </span>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: 14,
+                                  marginLeft: 2,
+                                }}
+                              >
+                                {[
+                                  [byS.s, "In Storage", "#15803D"],
+                                  [byS.m, "With Member", "#B45309"],
+                                  [byS.r, "Awaiting Repair", "#B91C1C"],
+                                ].map(
+                                  ([n, l, c]) =>
+                                    n > 0 && (
+                                      <span
+                                        key={l}
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          fontSize: 12,
+                                          color: c,
+                                        }}
+                                      >
+                                        <Dot color={c} />
+                                        {n} {l}
+                                      </span>
+                                    ),
+                                )}
+                              </div>
+                            </div>
+                            {/* Item table */}
+                            {isExpanded && (
+                              <div
+                                style={{
+                                  borderTop: "1px solid #EAE6DF",
+                                  overflowX: "auto",
+                                }}
+                              >
+                                <table
+                                  style={{
+                                    width: "100%",
+                                    borderCollapse: "collapse",
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  <thead>
+                                    <tr style={{ background: "#FAF8F4" }}>
+                                      <th style={S.th}>Code</th>
+                                      <th style={S.th}>Details</th>
+                                      <th style={S.th}>Condition</th>
+                                      <th style={S.th}>Status</th>
+                                      <th style={S.th}>Notes</th>
+                                      <th
+                                        style={{ ...S.th, textAlign: "right" }}
+                                      ></th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {displayItems.map((item) => (
+                                      <tr key={item.id} className="ledger-row">
+                                        <td
+                                          style={{
+                                            ...S.td,
+                                            fontFamily:
+                                              "Consolas,Monaco,monospace",
+                                            fontWeight: 700,
+                                            color: "#0B1F3A",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          {item.code}
+                                        </td>
+                                        <td
+                                          style={{ ...S.td, color: "#5A5248" }}
+                                        >
+                                          {itemDetail(item)}
+                                        </td>
+                                        <td
+                                          style={{
+                                            ...S.td,
+                                            color:
+                                              COND_COLOR[item.condition] ||
+                                              "#5A5248",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          {item.condition}
+                                        </td>
+                                        <td
+                                          style={{
+                                            ...S.td,
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              color:
+                                                STATUS_COLOR[item.status] ||
+                                                "#5A5248",
+                                            }}
+                                          >
+                                            <Dot
+                                              color={STATUS_COLOR[item.status]}
+                                            />
+                                            {item.status}
+                                          </span>
+                                        </td>
+                                        <td
+                                          style={{
+                                            ...S.td,
+                                            color: "#A89880",
+                                            maxWidth: 200,
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          {item.notes || "—"}
+                                        </td>
+                                        <td
+                                          style={{
+                                            ...S.td,
+                                            textAlign: "right",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          <button
+                                            onClick={() => openEdit(item)}
+                                            style={{
+                                              ...S.btnGh,
+                                              color: "#1D4ED8",
+                                              marginRight: 12,
+                                            }}
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={() => setDelTarget(item)}
+                                            style={{
+                                              ...S.btnGh,
+                                              color: "#B91C1C",
+                                            }}
+                                          >
+                                            Delete
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {anyFilter && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    fontSize: 12,
+                    color: "#9CA3AF",
+                    textAlign: "right",
+                  }}
+                >
+                  {filteredItems.length} of {(items || []).length} items match
+                </div>
+              )}
+            </main>
+
+            {/* ADD / EDIT MODAL */}
+            {modal && (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(7,14,27,0.65)",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "center",
+                  paddingTop: 56,
+                  zIndex: 50,
+                }}
+                onClick={(e) => e.target === e.currentTarget && closeModal()}
+              >
+                <div
+                  style={{
+                    background: "white",
+                    width: "100%",
+                    maxWidth: 440,
+                    maxHeight: "88vh",
+                    overflow: "auto",
+                    borderRadius: 3,
+                    boxShadow: "0 24px 60px rgba(7,14,27,0.4)",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "#0B1F3A",
+                      padding: "15px 20px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 1,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: 14,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {editing ? `Edit ${editing.code}` : "Add equipment item"}
+                    </span>
+                    <button
+                      onClick={closeModal}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "rgba(255,255,255,0.5)",
+                        fontSize: 22,
+                        cursor: "pointer",
+                        lineHeight: 1,
+                        padding: "0 2px",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div
+                    style={{
+                      padding: "20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 16,
+                    }}
+                  >
+                    <div>
+                      <label style={S.label}>Equipment type</label>
+                      <select
+                        value={form.type}
+                        onChange={(e) => !editing && changeType(e.target.value)}
+                        disabled={!!editing}
+                        style={{
+                          ...S.input,
+                          opacity: editing ? 0.65 : 1,
+                          cursor: editing ? "default" : "pointer",
+                        }}
+                      >
+                        <option value="">Select type…</option>
+                        {TYPE_ORDER.map((t) => (
+                          <option key={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {form.type && (
+                      <>
+                        <div>
+                          <label style={S.label}>Item code</label>
+                          <input
+                            type="text"
+                            value={form.code}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                code: e.target.value.toUpperCase(),
+                              }))
+                            }
+                            style={{
+                              ...S.input,
+                              fontFamily: "Consolas,Monaco,monospace",
+                            }}
+                            placeholder="e.g. WF001"
+                          />
+                          <p
+                            style={{
+                              margin: "5px 0 0",
+                              fontSize: 11,
+                              color: "#A89880",
+                            }}
+                          >
+                            Auto-generated — override if needed.
+                          </p>
+                        </div>
+                        {tinfo?.size && (
+                          <div>
+                            <label style={S.label}>Size</label>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {SIZES.map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() =>
+                                    setForm((f) => ({ ...f, size: s }))
+                                  }
+                                  style={{
+                                    flex: 1,
+                                    padding: "7px 0",
+                                    cursor: "pointer",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    border:
+                                      form.size === s
+                                        ? "2px solid #C49A1C"
+                                        : "1px solid #D5CFC5",
+                                    background:
+                                      form.size === s ? "#C49A1C" : "white",
+                                    color:
+                                      form.size === s ? "white" : "#5A5248",
+                                    borderRadius: 2,
+                                  }}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {tinfo?.hand && (
+                          <div>
+                            <label style={S.label}>Handedness</label>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              {["Right", "Left"].map((h) => (
+                                <button
+                                  key={h}
+                                  onClick={() =>
+                                    setForm((f) => ({ ...f, hand: h }))
+                                  }
+                                  style={{
+                                    flex: 1,
+                                    padding: "9px 0",
+                                    cursor: "pointer",
+                                    fontSize: 13,
+                                    border:
+                                      form.hand === h
+                                        ? "2px solid #C49A1C"
+                                        : "1px solid #D5CFC5",
+                                    background:
+                                      form.hand === h ? "#C49A1C" : "white",
+                                    color:
+                                      form.hand === h ? "white" : "#5A5248",
+                                    borderRadius: 2,
+                                  }}
+                                >
+                                  {h}-handed
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: 12,
+                          }}
+                        >
+                          {[
+                            ["Condition", "condition", CONDITIONS],
+                            ["Status", "status", STATUSES],
+                          ].map(([lbl, key, opts]) => (
+                            <div key={key}>
+                              <label style={S.label}>{lbl}</label>
+                              <select
+                                value={form[key]}
+                                onChange={(e) =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    [key]: e.target.value,
+                                  }))
+                                }
+                                style={{ ...S.input, cursor: "pointer" }}
+                              >
+                                {opts.map((o) => (
+                                  <option key={o}>{o}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <label style={S.label}>
+                            Notes{" "}
+                            <span style={{ fontWeight: 400, color: "#A89880" }}>
+                              (optional)
+                            </span>
+                          </label>
+                          <textarea
+                            value={form.notes}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, notes: e.target.value }))
+                            }
+                            rows={2}
+                            placeholder="Any notes about this item…"
+                            style={{
+                              ...S.input,
+                              resize: "vertical",
+                              minHeight: 56,
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                    {formErr && (
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: 12,
+                          color: "#B91C1C",
+                          background: "#FEF2F2",
+                          border: "1px solid #FECACA",
+                          borderRadius: 2,
+                          padding: "8px 12px",
+                        }}
+                      >
+                        {formErr}
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px 20px",
+                      borderTop: "1px solid #EAE6DF",
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 8,
+                      position: "sticky",
+                      bottom: 0,
+                      background: "white",
+                    }}
+                  >
+                    <button onClick={closeModal} style={S.btnOut}>
+                      Cancel
+                    </button>
+                    <button
+                      onClick={save}
+                      disabled={!form.type}
+                      style={{
+                        ...S.btnGold,
+                        opacity: form.type ? 1 : 0.45,
+                        cursor: form.type ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      {editing ? "Save changes" : "Add item"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* DELETE CONFIRM */}
+            {delTarget && (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(7,14,27,0.65)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 50,
+                  padding: "0 16px",
+                }}
+              >
+                <div
+                  style={{
+                    background: "white",
+                    width: "100%",
+                    maxWidth: 380,
+                    borderRadius: 3,
+                    padding: 24,
+                    boxShadow: "0 24px 60px rgba(7,14,27,0.4)",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: "0 0 6px",
+                      fontWeight: 700,
+                      fontSize: 16,
+                      color: "#0B1F3A",
+                    }}
+                  >
+                    Delete {delTarget.code}?
+                  </p>
+                  <p
+                    style={{
+                      margin: "0 0 20px",
+                      fontSize: 13,
+                      color: "#7A7265",
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    Permanently removes this{" "}
+                    <strong style={{ color: "#0B1F3A" }}>
+                      {delTarget.type}
+                    </strong>
+                    {itemDetail(delTarget) !== "—"
+                      ? ` (${itemDetail(delTarget)})`
+                      : ""}{" "}
+                    from the register.
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 8,
+                    }}
+                  >
+                    <button onClick={() => setDelTarget(null)} style={S.btnOut}>
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => del(delTarget.id)}
+                      style={{ ...S.btnGold, background: "#B91C1C" }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

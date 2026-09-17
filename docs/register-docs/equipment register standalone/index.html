@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CFA Equipment Register</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F4F2EE; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1A1A2E; }
+    .group-header:hover { background: #F0ECE3; }
+    .ledger-row { border-bottom: 1px solid #EAE6DF; }
+    .ledger-row:hover { background: #F7F4EE; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #C49A1C !important; box-shadow: 0 0 0 3px rgba(196,154,28,0.18); }
+  </style>
+</head>
+<body>
+  <div id="root"><p style="padding:2rem;color:#888;font-size:14px">Loading register…</p></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- All app logic lives in static/app.js (Babel-transpiled in the browser,
+       same as the original single-file version) -->
+  <script type="text/babel" src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
