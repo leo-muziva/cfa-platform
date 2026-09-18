@@ -1,6 +1,6 @@
 begin;
 
-select plan(37);
+select plan(39);
 
 create temporary table workflow_test_baseline as
 select
@@ -116,33 +116,35 @@ select is((select count(*)::integer from public.membership_application_admin_not
   'the applicant cannot retrieve administrator private notes through RLS');
 reset role;
 
-insert into public.lesson_slots (
-  id, starts_at, ends_at, coach_id, capacity, price, is_open, access_rule, created_by
-) values (
-  '90000000-0000-4000-8000-000000000002', now() + interval '1 hour',
-  now() + interval '2 hours', '22222222-2222-4222-8222-222222222222',
-  4, 300, true, 'guest_allowed', '11111111-1111-4111-8111-111111111111'
-);
+-- Booking goes through create_lesson_booking_v2: it creates its own lesson slot
+-- from the coach's availability, so there is no slot to insert by hand. v2 also
+-- refuses an account that has not completed its profile, which a real member
+-- would have done before reaching the booking page.
+update public.profiles set profile_completed_at = now()
+where id = '90000000-0000-4000-8000-000000000001';
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '90000000-0000-4000-8000-000000000001', true);
-select lives_ok($$select public.create_lesson_booking(
-  '90000000-0000-4000-8000-000000000002',
-  '90000000-0000-4000-8000-000000000001', 'pay_later')$$,
-  'the member can book a lesson with pay later');
+select lives_ok($$select public.create_lesson_booking_v2(
+  '22222222-2222-4222-8222-222222222222',
+  (select starts_at from public.list_available_lesson_times(
+     '22222222-2222-4222-8222-222222222222', 'foil', current_date, current_date + 7) limit 1),
+  array['90000000-0000-4000-8000-000000000001']::uuid[],
+  'foil')$$,
+  'the member can book a lesson');
 reset role;
 
 select is((select count(*)::integer from public.bookings
-  where lesson_slot_id = '90000000-0000-4000-8000-000000000002'
+  where booking_model = 'lesson_v2'
     and fencer_id = '90000000-0000-4000-8000-000000000001'), 1,
   'pay later creates exactly one booking');
 select is((select payment_option from public.bookings
-  where lesson_slot_id = '90000000-0000-4000-8000-000000000002'
+  where booking_model = 'lesson_v2'
     and fencer_id = '90000000-0000-4000-8000-000000000001'), 'pay_later',
-  'the booking retains the pay-later choice');
+  'v2 bookings are always invoiced rather than paid up front');
 select is((select count(*)::integer from public.charges c
   join public.bookings b on b.id = c.booking_id
-  where b.lesson_slot_id = '90000000-0000-4000-8000-000000000002'
+  where b.booking_model = 'lesson_v2'
     and b.fencer_id = '90000000-0000-4000-8000-000000000001'
     and c.type = 'lesson' and c.amount = 300), 1,
   'pay later creates exactly one lesson charge');
@@ -175,25 +177,37 @@ select is((select count(*)::integer from public.invoices
 select is((select count(*)::integer from public.invoice_lines il
   join public.invoices i on i.id = il.invoice_id
   where i.payer_id = '90000000-0000-4000-8000-000000000001'
-    and i.period = date_trunc('month', current_date)::date), 3,
-  'the invoice contains membership, joining-fee, and lesson lines');
+    and i.period = date_trunc('month', current_date)::date), 2,
+  'the invoice contains the membership and joining-fee lines');
 select is((select count(*)::integer from public.invoice_lines il
   join public.invoices i on i.id = il.invoice_id
   where i.payer_id = '90000000-0000-4000-8000-000000000001'
-    and il.participant_id = '90000000-0000-4000-8000-000000000001'), 3,
+    and il.participant_id = '90000000-0000-4000-8000-000000000001'), 2,
   'every invoice line identifies the charged participant');
 select is((select total from public.invoices
   where payer_id = '90000000-0000-4000-8000-000000000001'
     and period = date_trunc('month', current_date)::date),
-  (select price + joining_fee + 300 from public.membership_types
+  (select price + joining_fee from public.membership_types
    where code = 'month_to_month'),
   'the invoice total equals all eligible payer charges');
 select is((select sum(il.amount) from public.invoice_lines il
   join public.invoices i on i.id = il.invoice_id
   where i.payer_id = '90000000-0000-4000-8000-000000000001'),
-  (select price + joining_fee + 300 from public.membership_types
+  (select price + joining_fee from public.membership_types
    where code = 'month_to_month'),
   'invoice line amounts reconcile to the expected total');
+
+-- The lesson is booked but has not happened, so its charge is still
+-- provisional and must stay off the invoice: cancelling inside the free window
+-- would void it. This is the v1/v2 difference the old test papered over.
+select is((select lifecycle_state from public.charges
+  where payer_id = '90000000-0000-4000-8000-000000000001' and type = 'lesson'),
+  'provisional',
+  'the lesson charge is provisional until the lesson is honoured');
+select is((select count(*)::integer from public.invoice_lines il
+  join public.charges c on c.id = il.charge_id
+  where c.type = 'lesson'), 0,
+  'a provisional lesson charge is not invoiced');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
@@ -207,12 +221,12 @@ select is((select count(*)::integer from public.invoices
   'rerunning invoicing does not duplicate the invoice');
 select is((select count(*)::integer from public.invoice_lines il
   join public.invoices i on i.id = il.invoice_id
-  where i.payer_id = '90000000-0000-4000-8000-000000000001'), 3,
+  where i.payer_id = '90000000-0000-4000-8000-000000000001'), 2,
   'rerunning invoicing does not duplicate invoice lines');
 select is((select total from public.invoices
   where payer_id = '90000000-0000-4000-8000-000000000001'
     and period = date_trunc('month', current_date)::date),
-  (select price + joining_fee + 300 from public.membership_types
+  (select price + joining_fee from public.membership_types
    where code = 'month_to_month'),
   'rerunning invoicing preserves the reconciled total');
 
