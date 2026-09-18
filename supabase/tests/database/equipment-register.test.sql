@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(14);
 
 select has_table('public','equipment_types','equipment types table exists');
 select has_table('public','equipment_items','equipment items table exists');
@@ -10,6 +10,16 @@ select is((select count(*)::integer from public.equipment_items i
   join public.equipment_types t on t.id=i.type_id
   where t.code_prefix<>left(i.code,2)),0,
   'every item hangs off the type its code prefix belongs to');
+
+-- The demo seed names a holder for everything that is out. Without this the
+-- register quietly drifts back to every row reading "not recorded", which looks
+-- identical to the feature not working.
+select is((select count(*)::integer from public.equipment_items
+  where status='with_member' and assigned_to is null), 0,
+  'every item that is out has a holder recorded');
+select ok((select count(distinct assigned_to) from public.equipment_items
+  where assigned_to is not null) > 1,
+  'holders are spread across more than one person');
 
 -- A fencer with no staff flag: the register should not exist as far as they know.
 set local role authenticated;

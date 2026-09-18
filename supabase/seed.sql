@@ -348,3 +348,15 @@ insert into public.charges(id,fencer_id,payer_id,booking_id,type,amount,status,p
   ('ffffffff-ffff-4fff-8fff-fffffffffff3','33333333-3333-4333-8333-333333333333','44444444-4444-4444-8444-444444444444',
     'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2','lesson',300,'unpaid',date_trunc('month',current_date)::date,'Individual lesson','provisional')
 on conflict(id) do update set amount=excluded.amount,lifecycle_state='provisional';
+
+-- Equipment holders for the demo register. 0012 seeds the 117 items with no
+-- holder on purpose (the club's paper records genuinely did not name one), so
+-- assign them here instead: demo-only, rebuilt by db reset, and it keeps the
+-- migration honest about what the real data looked like.
+-- Named exceptions first, then everything still out goes to the same fencer.
+update public.equipment_items set assigned_to='44444444-4444-4444-8444-444444444444'
+where code in ('WF009','LS002');
+update public.equipment_items set assigned_to='22222222-2222-4222-8222-222222222222'
+where code in ('MC003');
+update public.equipment_items set assigned_to='33333333-3333-4333-8333-333333333333'
+where status='with_member' and assigned_to is null;

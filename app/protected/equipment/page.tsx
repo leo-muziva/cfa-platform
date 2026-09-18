@@ -26,9 +26,13 @@ function StatusCell({ item, holders }: { item: EquipmentItem; holders: Record<st
   const holder = item.assigned_to ? holders[item.assigned_to] : null
   return (
     <span className="inline-flex items-center gap-2">
-      <Badge variant={STATUS_VARIANT[item.status]}>{STATUS_LABELS[item.status]}</Badge>
-      {item.status === 'with_member' && (
-        <span className="text-xs text-muted-foreground">{holder ?? 'not recorded'}</span>
+      <Badge variant={STATUS_VARIANT[item.status]}>
+        {holder ? `${STATUS_LABELS[item.status]}: ${holder}` : STATUS_LABELS[item.status]}
+      </Badge>
+      {/* Left deliberately plain: an item out with nobody named is a gap in the
+          register, and should look like one rather than like a holder. */}
+      {item.status === 'with_member' && !holder && (
+        <span className="text-xs text-muted-foreground">not recorded</span>
       )}
     </span>
   )
