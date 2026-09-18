@@ -66,6 +66,23 @@ describe('matchesEquipmentFilter', () => {
     expect(matchesEquipmentFilter(mask, { search: 'Épée' })).toBe(true)
   })
 
+  it('finds an item by who has it, without matching an unrelated holder', () => {
+    const holders = { 'member-1': 'Fiona Fencer', 'member-2': 'Réne Dupont' }
+    const out = item('WF004', foil, { status: 'with_member', assigned_to: 'member-1' })
+    expect(matchesEquipmentFilter(out, { search: 'fiona' }, holders)).toBe(true)
+    expect(matchesEquipmentFilter(out, { search: 'rene' }, holders)).toBe(false)
+    // Accent folding applies to names too.
+    expect(matchesEquipmentFilter(
+      item('WF005', foil, { status: 'with_member', assigned_to: 'member-2' }),
+      { search: 'rene' }, holders,
+    )).toBe(true)
+  })
+
+  it('does not match a holder name when nobody is recorded', () => {
+    const out = item('WF006', foil, { status: 'with_member', assigned_to: null })
+    expect(matchesEquipmentFilter(out, { search: 'fiona' }, { 'member-1': 'Fiona Fencer' })).toBe(false)
+  })
+
   it('combines status and condition with the search term', () => {
     expect(matchesEquipmentFilter(broken, { status: 'awaiting_repair', condition: 'poor' })).toBe(true)
     expect(matchesEquipmentFilter(broken, { status: 'in_storage' })).toBe(false)

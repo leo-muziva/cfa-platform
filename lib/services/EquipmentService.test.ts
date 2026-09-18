@@ -154,3 +154,35 @@ describe('getEquipmentRegister', () => {
     expect('items' in result && result.items.length).toBe(1)
   })
 })
+
+describe('holder names', () => {
+  beforeEach(asCoach)
+
+  it('returns a holder lookup so the page can name who has an item', async () => {
+    const result = await getEquipmentRegister()
+    expect('holders' in result && result.holders).toEqual({ [MEMBER_ID]: 'Fiona Fencer' })
+  })
+
+  it('searches on the holder name, not just the item fields', async () => {
+    repository.listEquipmentItems.mockResolvedValue([
+      item('WF001'),
+      item('WF002', { status: 'with_member', assigned_to: MEMBER_ID }),
+    ])
+    const result = await getEquipmentRegister({ search: 'fiona' })
+    expect('items' in result && result.items.map((i) => i.code)).toEqual(['WF002'])
+  })
+
+  it('records the holder a coach picked', async () => {
+    await createEquipmentItem(validForm({ status: 'with_member', assigned_to: MEMBER_ID }))
+    expect(repository.insertEquipmentItem).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'with_member', assigned_to: MEMBER_ID }),
+    )
+  })
+
+  it('drops the holder when an item comes back into storage', async () => {
+    await editEquipmentItem('item-WF001', validForm({ status: 'in_storage', assigned_to: MEMBER_ID }))
+    expect(repository.updateEquipmentItem).toHaveBeenCalledWith(
+      'item-WF001', expect.objectContaining({ assigned_to: null }),
+    )
+  })
+})
