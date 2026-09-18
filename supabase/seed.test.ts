@@ -10,21 +10,28 @@ const hostedSeed = readFileSync(
 describe("CFA test account seed identities", () => {
   it("seeds independent admin and coach staff identities locally", () => {
     expect(localSeed).toMatch(
-      /role\s*=\s*'admin'[\s\S]*?is_staff\s*=\s*true,[\s\S]*?staff_type\s*=\s*'admin'/,
+      /is_staff\s*=\s*true,[\s\S]*?staff_type\s*=\s*'admin',[\s\S]*?full_name\s*=\s*'Alice Admin'/,
     );
     expect(localSeed).toMatch(
-      /role\s*=\s*'coach'[\s\S]*?is_staff\s*=\s*true,[\s\S]*?staff_type\s*=\s*'coach'/,
+      /is_staff\s*=\s*true,[\s\S]*?staff_type\s*=\s*'coach',[\s\S]*?full_name\s*=\s*'Dr. Misha Galukhin'/,
     );
   });
 
   it("keeps the ordinary fencer and guardian accounts non-staff", () => {
-    for (const role of ["fencer", "guardian"]) {
+    for (const name of ["Fiona Fencer", "George Guardian"]) {
       expect(localSeed).toMatch(
         new RegExp(
-          `role\\s*=\\s*'${role}'[\\s\\S]*?is_staff\\s*=\\s*false,[\\s\\S]*?staff_type\\s*=\\s*null`,
+          `is_staff\\s*=\\s*false,[\\s\\S]*?staff_type\\s*=\\s*null,[\\s\\S]*?full_name\\s*=\\s*'${name}'`,
         ),
       );
     }
+  });
+
+  it("does not set the retired profiles.role column", () => {
+    // 0014 drops the column, so writing it here would break the seed outright.
+    // Reintroducing it would also bring back the two-sources-of-truth problem
+    // where staff_type said coach and role still said fencer.
+    expect(localSeed).not.toMatch(/\brole\s*=\s*'(admin|coach|fencer|guardian)'/);
   });
 
   it("creates a payer and dependent test household", () => {

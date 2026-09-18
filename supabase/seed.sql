@@ -89,11 +89,10 @@ insert into auth.users (
 ) values
   ('55555555-5555-4555-8555-555555555555', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'jacques@cfa.test', crypt('Test1234!', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Jacques Viljoen"}', false, '', '', '', '', '', '', '', ''),
   ('66666666-6666-4666-8666-666666666666', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'jeremy@cfa.test', crypt('Test1234!', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Jeremy Saner"}', false, '', '', '', '', '', '', '', '');
--- [HOSTED + LOCAL] Set roles, names, and phone numbers on the auto-created profiles.
+-- [HOSTED + LOCAL] Set staff type, names, and phone numbers on the auto-created profiles.
 -- These UUIDs must match the auth.users IDs above (local) or the real UUIDs from
 -- Supabase Dashboard (hosted).
 update public.profiles set
-  role              = 'admin',
   membership_status = 'guest',
   is_staff          = true,
   staff_type        = 'admin',
@@ -103,7 +102,6 @@ update public.profiles set
 where id = '11111111-1111-4111-8111-111111111111';
 
 update public.profiles set
-  role              = 'coach',
   membership_status = 'guest',
   is_staff          = true,
   staff_type        = 'coach',
@@ -113,16 +111,15 @@ update public.profiles set
 where id = '22222222-2222-4222-8222-222222222222';
 
 update public.profiles set
-  role = 'coach', membership_status = 'guest', is_staff = true, staff_type = 'coach',
+  membership_status = 'guest', is_staff = true, staff_type = 'coach',
   full_name = 'Jacques Viljoen', phone = '+27 21 000 0005', is_active = true
 where id = '55555555-5555-4555-8555-555555555555';
 
 update public.profiles set
-  role = 'coach', membership_status = 'guest', is_staff = true, staff_type = 'coach',
+  membership_status = 'guest', is_staff = true, staff_type = 'coach',
   full_name = 'Jeremy Saner', phone = '+27 21 000 0006', is_active = true
 where id = '66666666-6666-4666-8666-666666666666';
 update public.profiles set
-  role               = 'fencer',
   membership_status  = 'guest',
   is_staff           = false,
   staff_type         = null,
@@ -134,7 +131,6 @@ update public.profiles set
 where id = '33333333-3333-4333-8333-333333333333';
 
 update public.profiles set
-  role               = 'guardian',
   membership_status  = 'guest',
   is_staff           = false,
   staff_type         = null,
