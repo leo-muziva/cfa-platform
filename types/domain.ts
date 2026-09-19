@@ -327,11 +327,21 @@ export interface LessonHistoryItem {
 
 export interface PayerBillingView {
   balance: number
+  outstandingCharges: OutstandingCharge[]
+  creditTotal: number
   invoices: Invoice[]
   receipts: Receipt[]
   pendingLessonCharges: PendingLessonCharge[]
   paymentPreference: PaymentPreference
   providerAvailable: boolean
+}
+
+export interface OutstandingCharge {
+  id: string
+  participantName: string
+  amount: number
+  label: string
+  finalizedAt: string | null
 }
 
 export interface PendingLessonCharge {

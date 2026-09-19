@@ -51,17 +51,17 @@ export default async function CoachLessonBookingPage({
   return (
     <div className="space-y-7">
       <header>
-        <Link href="/protected/book" className="inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-medium text-[#2d176b] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b]">
+        <Link href="/protected/book" className="inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-medium text-cfa-purple hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-purple">
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           All coaches
         </Link>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
           Private lesson
         </p>
-        <h1 className="mt-2 font-serif text-4xl font-light tracking-tight text-slate-950 sm:text-5xl">
+        <h1 className="mt-2 font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
           Book with {data.coach.fullName}
         </h1>
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-muted-foreground">
           Free times are current when this page loads and are always rechecked when you confirm.
         </p>
       </header>

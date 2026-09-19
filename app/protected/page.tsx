@@ -6,15 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
-import { getLessonHistory, getMembershipRequestPageData } from '@/lib/services/PlatformService'
+import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 import { ProfileForm } from './profile/profile-form'
 
 export default async function ProfileDashboardPage() {
-  const [context, history, membershipData] = await Promise.all([
+  const [context, membershipData] = await Promise.all([
     getCurrentAccountContext(),
-    getLessonHistory(),
     getMembershipRequestPageData(),
   ])
 
@@ -22,11 +20,6 @@ export default async function ProfileDashboardPage() {
     redirect('/auth/login?next=/protected')
   }
 
-  const nextLesson = 'items' in history
-    ? history.items
-        .filter((item) => item.status === 'upcoming')
-        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0]
-    : null
   const changes = membershipData.requests.find((item) => item.status === 'changes_requested')
   const canApply =
     !membershipData.membership &&
@@ -37,13 +30,13 @@ export default async function ProfileDashboardPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
           CFA Member Portal
         </p>
-        <h1 className="font-serif text-4xl font-light tracking-tight text-slate-950 sm:text-5xl">
+        <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
           My Profile
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-muted-foreground">
           Welcome, {context.profile.full_name || context.profile.email}. Manage your account and
           membership from one place.
         </p>
@@ -65,33 +58,6 @@ export default async function ProfileDashboardPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="cfa-light-card">
-          <CardHeader>
-            <CardTitle>Next lesson</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>{nextLesson ? formatCapeTownLessonDate(nextLesson.starts_at) : 'No upcoming lessons.'}</p>
-            <Button asChild variant="outline">
-              <Link href="/protected/book">Book a lesson</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {context.capabilities.isPayer && context.householdMembers.length > 1 && (
-          <Card className="cfa-light-card">
-            <CardHeader>
-              <CardTitle>Household</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p>{context.householdMembers.length - 1} dependent(s)</p>
-              <Button asChild variant="outline">
-                <Link href="/protected/family#dependents">View family</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
 
       <ProfileForm profile={context.profile} />
 

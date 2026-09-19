@@ -2,8 +2,10 @@
 
 import { CalendarDays, Check, Clock, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { GlassButton } from "@/components/ui/glass-auth";
+import { GlassDialog } from "@/components/ui/glass-dialog";
 import {
   formatCapeTownCompactDate,
   formatCapeTownDate,
@@ -71,8 +73,7 @@ export function CoachBookingCalendar({
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
     defaultParticipant ? [defaultParticipant.id] : [],
   );
-  const [contentionMessage, setContentionMessage] = useState("");
-  const contentionRef = useRef<HTMLParagraphElement>(null);
+  const [attemptedSlot, setAttemptedSlot] = useState<AvailableLessonTime | null>(null);
   const [state, formAction, pending] = useActionState(createAction, initialActionState);
 
   const timesForDate = timesForLessonDate(times, selectedDate);
@@ -89,19 +90,20 @@ export function CoachBookingCalendar({
 
   useEffect(() => {
     if (state.errorCode !== "slot_taken") return;
+    // Snapshot what was attempted before clearing it — router.refresh() below
+    // re-fetches `times`, which will no longer contain this slot, so `selected`
+    // itself is about to go stale.
+    setAttemptedSlot(selected);
     setSelectedTime("");
-    setContentionMessage(BOOKING_CONTENTION_MESSAGE);
     router.refresh();
-    window.requestAnimationFrame(() => contentionRef.current?.focus());
-  }, [router, state]);
+  }, [router, state, selected]);
 
   const chooseDate = (date: string) => {
     setSelectedDate(date);
     setSelectedTime("");
-    setContentionMessage("");
   };
 
-  if (times.length === 0 && !contentionMessage) {
+  if (times.length === 0 && !attemptedSlot) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
         <h2 className="font-serif text-2xl text-slate-950">No free times right now</h2>
@@ -115,18 +117,19 @@ export function CoachBookingCalendar({
 
   return (
     <div className="grid gap-7 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-      <div className="space-y-6">
-        {contentionMessage && (
-          <p
-            ref={contentionRef}
-            role="alert"
-            tabIndex={-1}
-            className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-950 outline-none focus-visible:ring-2 focus-visible:ring-amber-700"
-          >
-            {contentionMessage}
-          </p>
-        )}
+      <GlassDialog open={attemptedSlot !== null} onClose={() => setAttemptedSlot(null)} labelledBy="slot-unavailable-heading">
+        <h2 id="slot-unavailable-heading" className="text-xl font-semibold text-foreground">Time no longer available</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {attemptedSlot
+            ? `${coach.fullName} isn't available at ${formatCapeTownLessonDate(attemptedSlot.startsAt)} anymore. Pick another time.`
+            : BOOKING_CONTENTION_MESSAGE}
+        </p>
+        <GlassButton type="button" className="mt-6" onClick={() => setAttemptedSlot(null)}>
+          Choose another time
+        </GlassButton>
+      </GlassDialog>
 
+      <div className="space-y-6">
         <section aria-labelledby="lesson-weapon-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
@@ -184,7 +187,7 @@ export function CoachBookingCalendar({
               {timesForDate.map((time) => {
                 const isSelected = selectedTime === time.startsAt;
                 return (
-                  <button key={time.startsAt} type="button" onClick={() => { setSelectedTime(time.startsAt); setContentionMessage(""); }} aria-pressed={isSelected} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308]" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35")}>
+                  <button key={time.startsAt} type="button" onClick={() => setSelectedTime(time.startsAt)} aria-pressed={isSelected} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308]" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35")}>
                     {formatCapeTownTime(time.startsAt)}
                     {isSelected && <Check className="h-4 w-4" aria-hidden="true" />}
                   </button>

@@ -95,6 +95,17 @@ export const coachAvailabilityExceptionPreviewSchema = z.object({
   message: 'End time must be after start time', path: ['endsAt'],
 })
 
+// Same shape as coachAvailabilityExceptionPreviewSchema, plus the coachId a
+// standalone preview Server Action needs to authorize the request (the page-load
+// preview path derives the coach from the signed-in session instead).
+export const coachAvailabilityExceptionPreviewWithCoachSchema = z.object({
+  coachId: z.uuid(),
+  startsAt: z.iso.datetime({ offset: true }),
+  endsAt: z.iso.datetime({ offset: true }),
+}).strict().refine((value) => new Date(value.endsAt) > new Date(value.startsAt), {
+  message: 'End time must be after start time', path: ['endsAt'],
+})
+
 export const deleteAvailabilityExceptionSchema = z.object({ exceptionId: z.uuid() }).strict()
 
 export const clubClosureSchema = z.object({
@@ -102,6 +113,19 @@ export const clubClosureSchema = z.object({
   endsOn: z.iso.date(),
   reason: z.string().trim().min(1, 'Reason is required').max(500),
   cancelAffected: z.boolean().default(false),
+}).strict().refine((value) => value.endsOn >= value.startsOn, {
+  message: 'End date must be on or after start date',
+  path: ['endsOn'],
+})
+
+// Same startsOn/endsOn shape as clubClosureSchema, kept as its own schema
+// rather than clubClosureSchema.pick(...) — Zod rejects .pick() on a schema
+// that already has .refine() applied ("cannot be used on object schemas
+// containing refinements"), since refine wraps the object rather than
+// extending it.
+export const clubClosurePreviewSchema = z.object({
+  startsOn: z.iso.date(),
+  endsOn: z.iso.date(),
 }).strict().refine((value) => value.endsOn >= value.startsOn, {
   message: 'End date must be on or after start date',
   path: ['endsOn'],

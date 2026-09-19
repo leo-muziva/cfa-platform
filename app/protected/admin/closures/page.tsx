@@ -3,18 +3,12 @@ import { cancelClubClosureAction, createClubClosureAction } from "@/app/actions/
 import { ClosureManager } from "@/components/portal/lesson-operations/closure-manager";
 import { getAdminClosuresPageData, getAdminCoachSetupPageData } from "@/lib/services/LessonBookingService";
 
-export default async function AdminClosuresPage({ searchParams }: { searchParams: Promise<{ startsOn?: string; endsOn?: string }> }) {
-  const query = await searchParams;
-  const rawPreview = query.startsOn && query.endsOn ? { startsOn: query.startsOn, endsOn: query.endsOn } : undefined;
-  const [result, coachResult] = await Promise.all([getAdminClosuresPageData(rawPreview), getAdminCoachSetupPageData()]);
+export default async function AdminClosuresPage() {
+  const [result, coachResult] = await Promise.all([getAdminClosuresPageData(), getAdminCoachSetupPageData()]);
   if ("error" in result) redirect(result.error === "Not authenticated" ? "/auth/login" : "/protected");
   if ("error" in coachResult) redirect(coachResult.error === "Not authenticated" ? "/auth/login" : "/protected");
-  const coachNames = new Map(coachResult.coaches.map((coach) => [coach.coachId, coach.fullName]));
-  const preview = rawPreview ? {
-    ...rawPreview,
-    affectedBookingCount: result.affectedBookings.length,
-    affectedCoachNames: [...new Set(result.affectedBookings.map((booking) => coachNames.get(booking.coachId) ?? "Unknown coach"))],
-    affectedMemberNames: [...new Set(result.affectedBookings.flatMap((booking) => booking.participantNames))],
-  } : null;
-  return <ClosureManager closures={result.closures} preview={preview} createAction={createClubClosureAction} cancelAction={cancelClubClosureAction} />;
+  // Plain object, not a Map — this crosses the server/client boundary as a
+  // prop into ClosurePreviewCard, and Maps don't serialize across it.
+  const coachNames = Object.fromEntries(coachResult.coaches.map((coach) => [coach.coachId, coach.fullName]));
+  return <ClosureManager closures={result.closures} coachNames={coachNames} createAction={createClubClosureAction} cancelAction={cancelClubClosureAction} />;
 }

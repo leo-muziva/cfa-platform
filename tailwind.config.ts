@@ -52,6 +52,12 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        // Theme-invariant brand colours (identical in light/dark by design —
+        // see the comment above --cfa-purple/--cfa-gold in globals.css).
+        // Exposed as real Tailwind colours so components can use them as
+        // `bg-cfa-purple`/`text-cfa-gold` instead of arbitrary-value syntax.
+        "cfa-purple": "hsl(var(--cfa-purple))",
+        "cfa-gold": "hsl(var(--cfa-gold))",
       },
       borderRadius: {
         lg: "var(--radius)",
