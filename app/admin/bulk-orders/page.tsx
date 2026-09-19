@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { StatusControls } from "./StatusControls";
+import { ExportButtons } from "./ExportButtons";
 
 const STATUS_LABELS: Record<string, string> = {
   collecting: "Collecting orders",
@@ -136,6 +137,10 @@ export default async function BulkOrdersPage() {
         ) : (
           <p className="mt-4 text-sm text-gray-500">No orders yet.</p>
         )}
+
+                <ExportButtons bulkOrderId={bulk.id} />
+
+     
 
         <StatusControls
           bulkOrderId={bulk.id}

@@ -1,1 +1,1 @@
-select count(*) from public.products where image_path is not null;
+select count(*) from public.products where sizes is not null;
