@@ -1,1 +1,1 @@
-update public.bulk_orders set threshold = 500 where status = 'collecting';
+select count(*) from public.products where image_path is not null;

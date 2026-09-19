@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "../components/AddToCartButton";
+import Image from "next/image";
+import { productImageUrl } from "@/lib/productImage";
 
 export default async function ProductPage({
   params,
@@ -17,8 +19,10 @@ export default async function ProductPage({
     .single();
 
   if (!product) {
+     
     notFound();
   }
+   const imageUrl = productImageUrl(product.image_path);
 
   return (
     <main className="mx-auto max-w-3xl p-8">
@@ -32,8 +36,19 @@ export default async function ProductPage({
       </div>
 
       <div className="mt-6 grid gap-8 sm:grid-cols-2">
-        <div className="flex aspect-square items-center justify-center rounded-lg border bg-gray-50">
-          <span className="text-sm text-gray-400">No image</span>
+                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={product.name}
+              fill
+              unoptimized 
+              className="object-contain p-4"
+              sizes="(max-width: 640px) 100vw, 50vw"
+            />
+          ) : (
+            <span className="text-sm text-gray-400">No image</span>
+          )}
         </div>
 
         <div>
