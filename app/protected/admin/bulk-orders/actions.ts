@@ -71,8 +71,8 @@ export async function advanceStatus(bulkOrderId: string, newStatus: string) {
     }
   }
 
-  revalidatePath("/admin/bulk-orders");
-  revalidatePath("/shop");
+  revalidatePath("/protected/admin/bulk-orders");
+  revalidatePath("/protected/shop");
 
   return { success: true };
 }
@@ -93,8 +93,8 @@ export async function setEstimatedArrival(bulkOrderId: string, date: string) {
     return { error: "Could not save the date." };
   }
 
-  revalidatePath("/admin/bulk-orders");
-  revalidatePath("/shop");
+  revalidatePath("/protected/admin/bulk-orders");
+  revalidatePath("/protected/shop");
 
   return { success: true };
 

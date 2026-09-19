@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { StatusControls } from "./StatusControls";
 import { ExportButtons } from "./ExportButtons";
 
@@ -15,30 +14,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function BulkOrdersPage() {
   const supabase = await createClient();
 
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) {
-    redirect("/auth/login?next=%2Fadmin%2Fbulk-orders");
-  }
-
-  // Only admins get in.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", auth.user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return (
-      <main className="mx-auto max-w-3xl p-8">
-        <h1 className="text-2xl font-semibold">Not authorised</h1>
-        <p className="mt-2 text-gray-600">
-          This page is for CFA administrators.
-        </p>
-      </main>
-    );
-  }
-
-  // Every bulk order, newest first, with the customer orders inside each.
+  // The admin layout already checks permissions, so no auth check here.
   const { data: bulkOrders } = await supabase
     .from("bulk_orders")
     .select(
@@ -51,7 +27,6 @@ export default async function BulkOrdersPage() {
   const cards = list.map(function (bulk) {
     const orders = bulk.orders ?? [];
 
-    // Add up everything in this bulk order.
     let total = 0;
     let itemCount = 0;
     for (const order of orders) {
@@ -79,15 +54,15 @@ export default async function BulkOrdersPage() {
           ? line.products[0]
           : line.products;
         return (
-          <p key={i} className="text-xs text-gray-600">
+          <p key={i} className="text-xs text-muted-foreground">
             {product?.item_code} {product?.name}
-            {line.size ? " (" + line.size + ")" : ""} × {line.quantity}
+            {line.size ? " (" + line.size + ")" : ""} &times; {line.quantity}
           </p>
         );
       });
 
       return (
-        <div key={order.id} className="border-t py-3">
+        <div key={order.id} className="border-t border-border py-3">
           <div className="flex justify-between">
             <p className="text-sm font-medium">
               {profile?.full_name || profile?.email || "Unknown customer"}
@@ -100,47 +75,50 @@ export default async function BulkOrdersPage() {
     });
 
     return (
-      <div key={bulk.id} className="mb-6 rounded-lg border p-5">
+      <div
+        key={bulk.id}
+        className="mb-6 rounded-xl border border-border bg-card p-5"
+      >
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-mono text-xs text-gray-500">{bulk.reference}</p>
+            <p className="font-mono text-xs text-muted-foreground">
+              {bulk.reference}
+            </p>
             <p className="mt-1 text-lg font-medium">
               {STATUS_LABELS[bulk.status] ?? bulk.status}
             </p>
           </div>
           <div className="text-right">
             <p className="text-xl font-semibold">R{total.toFixed(2)}</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               of R{threshold.toFixed(2)}
             </p>
           </div>
         </div>
 
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
           <div
             className={
               "h-full rounded-full " +
-              (total >= threshold ? "bg-green-600" : "bg-gray-900")
+              (total >= threshold ? "bg-green-600" : "bg-primary")
             }
             style={{ width: percent + "%" }}
           />
         </div>
 
-        <p className="mt-2 text-sm text-gray-600">
-          {orders.length} order{orders.length === 1 ? "" : "s"} · {itemCount}{" "}
-          item{itemCount === 1 ? "" : "s"}
+        <p className="mt-2 text-sm text-muted-foreground">
+          {orders.length} order{orders.length === 1 ? "" : "s"} &middot;{" "}
+          {itemCount} item{itemCount === 1 ? "" : "s"}
           {total >= threshold ? " · threshold reached" : ""}
         </p>
 
         {orders.length > 0 ? (
           <div className="mt-4">{customerRows}</div>
         ) : (
-          <p className="mt-4 text-sm text-gray-500">No orders yet.</p>
+          <p className="mt-4 text-sm text-muted-foreground">No orders yet.</p>
         )}
 
-                <ExportButtons bulkOrderId={bulk.id} />
-
-     
+        <ExportButtons bulkOrderId={bulk.id} />
 
         <StatusControls
           bulkOrderId={bulk.id}
@@ -152,13 +130,13 @@ export default async function BulkOrdersPage() {
   });
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <div>
       <h1 className="mb-6 text-2xl font-semibold">Bulk orders</h1>
       {list.length === 0 ? (
-        <p className="text-gray-500">No bulk orders yet.</p>
+        <p className="text-muted-foreground">No bulk orders yet.</p>
       ) : (
         cards
       )}
-    </main>
+    </div>
   );
 }

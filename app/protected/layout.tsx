@@ -15,10 +15,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     { href: '/protected/book', label: 'Book' },
     { href: '/protected/lessons', label: 'Lessons' },
     { href: '/protected/family', label: 'Family' },
-    { href: '/shop', label: 'Shop' },
+    { href: '/protected/shop', label: 'Shop' },
     ...(capabilities?.canSeeHouseholdMoney ? [{ href: '/protected/billing', label: 'Billing' }] : []),
     ...(capabilities?.isCoach ? [{ href: '/protected/coach', label: 'Coach' }] : []),
-       ...(capabilities?.canManageStaffArea ? [{ href: '/admin/bulk-orders', label: 'Bulk orders' }] : []),
+      
   ]
   
   return (

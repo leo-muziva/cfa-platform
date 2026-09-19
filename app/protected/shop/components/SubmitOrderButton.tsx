@@ -23,7 +23,7 @@ export function SubmitOrderButton() {
     }
 
     // Worked — send them to their order history.
-    router.push("/shop/orders?submitted=1");
+    router.push("/protected/shop/orders?submitted=1");
   }
 
   return (

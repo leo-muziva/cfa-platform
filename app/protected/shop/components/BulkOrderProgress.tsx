@@ -29,26 +29,26 @@ export async function BulkOrderProgress() {
   const reached = total >= threshold;
   //const remaining = threshold - total; 
 
-    return (
-    <div className="mb-6 rounded-xl border bg-gray-50 p-4">
+      return (
+    <div className="mb-6 rounded-xl border border-border bg-card p-4">
       <div className="flex items-baseline justify-between">
-        <p className="text-sm font-medium">
+        <p className="text-sm font-medium text-card-foreground">
           {reached ? "Next order ready to place" : "Next equipment order"}
         </p>
-        <p className="text-sm text-gray-600">{percent}% to next order</p>
+        <p className="text-sm text-muted-foreground">{percent}% to next order</p>
       </div>
 
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
         <div
           className={
             "h-full rounded-full transition-all " +
-            (reached ? "bg-green-600" : "bg-gray-900")
+            (reached ? "bg-green-600" : "bg-primary")
           }
           style={{ width: percent + "%" }}
         />
       </div>
 
-      <p className="mt-2 text-sm text-gray-600">
+      <p className="mt-2 text-sm text-muted-foreground">
         {reached
           ? "The threshold has been reached. CFA will place this order with the supplier shortly."
           : "CFA places a bulk order with the supplier once enough orders have come in. Your items join the next one."}

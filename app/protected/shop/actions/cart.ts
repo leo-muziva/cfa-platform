@@ -92,8 +92,8 @@ export async function addToCart(productId: number, size: string | null) {
   }
 
   // Tell Next these pages have changed so it re-fetches them.
-  revalidatePath("/shop");
-  revalidatePath("/shop/cart");
+  revalidatePath("/protected/shop");
+  revalidatePath("/protected/shop/cart");
 
   return { success: true };
 }
@@ -122,7 +122,7 @@ export async function updateQuantity(itemId: string, quantity: number) {
     return { error: "Could not update quantity." };
   }
 
-  revalidatePath("/shop/cart");
+  revalidatePath("/protected/shop/cart");
   return { success: true };
 }
 
@@ -146,7 +146,7 @@ export async function removeItem(itemId: string) {
   
   }
 
-  revalidatePath("/shop/cart");
+  revalidatePath("/protected/shop/cart");
   return { success: true };
 }
 
@@ -192,8 +192,8 @@ export async function submitOrder(notes: string) {
     return { error: "Could not submit your order." };
   }
 
-  revalidatePath("/shop/cart");
-  revalidatePath("/shop/orders");
+  revalidatePath("/protected/shop/cart");
+  revalidatePath("/protected/shop/orders");
 
   return { success: true, orderId: order.id };
 }

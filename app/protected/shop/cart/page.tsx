@@ -26,7 +26,7 @@ export default async function CartPage() {
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-6 text-2xl font-semibold">Your order</h1>
         <p className="text-gray-500">Your order is empty.</p>
-        <a href="/shop" className="mt-4 inline-block underline">
+        <a href="/protected/shop" className="mt-4 inline-block underline">
           Browse the catalogue
         </a>
       </main>
@@ -54,7 +54,7 @@ export default async function CartPage() {
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-6 text-2xl font-semibold">Your order</h1>
         <p className="text-gray-500">Your order is empty.</p>
-        <a href="/shop" className="mt-4 inline-block underline">
+        <a href="/protected/shop" className="mt-4 inline-block underline">
           Browse the catalogue
         </a>
       </main>
@@ -98,7 +98,7 @@ export default async function CartPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <a href="/shop" className="text-sm text-gray-500 underline">
+      <a href="/protected/shop" className="text-sm text-gray-500 underline">
         Back to catalogue
       </a>
 
