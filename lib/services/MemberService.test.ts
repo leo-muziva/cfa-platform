@@ -1,5 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
-vi.mock('server-only', () => ({}))
+import { describe, expect, it, vi } from 'vitest' //Vittest is used for unit testing. when we want to test the cde, vittest will open memberservice.test.ts and test whether the permissions is working correctly  
+vi.mock('server-only', () => ({})) // server only means "dont let this run in the users browser"
+
+//server only makes sire that the code is only run on the server side and not in the users browser
+
+
 import { aggregateMemberStats, deriveCapabilities } from './MemberService'
 import type { HouseholdMember, MemberStatsRow, Profile } from '@/types/domain'
 
@@ -23,11 +27,17 @@ describe('aggregateMemberStats', () => {
 })
 
 describe('deriveCapabilities', () => {
-  const profile = { is_staff: false, staff_type: null } as Profile
-  it('never grants household money or payment to a dependent', () => {
+  const profile = { is_staff: false, staff_type: null } as Profile 
+  it('never grants household money or payment to a dependent', () => { //lets pretend that we have a dependent in the household. we want to make sure that the dependent does not have access to household money or payment capabilities. this is important because dependents should not be able to manage household finances. we will create a profile for the dependent and check their capabilities using the deriveCapabilities function. we expect that the dependent will not be able to see household money or trigger payments. this test ensures that our code correctly identifies dependents and restricts their financial capabilities accordingly.
     const capabilities = deriveCapabilities(profile, { household_role: 'dependent' } as HouseholdMember, 'payer-id')
     expect(capabilities.canSeeHouseholdMoney).toBe(false)
     expect(capabilities.canTriggerPayment).toBe(false)
+
+// can the dependent see household money? no, they cannot. can the dependent trigger payment? no, they cannot.
+
+    //did our code correctly identify that the user is a dependent and not a payer? yes, it did. the code is working correctly
+
+
   })
   it('grants payer financial capabilities', () => {
     const payer = { ...profile, id: 'payer-id' } as Profile
@@ -35,7 +45,7 @@ describe('deriveCapabilities', () => {
     expect(capabilities.canSeeHouseholdMoney).toBe(true)
     expect(capabilities.canTriggerPayment).toBe(true)
   })
-  it('keeps coach and admin capabilities distinct', () => {
+  it('keeps coach and admin capabilities distinct', () => { //keep coach and admin capabilities distinct means that we want to make sure that coaches and admins have different capabilities. we will create a profile for a coach and a profile for an admin and check their capabilities using the deriveCapabilities function. we expect that the coach will not be able to manage the staff area, while the admin will be able to manage the staff area. this test ensures that our code correctly identifies coaches and admins and grants them the appropriate capabilities.
     const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
     const admin = { ...profile, id: 'admin-id', is_staff: true, staff_type: 'admin' } as Profile
     expect(deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id').canManageStaffArea).toBe(false)

@@ -6,6 +6,7 @@ import { getCurrentAccountContext } from '@/lib/services/MemberService'
 import { Suspense } from 'react'
 import { PortalNavigation, type PortalNavigationLink } from '@/components/portal/portal-navigation'
 
+
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const context = await getCurrentAccountContext()
   const capabilities = 'error' in context ? null : context.capabilities
@@ -14,10 +15,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     { href: '/protected/book', label: 'Book' },
     { href: '/protected/lessons', label: 'Lessons' },
     { href: '/protected/family', label: 'Family' },
+    { href: '/protected/shop', label: 'Shop' },
     ...(capabilities?.canSeeHouseholdMoney ? [{ href: '/protected/billing', label: 'Billing' }] : []),
     ...(capabilities?.isCoach ? [{ href: '/protected/coach', label: 'Coach' }] : []),
-    ...(capabilities?.canManageStaffArea ? [{ href: '/protected/admin', label: 'Admin' }] : []),
+      
   ]
+  
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_hsl(var(--cfa-purple)/0.30),_transparent_34%),radial-gradient(circle_at_bottom_left,_hsl(var(--cfa-gold)/0.14),_transparent_32%),hsl(var(--background))] text-foreground">
       <div className="flex min-h-screen w-full flex-col">
