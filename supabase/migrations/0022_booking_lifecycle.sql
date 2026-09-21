@@ -1,4 +1,35 @@
 -- Preserve contractual lesson terms and keep holds inside the existing slot lock.
+-- These ledger primitives are defined here because the lifecycle functions
+-- below depend on them during a clean, forward-only migration run.
+alter table public.charges add column if not exists amount_cents bigint;
+update public.charges set amount_cents=round(amount * 100)::bigint where amount_cents is null;
+alter table public.ledger_credits add column if not exists amount_cents bigint;
+update public.ledger_credits set amount_cents=round(amount * 100)::bigint where amount_cents is null;
+create table if not exists public.payment_allocations (
+  id uuid primary key default gen_random_uuid(),
+  payment_attempt_id uuid not null references public.payment_attempts(id) on delete restrict,
+  charge_id uuid not null references public.charges(id) on delete restrict,
+  amount_cents bigint not null check (amount_cents > 0),
+  created_at timestamptz not null default now(),
+  unique(payment_attempt_id, charge_id)
+);
+create table if not exists public.credit_consumptions (
+  id uuid primary key default gen_random_uuid(),
+  ledger_credit_id uuid not null references public.ledger_credits(id) on delete restrict,
+  charge_id uuid not null references public.charges(id) on delete restrict,
+  amount_cents bigint not null check (amount_cents > 0),
+  created_at timestamptz not null default now(),
+  unique(ledger_credit_id, charge_id)
+);
+create table if not exists public.invoice_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  invoice_id uuid references public.invoices(id) on delete restrict,
+  charge_id uuid not null unique references public.charges(id) on delete restrict,
+  amount_cents bigint not null check (amount_cents > 0),
+  reason text not null,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
 alter table public.lesson_booking_settings add column hold_expiry_minutes integer not null default 30 check (hold_expiry_minutes between 1 and 1440);
 alter table public.bookings
   add column booked_unit_price_cents bigint,
