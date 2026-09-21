@@ -17,6 +17,7 @@ export default async function CoachDashboardPage() {
     weapon: lesson.weapon,
     status: lesson.status,
     participantNames: lesson.participants.map((participant) => participant.fullName),
+    participants: lesson.participants,
   }));
 
   return <div className="space-y-6">

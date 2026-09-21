@@ -26,6 +26,8 @@ export type LessonActionState = {
   error?: string
   errorCode?: LessonBookingErrorCode
   success?: string
+  bookingId?: string
+  checkoutRequired?: boolean
 }
 
 type OperationResult = { success: true; data: unknown } | { success: false; error: string; errorCode: LessonBookingErrorCode }
@@ -76,11 +78,17 @@ export async function createLessonBookingAction(_: LessonActionState, formData: 
     startsAt: isoDateTime(value(formData, 'startsAt', 'starts_at')),
     participantIds,
     weapon: formData.get('weapon'),
+    paymentOption: formData.get('paymentOption') ?? 'pay_later',
   })
   if (!result.success) return actionResult(result, '')
   revalidatePath('/protected/book')
   revalidatePath('/protected/lessons')
-  return { success: 'Lesson booked successfully.' }
+  const checkoutRequired = formData.get('paymentOption') === 'pay_now'
+  return {
+    success: checkoutRequired ? 'Lesson held. Complete payment before the hold expires.' : 'Lesson booked successfully.',
+    bookingId: result.data.bookingId,
+    checkoutRequired,
+  }
 }
 
 export async function cancelLessonBookingAction(_: LessonActionState, formData: FormData): Promise<LessonActionState> {
@@ -105,6 +113,7 @@ export async function rescheduleLessonBookingAction(_: LessonActionState, formDa
 export async function recordLessonOutcomeAction(_: LessonActionState, formData: FormData): Promise<LessonActionState> {
   const result = await recordLessonOutcome({
     bookingId: value(formData, 'bookingId', 'booking_id'), outcome: formData.get('outcome'),
+    participantId: formData.get('participantId') ?? undefined,
   })
   if (!result.success) return actionResult(result, '')
   revalidateLessonPaths()

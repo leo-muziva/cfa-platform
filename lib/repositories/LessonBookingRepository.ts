@@ -14,6 +14,7 @@ import type {
   LessonBookingSettings,
   LessonCoachSummary,
   LessonParticipant,
+  LessonTimeOption,
   LessonQuote,
   Weapon,
 } from '@/types/domain'
@@ -71,6 +72,7 @@ function failed(error: unknown): LessonBookingResult<never> {
 
 type CoachRow = { coach_id: string; full_name: string; weapons: string[] | null }
 type TimeRow = { starts_at: string; ends_at: string }
+type TimeOptionRow = TimeRow & { is_available: boolean }
 type QuoteRow = { participant_count: number | string; total_cents: number | string; currency: string }
 
 export async function listLessonCoaches(): Promise<LessonBookingResult<LessonCoachSummary[]>> {
@@ -94,25 +96,40 @@ export async function listAvailableLessonTimes(input: LessonAvailabilityInput): 
   return { success: true, data: ((data ?? []) as TimeRow[]).map((row) => ({ startsAt: row.starts_at, endsAt: row.ends_at })) }
 }
 
+export async function listLessonTimeOptions(input: LessonAvailabilityInput): Promise<LessonBookingResult<LessonTimeOption[]>> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('list_lesson_time_options', {
+    target_coach: input.coachId,
+    target_weapon: input.weapon,
+    range_start: input.rangeStart ?? null,
+    range_end: input.rangeEnd ?? null,
+  })
+  if (error) return failed(error)
+  return { success: true, data: ((data ?? []) as TimeOptionRow[]).map((row) => ({
+    startsAt: row.starts_at, endsAt: row.ends_at, isAvailable: row.is_available,
+  })) }
+}
+
 export async function getLessonQuote(participantIds: [string] | [string, string]): Promise<LessonBookingResult<LessonQuote>> {
   const db = await createClient()
-  const { data, error } = await db.rpc('get_lesson_quote', { target_participant_ids: participantIds })
+  const { data, error } = await db.rpc('get_lesson_quote_v3', { target_participant_ids: participantIds })
   if (error) return failed(error)
   const row = (Array.isArray(data) ? data[0] : data) as QuoteRow | null
   if (!row) return lessonBookingError('request_failed')
   return { success: true, data: {
     participantCount: Number(row.participant_count) as 1 | 2,
-    totalCents: Number(row.total_cents), currency: 'ZAR',
+    totalCents: String(row.total_cents), currency: 'ZAR',
   } }
 }
 
 export async function insertLessonBooking(input: CreateLessonBookingInput): Promise<LessonBookingResult<{ bookingId: string }>> {
   const db = await createClient()
-  const { data, error } = await db.rpc('create_lesson_booking_v2', {
+  const { data, error } = await db.rpc('create_lesson_booking_v3', {
     target_coach: input.coachId,
     target_starts_at: input.startsAt,
     target_participant_ids: input.participantIds,
     target_weapon: input.weapon,
+    target_payment_option: input.paymentOption,
   })
   return error ? failed(error) : { success: true, data: { bookingId: data as string } }
 }
@@ -133,9 +150,11 @@ export async function rescheduleLessonBookingRecord(bookingId: string, startsAt:
   return error ? failed(error) : { success: true, data: { bookingId: data as string } }
 }
 
-export async function recordLessonOutcomeRecord(bookingId: string, outcome: 'attended' | 'no_show'): Promise<LessonBookingResult<null>> {
+export async function recordLessonOutcomeRecord(bookingId: string, outcome: 'attended' | 'no_show', participantId?: string): Promise<LessonBookingResult<null>> {
   const db = await createClient()
-  const { error } = await db.rpc('record_lesson_outcome', { target_booking: bookingId, target_outcome: outcome })
+  const { error } = participantId
+    ? await db.rpc('record_lesson_participant_outcome', { target_booking: bookingId, target_participant: participantId, target_outcome: outcome })
+    : await db.rpc('record_lesson_outcome', { target_booking: bookingId, target_outcome: outcome })
   return error ? failed(error) : { success: true, data: null }
 }
 
@@ -149,6 +168,7 @@ type SafeBookingRow = {
   status: string
   participant_ids?: string[]
   participant_names: string[]
+  participant_outcomes?: Array<'attended' | 'no_show' | null>
   cancellation_deadline?: string | null
   cancelled_at?: string | null
   cancellation_reason?: string | null
@@ -167,6 +187,7 @@ export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
     status: row.status as LessonBooking['status'],
     participants: (row.participant_names ?? []).map((fullName, index) => ({
       id: row.participant_ids?.[index] ?? `${row.booking_id}:${index + 1}`, fullName,
+      ...(row.participant_outcomes ? { attendanceOutcome: row.participant_outcomes[index] ?? null } : {}),
     })),
     cancellationDeadline: row.cancellation_deadline ?? null,
     cancelledAt: row.cancelled_at ?? null,
@@ -186,7 +207,7 @@ export async function listMemberLessonBookings(): Promise<LessonBookingResult<Le
 
 export async function listCoachLessonAgenda(coachId?: string): Promise<LessonBookingResult<LessonBooking[]>> {
   const db = await createClient()
-  const { data, error } = await db.rpc('list_coach_lesson_agenda', { target_coach: coachId ?? null })
+  const { data, error } = await db.rpc('list_coach_lesson_agenda_v3', { target_coach: coachId ?? null })
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as Array<Omit<SafeBookingRow, 'coach_name'> & { booking_id: string }>).map((row) => mapSafeLessonBooking({
     ...row, coach_name: '', participant_names: row.participant_names ?? [],
@@ -205,7 +226,7 @@ type BookingQueryRow = {
   rescheduled_from_booking_id: string | null
   rescheduled_to_booking_id: string | null
   coach: { full_name: string | null } | { full_name: string | null }[] | null
-  participants: Array<{ ordinal: number; participant_id: string; profile: { full_name: string | null } | { full_name: string | null }[] | null }>
+  participants: Array<{ ordinal: number; participant_id: string; attendance_outcome: 'attended' | 'no_show' | null; profile: { full_name: string | null } | { full_name: string | null }[] | null }>
 }
 
 function one<T>(value: T | T[] | null): T | null {
@@ -218,7 +239,7 @@ export async function listAllLessonBookings(): Promise<LessonBookingResult<Lesso
     id,coach_id,starts_at,ends_at,weapon,status,cancelled_at,cancellation_reason,
     rescheduled_from_booking_id,rescheduled_to_booking_id,
     coach:profiles!bookings_coach_id_fkey(full_name),
-    participants:booking_participants(ordinal,participant_id,profile:profiles!booking_participants_participant_id_fkey(full_name))
+    participants:booking_participants(ordinal,participant_id,attendance_outcome,profile:profiles!booking_participants_participant_id_fkey(full_name))
   `).eq('booking_model', 'lesson_v2').order('starts_at', { ascending: false })
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as unknown as BookingQueryRow[]).map((row) => ({
@@ -226,7 +247,7 @@ export async function listAllLessonBookings(): Promise<LessonBookingResult<Lesso
     startsAt: row.starts_at, endsAt: row.ends_at, weapon: row.weapon as Weapon,
     status: row.status as LessonBooking['status'],
     participants: [...(row.participants ?? [])].sort((a, b) => a.ordinal - b.ordinal).map((item) => ({
-      id: item.participant_id, fullName: one(item.profile)?.full_name ?? 'Participant',
+      id: item.participant_id, fullName: one(item.profile)?.full_name ?? 'Participant', attendanceOutcome: item.attendance_outcome,
     })),
     cancellationDeadline: null,
     cancelledAt: row.cancelled_at, cancellationReason: row.cancellation_reason,
@@ -238,19 +259,19 @@ export async function listAllLessonBookings(): Promise<LessonBookingResult<Lesso
 export async function listEligibleLessonParticipants(actorId: string, isAdmin: boolean): Promise<LessonBookingResult<LessonParticipant[]>> {
   const db = await createClient()
   if (isAdmin) {
-    const { data, error } = await db.from('profiles').select('id,full_name,is_staff').eq('is_active', true).not('profile_completed_at', 'is', null).order('full_name')
+    const { data, error } = await db.from('profiles').select('id,full_name,is_staff,membership_status').eq('is_active', true).not('profile_completed_at', 'is', null).order('full_name')
     if (error) return failed(error)
-    return { success: true, data: (data ?? []).filter((row) => !row.is_staff).map((row) => ({ id: row.id, fullName: row.full_name ?? 'Account member', isSelf: row.id === actorId })) }
+    return { success: true, data: (data ?? []).map((row) => ({ id: row.id, fullName: row.full_name ?? 'Account member', isSelf: row.id === actorId, membershipStatus: row.membership_status as 'guest' | 'member' })) }
   }
   const [{ data: self, error: selfError }, { data: links, error: linksError }] = await Promise.all([
-    db.from('profiles').select('id,full_name').eq('id', actorId).single(),
-    db.from('family_links').select('dependent:profiles!family_links_dependent_id_fkey(id,full_name)').eq('guardian_id', actorId).eq('status', 'active'),
+    db.from('profiles').select('id,full_name,membership_status').eq('id', actorId).single(),
+    db.from('family_links').select('dependent:profiles!family_links_dependent_id_fkey(id,full_name,membership_status)').eq('guardian_id', actorId).eq('status', 'active'),
   ])
   if (selfError || linksError || !self) return failed(selfError ?? linksError)
-  const participants: LessonParticipant[] = [{ id: self.id, fullName: self.full_name ?? 'Your account', isSelf: true }]
+  const participants: LessonParticipant[] = [{ id: self.id, fullName: self.full_name ?? 'Your account', isSelf: true, membershipStatus: self.membership_status as 'guest' | 'member' }]
   for (const link of links ?? []) {
-    const dependent = one(link.dependent as { id: string; full_name: string | null } | { id: string; full_name: string | null }[] | null)
-    if (dependent && !participants.some((item) => item.id === dependent.id)) participants.push({ id: dependent.id, fullName: dependent.full_name ?? 'Dependent' })
+    const dependent = one(link.dependent as { id: string; full_name: string | null; membership_status: 'guest' | 'member' } | { id: string; full_name: string | null; membership_status: 'guest' | 'member' }[] | null)
+    if (dependent && !participants.some((item) => item.id === dependent.id)) participants.push({ id: dependent.id, fullName: dependent.full_name ?? 'Dependent', membershipStatus: dependent.membership_status })
   }
   return { success: true, data: participants }
 }

@@ -18,6 +18,7 @@ export const createLessonBookingSchema = z.object({
   startsAt: z.iso.datetime({ offset: true }),
   participantIds: participantIdsSchema,
   weapon: weaponSchema,
+  paymentOption: z.enum(['pay_now', 'pay_later']).default('pay_later'),
 }).strict()
 
 export const lessonAvailabilitySchema = z.object({
@@ -42,6 +43,7 @@ export const rescheduleLessonBookingSchema = z.object({
 
 export const lessonOutcomeSchema = z.object({
   bookingId: z.uuid(),
+  participantId: z.uuid().optional(),
   outcome: z.enum(['attended', 'no_show']),
 }).strict()
 

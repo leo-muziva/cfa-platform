@@ -2,6 +2,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import type { AdminMembershipApplication, BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, MembershipOperationErrorCode, Receipt } from '@/types/domain'
 import { bookingDatabaseErrorCode } from '@/lib/booking-errors'
+import { getPaymentProvider } from '@/lib/providers/contracts'
 
 type PublicLessonSlotRow = Omit<BookableLessonSlot, 'price' | 'booked_count' | 'remaining_capacity' | 'is_full'> & {
   price: number | string
@@ -176,7 +177,7 @@ export async function getBillingForPayer(payerId: string) {
       amount: Number(row.amount), description: row.description,
       lessonStartsAt: relationValue(row.booking)?.starts_at ?? null,
     })),
-    paymentPreference: household?.membership_payment_method ?? 'manual', providerAvailable: false,
+    paymentPreference: household?.membership_payment_method ?? 'manual', providerAvailable: getPaymentProvider() !== null,
   }
 }
 

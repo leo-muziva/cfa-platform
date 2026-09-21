@@ -40,7 +40,8 @@ describe('deriveCapabilities', () => {
     const admin = { ...profile, id: 'admin-id', is_staff: true, staff_type: 'admin' } as Profile
     expect(deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id').canManageStaffArea).toBe(false)
     expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').canManageStaffArea).toBe(true)
-    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').isDependent).toBe(false)
+    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').isDependent).toBe(true)
+    expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').canSeeHouseholdMoney).toBe(false)
   })
   it('uses effective billing responsibility instead of a stale household role', () => {
     const linked = { ...profile, id: 'linked-dependent' } as Profile
@@ -49,10 +50,10 @@ describe('deriveCapabilities', () => {
     expect(capabilities.isPayer).toBe(false)
     expect(capabilities.canSeeHouseholdMoney).toBe(false)
   })
-  it('never grants coach financial capabilities even when the coach is their own payer', () => {
+  it('grants coaches personal financial capabilities when they are their own payer', () => {
     const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
     const capabilities = deriveCapabilities(coach, { household_role: 'payer' } as HouseholdMember, 'coach-id')
-    expect(capabilities.canSeeHouseholdMoney).toBe(false)
-    expect(capabilities.canTriggerPayment).toBe(false)
+    expect(capabilities.canSeeHouseholdMoney).toBe(true)
+    expect(capabilities.canTriggerPayment).toBe(true)
   })
 })

@@ -37,10 +37,10 @@ export function deriveCapabilities(profile: Profile, household: HouseholdMember,
     isAdmin,
     isCoach,
     isPayer,
-    isDependent: !isAdmin && !isPayer,
-    canSeeHouseholdMoney: isAdmin || (isPayer && !isCoach),
-    canTriggerPayment: isAdmin || (isPayer && !isCoach),
-    canManageDependents: isPayer || isAdmin,
+    isDependent: !isPayer,
+    canSeeHouseholdMoney: isPayer,
+    canTriggerPayment: isPayer,
+    canManageDependents: isPayer,
     canManageStaffArea: isAdmin,
   }
 }
@@ -55,8 +55,15 @@ export async function getCurrentAccountContext(): Promise<
   if (!household) return { error: 'Household setup is incomplete' }
   const effectivePayerId = await getActiveBillingPayer(profile.id)
   if (!effectivePayerId) return { error: 'Billing responsibility is unavailable' }
-  const householdMembers = await getHouseholdMembers()
+  const householdMembers = await getHouseholdMembers(household.household_id)
   return { profile, household, householdMembers, capabilities: deriveCapabilities(profile, household, effectivePayerId) }
+}
+
+export async function requireStaff(): Promise<{ profile: Profile } | { error: string }> {
+  const profile = await getCurrentProfile()
+  if (!profile) return { error: 'Not authenticated' }
+  if (!profile.is_staff) return { error: 'Forbidden' }
+  return { profile }
 }
 
 export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string }> {

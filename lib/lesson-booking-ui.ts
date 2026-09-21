@@ -1,9 +1,11 @@
 import type {
   AvailableLessonTime,
+  LessonTimeOption,
   LessonBooking,
   LessonQuote,
   Weapon,
 } from "@/types/domain";
+import { formatZar } from "@/lib/money";
 import { capeTownDateKey } from "@/lib/booking-calendar";
 
 export const MAX_LESSON_PARTICIPANTS = 2;
@@ -24,8 +26,16 @@ export function lessonDates(times: AvailableLessonTime[]): string[] {
   return [...new Set(times.map((time) => capeTownDateKey(time.startsAt)))].sort();
 }
 
-export function timesForLessonDate(times: AvailableLessonTime[], date: string): AvailableLessonTime[] {
+export function timesForLessonDate<T extends AvailableLessonTime>(times: T[], date: string): T[] {
   return times.filter((time) => capeTownDateKey(time.startsAt) === date);
+}
+
+export function lessonDateHasAvailableTime(times: LessonTimeOption[], date: string): boolean {
+  return times.some((time) => capeTownDateKey(time.startsAt) === date && time.isAvailable);
+}
+
+export function firstAvailableLessonTime(times: LessonTimeOption[], date: string): LessonTimeOption | null {
+  return timesForLessonDate(times, date).find((time) => time.isAvailable) ?? null;
 }
 
 export function safeWeapon(value: string | undefined, supported: Weapon[]): Weapon {
@@ -39,11 +49,7 @@ export function isValidLessonParticipantSelection(selected: string[]): boolean {
 }
 
 export function formatLessonQuote(quote: LessonQuote): string {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: quote.currency,
-    minimumFractionDigits: 0,
-  }).format(quote.totalCents / 100);
+  return formatZar(quote.totalCents);
 }
 
 export function lessonBillingCopy({
@@ -54,11 +60,11 @@ export function lessonBillingCopy({
   quote: LessonQuote | null;
 }): string {
   if (!canSeeQuote) return "Your payer will be billed";
-  return quote ? formatLessonQuote(quote) + " will be added to your account" : "Invoice only";
+  return quote ? formatLessonQuote(quote) + " will be added to your account" : "Choose a payment option";
 }
 
 export function lessonBillingDetailCopy(canSeeQuote: boolean): string | null {
-  return canSeeQuote ? "Invoice only. No payment is taken now." : null;
+  return canSeeQuote ? "Pay later on your invoice, or hold the lesson while you pay now." : null;
 }
 
 export function splitMemberLessons(

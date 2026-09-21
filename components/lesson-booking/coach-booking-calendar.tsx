@@ -17,12 +17,15 @@ import {
   isValidLessonParticipantSelection,
   lessonBillingCopy,
   lessonBillingDetailCopy,
+  firstAvailableLessonTime,
+  lessonDateHasAvailableTime,
   lessonDates,
   timesForLessonDate,
   toggleLessonParticipant,
 } from "@/lib/lesson-booking-ui";
+import { startCheckoutAction } from "@/app/actions/payments";
 import type {
-  AvailableLessonTime,
+  LessonTimeOption,
   LessonBookingErrorCode,
   LessonCoachSummary,
   LessonParticipant,
@@ -34,6 +37,8 @@ export interface LessonMemberActionState {
   success?: string;
   error?: string;
   errorCode?: LessonBookingErrorCode;
+  bookingId?: string;
+  checkoutRequired?: boolean;
 }
 
 export type LessonMemberFormAction = (
@@ -58,7 +63,7 @@ export function CoachBookingCalendar({
   createAction,
 }: {
   coach: LessonCoachSummary;
-  times: AvailableLessonTime[];
+  times: LessonTimeOption[];
   participants: LessonParticipant[];
   quotes: LessonQuote[];
   canSeeQuote: boolean;
@@ -66,21 +71,24 @@ export function CoachBookingCalendar({
 }) {
   const router = useRouter();
   const availableDates = useMemo(() => lessonDates(times), [times]);
-  const [selectedDate, setSelectedDate] = useState(availableDates[0] ?? "");
-  const [selectedTime, setSelectedTime] = useState("");
+  const initialDate = availableDates.find((date) => lessonDateHasAvailableTime(times, date)) ?? availableDates[0] ?? "";
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [selectedTime, setSelectedTime] = useState(() => firstAvailableLessonTime(times, initialDate)?.startsAt ?? "");
   const [selectedWeapon, setSelectedWeapon] = useState<Weapon>(coach.weapons[0]);
   const defaultParticipant = participants.find((participant) => participant.isSelf) ?? participants[0];
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
     defaultParticipant ? [defaultParticipant.id] : [],
   );
-  const [attemptedSlot, setAttemptedSlot] = useState<AvailableLessonTime | null>(null);
+  const [attemptedSlot, setAttemptedSlot] = useState<LessonTimeOption | null>(null);
   const [state, formAction, pending] = useActionState(createAction, initialActionState);
 
   const timesForDate = timesForLessonDate(times, selectedDate);
-  const selected = times.find((time) => time.startsAt === selectedTime) ?? null;
+  const hasAvailableTimes = times.some((time) => time.isAvailable);
+  const selected = times.find((time) => time.startsAt === selectedTime && time.isAvailable) ?? null;
   const quote = quotes.find(
     (item) => item.participantCount === selectedParticipants.length,
   ) ?? null;
+  const requiresPayNow = selectedParticipants.some((participantId) => participants.find((participant) => participant.id === participantId)?.membershipStatus === "guest");
 
   useEffect(() => {
     if (selectedTime && !times.some((time) => time.startsAt === selectedTime)) {
@@ -100,15 +108,15 @@ export function CoachBookingCalendar({
 
   const chooseDate = (date: string) => {
     setSelectedDate(date);
-    setSelectedTime("");
+    setSelectedTime(firstAvailableLessonTime(times, date)?.startsAt ?? "");
   };
 
   if (times.length === 0 && !attemptedSlot) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
-        <h2 className="font-serif text-2xl text-slate-950">No free times right now</h2>
+        <h2 className="font-serif text-2xl text-slate-950">No scheduled times right now</h2>
         <p className="mt-2 text-sm text-slate-600">
-          {coach.fullName} has no bookable 30-minute lessons in the next four weeks.
+          {coach.fullName} has no scheduled 30-minute lessons in the next four weeks.
           Check again later or choose another coach.
         </p>
       </div>
@@ -159,16 +167,16 @@ export function CoachBookingCalendar({
               <p className="mt-1 text-sm text-slate-600">All dates and times use Cape Town time.</p>
             </div>
           </div>
-          <label htmlFor="lesson-date" className="mt-5 block max-w-xs text-sm font-medium text-slate-800">
-            Lesson date
-            <input id="lesson-date" type="date" value={selectedDate} min={availableDates[0]} max={availableDates.at(-1)} onChange={(event) => chooseDate(event.target.value)} className="mt-2 min-h-11 w-full rounded-xl border border-[#2d176b]/20 bg-white px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b]" />
-          </label>
-          <div className="mt-4 flex flex-wrap gap-2" aria-label="Dates with free lesson times">
-            {availableDates.map((date) => (
-              <button key={date} type="button" onClick={() => chooseDate(date)} aria-pressed={selectedDate === date} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] " + (selectedDate === date ? "bg-[#2d176b] text-white" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40")}>
-                {formatCapeTownCompactDate(date)}
-              </button>
-            ))}
+          <div className="mt-5 flex flex-wrap gap-2" aria-label="Dates with scheduled lesson times">
+            {availableDates.map((date) => {
+              const isAvailable = lessonDateHasAvailableTime(times, date);
+              const isSelected = selectedDate === date;
+              return (
+                <button key={date} type="button" onClick={() => chooseDate(date)} disabled={!isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownCompactDate(date)}${isAvailable ? "" : ", unavailable"}`} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] " + (isSelected ? "bg-[#2d176b] text-white" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40") + (!isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70" : "")}>
+                  {formatCapeTownCompactDate(date)}
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -180,16 +188,21 @@ export function CoachBookingCalendar({
               <p className="mt-1 text-sm text-slate-600">{selectedDate ? formatCapeTownDate(selectedDate) : "Choose a date first"}</p>
             </div>
           </div>
+          {!hasAvailableTimes && (
+            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600" role="status">
+              No bookable times are currently available. Scheduled times are shown below.
+            </p>
+          )}
           {timesForDate.length === 0 ? (
-            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">There are no free times on this date.</p>
+            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">There are no scheduled times on this date.</p>
           ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Free lesson times">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Scheduled lesson times">
               {timesForDate.map((time) => {
                 const isSelected = selectedTime === time.startsAt;
                 return (
-                  <button key={time.startsAt} type="button" onClick={() => setSelectedTime(time.startsAt)} aria-pressed={isSelected} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308]" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35")}>
-                    {formatCapeTownTime(time.startsAt)}
-                    {isSelected && <Check className="h-4 w-4" aria-hidden="true" />}
+                  <button key={time.startsAt} type="button" onClick={() => time.isAvailable && setSelectedTime(time.startsAt)} disabled={!time.isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownTime(time.startsAt)}${time.isAvailable ? "" : ", unavailable"}`} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308]" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35") + (!time.isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70" : "")}>
+                    <span>{formatCapeTownTime(time.startsAt)}</span>
+                    {time.isAvailable ? (isSelected && <Check className="h-4 w-4" aria-hidden="true" />) : <span className="text-xs font-semibold uppercase tracking-wide">Unavailable</span>}
                   </button>
                 );
               })}
@@ -233,7 +246,7 @@ export function CoachBookingCalendar({
             <p className="mt-1 text-sm text-white/70">{weaponLabels[selectedWeapon]} · 30 minutes · Cape Town time</p>
           </>
         ) : (
-          <p className="mt-4 text-sm text-white/70">Choose a free time to continue.</p>
+          <p className="mt-4 text-sm text-white/70">Choose an available time to continue.</p>
         )}
         <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4">
           <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null })}</p>
@@ -246,12 +259,36 @@ export function CoachBookingCalendar({
           <input type="hidden" name="startsAt" value={selectedTime} />
           <input type="hidden" name="weapon" value={selectedWeapon} />
           {selectedParticipants.map((participantId) => <input key={participantId} type="hidden" name="participantIds" value={participantId} />)}
+          {canSeeQuote && (requiresPayNow ? (
+            <>
+              <input type="hidden" name="paymentOption" value="pay_now" />
+              <p className="text-sm text-white/85">Guest lessons are held while you complete payment now.</p>
+            </>
+          ) : (
+            <label className="block space-y-2 text-sm">
+              <span>Payment option</span>
+              <select name="paymentOption" defaultValue="pay_later" className="min-h-12 w-full rounded-xl border border-white/30 bg-[#25145c] px-3 text-white">
+                <option value="pay_later">Pay later on my invoice</option>
+                <option value="pay_now">Hold my lesson and pay now</option>
+              </select>
+            </label>
+          ))}
           {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}</p>}
           {state.success && <p role="status" className="rounded-xl bg-emerald-950/40 p-3 text-sm text-emerald-50">{state.success}</p>}
           <Button type="submit" disabled={pending || !selected || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
             {pending ? "Booking…" : "Confirm booking"}
           </Button>
         </form>
+        {state.checkoutRequired && state.bookingId && quote && (
+          <form action={async (formData) => { await startCheckoutAction(formData); }} className="mt-4">
+            <input type="hidden" name="bookingId" value={state.bookingId} />
+            <input type="hidden" name="amountCents" value={quote.totalCents} />
+            <input type="hidden" name="idempotencyKey" value={`lesson:${state.bookingId}`} />
+            <Button type="submit" className="min-h-12 w-full rounded-full bg-[#f0c71b] text-[#25145c] hover:bg-[#f6d94e]">
+              Continue to secure checkout
+            </Button>
+          </form>
+        )}
       </aside>
     </div>
   );

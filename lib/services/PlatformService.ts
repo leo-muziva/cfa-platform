@@ -1,5 +1,5 @@
 import 'server-only'
-import { getCurrentAccountContext, getCurrentProfile, requireAdmin } from '@/lib/services/MemberService'
+import { getCurrentAccountContext, getCurrentProfile, requireAdmin, requireStaff } from '@/lib/services/MemberService'
 import { getMembershipTypes } from '@/lib/repositories/MemberRepository'
 import {
   listOpenSlots, createSlot, createBooking, listBookings, createMembershipRequest,
@@ -143,16 +143,16 @@ export async function getPayerBilling(): Promise<PayerBillingView | { error: str
 }
 
 export async function runInvoicesForAdmin(period: string) {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   return 'error' in guard ? guard : runInvoices(period)
 }
 
 export async function recordManualPaymentForAdmin(invoiceId: string) {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   return 'error' in guard ? guard : recordManualPayment(invoiceId, guard.profile.id)
 }
 
 export async function getInvoicesForAdmin() {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   return 'error' in guard ? guard : { invoices: await listAllInvoices() }
 }
