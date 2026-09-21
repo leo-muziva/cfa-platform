@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   BOOKING_CONTENTION_MESSAGE,
   cancellationDeadline,
+  firstAvailableLessonTime,
+  lessonDateHasAvailableTime,
   isValidLessonParticipantSelection,
   lessonDates,
   lessonBillingCopy,
@@ -11,12 +13,14 @@ import {
   timesForLessonDate,
   toggleLessonParticipant,
 } from "./lesson-booking-ui";
-import type { AvailableLessonTime, LessonBooking } from "@/types/domain";
+import type { AvailableLessonTime, LessonBooking, LessonTimeOption } from "@/types/domain";
 
 const time = (startsAt: string): AvailableLessonTime => ({
   startsAt,
   endsAt: new Date(new Date(startsAt).getTime() + 30 * 60_000).toISOString(),
 });
+
+const option = (startsAt: string, isAvailable: boolean): LessonTimeOption => ({ ...time(startsAt), isAvailable });
 
 describe("lesson booking UI helpers", () => {
   it("allows one or two distinct participants and ignores a third", () => {
@@ -30,6 +34,19 @@ describe("lesson booking UI helpers", () => {
     const times = [time("2026-08-05T22:30:00.000Z"), time("2026-08-06T16:30:00.000Z")];
     expect(lessonDates(times)).toEqual(["2026-08-06"]);
     expect(timesForLessonDate(times, "2026-08-06")).toHaveLength(2);
+  });
+
+  it("keeps unavailable schedule dates visible but non-selectable", () => {
+    const options = [
+      option("2026-08-06T16:00:00.000Z", false),
+      option("2026-08-07T16:00:00.000Z", true),
+      option("2026-08-07T16:30:00.000Z", false),
+    ];
+    expect(lessonDates(options)).toEqual(["2026-08-06", "2026-08-07"]);
+    expect(lessonDateHasAvailableTime(options, "2026-08-06")).toBe(false);
+    expect(lessonDateHasAvailableTime(options, "2026-08-07")).toBe(true);
+    expect(firstAvailableLessonTime(options, "2026-08-06")).toBeNull();
+    expect(firstAvailableLessonTime(options, "2026-08-07")?.startsAt).toBe("2026-08-07T16:00:00.000Z");
   });
 
   it("falls back to the first supported weapon", () => {
@@ -46,7 +63,7 @@ describe("lesson booking UI helpers", () => {
   });
 
   it("keeps dependent confirmation copy financially private", () => {
-    const quote = { participantCount: 2 as const, totalCents: 60000, currency: "ZAR" as const };
+    const quote = { participantCount: 2 as const, totalCents: "60000", currency: "ZAR" as const };
     expect(lessonBillingCopy({ canSeeQuote: false, quote })).toBe("Your payer will be billed");
     expect(lessonBillingCopy({ canSeeQuote: false, quote })).not.toMatch(
       /R\s?\d|600|\b(?:price|amount)\b/i,

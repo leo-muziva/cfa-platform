@@ -62,13 +62,13 @@ export default async function CoachLessonBookingPage({
           Book with {data.coach.fullName}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Free times are current when this page loads and are always rechecked when you confirm.
+          Scheduled times are current when this page loads and are always rechecked when you confirm.
         </p>
       </header>
 
       <CoachBookingCalendar
         coach={data.coach}
-        times={data.availableTimes}
+        times={data.timeOptions}
         participants={participants}
         quotes={data.capabilities.canSeeHouseholdMoney ? quotes : []}
         canSeeQuote={data.capabilities.canSeeHouseholdMoney}

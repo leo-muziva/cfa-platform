@@ -43,12 +43,14 @@ export async function getHouseholdMembership(profileId: string): Promise<Househo
   return error ? null : data as HouseholdMember
 }
 
-export async function getHouseholdMembers(): Promise<HouseholdMember[]> {
+export async function getHouseholdMembers(householdId?: string): Promise<HouseholdMember[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('household_members').select(`
+  let query = supabase.from('household_members').select(`
     household_id,profile_id,household_role,payer_consent_at,
     profile:profiles!household_members_profile_id_fkey(id,full_name,email,membership_status)
   `).order('created_at')
+  if (householdId) query = query.eq('household_id', householdId)
+  const { data, error } = await query
   return error ? [] : data as unknown as HouseholdMember[]
 }
 
@@ -86,12 +88,17 @@ export async function inviteMemberByEmail(
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: {
       full_name: fullName,
-      cfa_is_staff: isStaff,
-      cfa_staff_type: isStaff ? staffType ?? 'coach' : null,
     },
     redirectTo: `${siteUrl}/auth/update-password`,
   })
   if (error) return { error: error.message.toLowerCase().includes('already') ? 'A user with this email already exists' : 'Failed to send invite' } as const
+  if (isStaff) {
+    const { error: provisioningError } = await admin.rpc('provision_invited_staff', {
+      target_user: data.user.id,
+      target_staff_type: staffType ?? 'coach',
+    })
+    if (provisioningError) return { error: 'Invitation sent, but staff assignment failed. An administrator must assign staff access before use.' } as const
+  }
   return { userId: data.user.id }
 }
 

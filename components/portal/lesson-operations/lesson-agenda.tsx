@@ -12,6 +12,7 @@ export interface CoachAgendaLesson {
   weapon: string;
   status: string;
   participantNames: string[];
+  participants?: Array<{ id: string; fullName: string; attendanceOutcome?: 'attended' | 'no_show' | null }>;
 }
 
 export function partitionCoachAgenda(items: CoachAgendaLesson[], now = new Date()) {
@@ -53,15 +54,23 @@ function OutcomeControls({
   action: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:w-[18rem]" aria-label={`Record outcome for ${lesson.participantNames.join(" and ")}`}>
-      <OperationForm action={action} submitLabel="Attended" pendingLabel="Recording..." className="space-y-1" submitClassName="w-full">
-        <input type="hidden" name="bookingId" value={lesson.bookingId} />
-        <input type="hidden" name="outcome" value="attended" />
-      </OperationForm>
-      <OperationForm action={action} submitLabel="No-show" pendingLabel="Recording..." variant="outline" className="space-y-1" submitClassName="w-full">
-        <input type="hidden" name="bookingId" value={lesson.bookingId} />
-        <input type="hidden" name="outcome" value="no_show" />
-      </OperationForm>
+    <div className="space-y-3 lg:w-[22rem]">
+      {(lesson.participants ?? []).map((participant) => (
+        <div key={participant.id} className="space-y-2">
+          <p className="text-sm font-medium">{participant.fullName}</p>
+          {participant.attendanceOutcome ? <Badge variant="secondary">{participant.attendanceOutcome === "attended" ? "Attended" : "No-show"}</Badge> : (
+            <div className="grid grid-cols-2 gap-2" aria-label={`Record outcome for ${participant.fullName}`}>
+              {(["attended", "no_show"] as const).map((outcome) => (
+                <OperationForm key={outcome} action={action} submitLabel={outcome === "attended" ? "Attended" : "No-show"} pendingLabel="Recording..." variant={outcome === "attended" ? "default" : "outline"} className="space-y-1" submitClassName="w-full">
+                  <input type="hidden" name="bookingId" value={lesson.bookingId} />
+                  <input type="hidden" name="participantId" value={participant.id} />
+                  <input type="hidden" name="outcome" value={outcome} />
+                </OperationForm>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

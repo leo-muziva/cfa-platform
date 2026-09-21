@@ -60,6 +60,7 @@ export interface ProfileUpdate {
   date_of_birth?: string | null
   emergency_contact_name?: string | null
   emergency_contact_phone?: string | null
+  reminder_preference?: ReminderPreference
 }
 
 export interface AdminProfileUpdate extends ProfileUpdate {

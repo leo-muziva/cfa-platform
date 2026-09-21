@@ -23,6 +23,7 @@ import {
   listEligibleLessonParticipants,
   listLessonActivity,
   listLessonCoaches,
+  listLessonTimeOptions,
   listMemberLessonBookings,
   previewClubClosure,
   previewCoachAvailabilityException,
@@ -86,14 +87,14 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
   if (!participantsResult.success) return pageError(participantsResult)
   const filtersResult = lessonAvailabilitySchema.safeParse({ coachId, weapon: coach.weapons[0], ...rawFilters as object })
   if (!filtersResult.success) return { error: 'Check the lesson filters and try again.', errorCode: 'invalid_input' as const }
-  const availabilityResult = await listAvailableLessonTimes(filtersResult.data)
-  if (!availabilityResult.success) return pageError(availabilityResult)
+  const optionsResult = await listLessonTimeOptions(filtersResult.data)
+  if (!optionsResult.success) return pageError(optionsResult)
   return {
     profile: context.profile,
     capabilities: context.capabilities,
     coach,
     participants: eligibleParticipantsForActor(participantsResult.data, context.profile.id, context.capabilities.isDependent),
-    availableTimes: availabilityResult.data,
+    timeOptions: optionsResult.data,
   }
 }
 
@@ -102,13 +103,17 @@ export async function getAvailableLessonTimes(raw: unknown) {
   return parsed.success ? listAvailableLessonTimes(parsed.data) : invalid()
 }
 
+export async function getLessonTimeOptions(raw: unknown) {
+  const parsed = lessonAvailabilitySchema.safeParse(raw)
+  return parsed.success ? listLessonTimeOptions(parsed.data) : invalid()
+}
+
 export async function quoteLesson(raw: unknown) {
   const parsed = lessonParticipantsSchema.safeParse(raw)
   if (!parsed.success) return invalid()
   const profile = await getCurrentProfile()
   if (!profile) return lessonBookingError('not_authenticated')
   if (profile.is_staff && profile.staff_type === 'admin') return getLessonQuote(parsed.data.participantIds)
-  if (profile.is_staff && profile.staff_type === 'coach') return lessonBookingError('forbidden')
   const context = await getCurrentAccountContext()
   if ('error' in context) return lessonBookingError('forbidden')
   if (!context.capabilities.canSeeHouseholdMoney) return lessonBookingError('forbidden')
@@ -134,12 +139,8 @@ export async function cancelLessonBooking(raw: unknown) {
   if (!parsed.success) return invalid()
   const profile = await getCurrentProfile()
   if (!profile) return lessonBookingError('not_authenticated')
-  if (profile.is_staff && profile.staff_type === 'admin') {
-    return cancelLessonBookingRecord(parsed.data.bookingId, parsed.data.reason ?? null, 'admin')
-  }
-  if (profile.is_staff && profile.staff_type === 'coach') {
-    return cancelLessonBookingRecord(parsed.data.bookingId, parsed.data.reason ?? null, 'coach')
-  }
+  // Personal lesson changes follow the household policy, including for staff.
+  // Operational coach/closure cancellations use their dedicated service actions.
   const context = await getCurrentAccountContext()
   if ('error' in context) return lessonBookingError('forbidden')
   const actorType = context.capabilities.isPayer ? 'payer' : 'member'
@@ -192,7 +193,7 @@ export async function recordLessonOutcome(raw: unknown) {
   const profile = await getCurrentProfile()
   if (!profile) return lessonBookingError('not_authenticated')
   if (!profile.is_staff || !['coach', 'admin'].includes(profile.staff_type ?? '')) return lessonBookingError('forbidden')
-  return recordLessonOutcomeRecord(parsed.data.bookingId, parsed.data.outcome)
+  return recordLessonOutcomeRecord(parsed.data.bookingId, parsed.data.outcome, parsed.data.participantId)
 }
 
 type CoachAdminGuard =
