@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { CartItemControls } from "../components/CartItemControls";
 import { SubmitOrderButton } from "../components/SubmitOrderButton";
 
@@ -26,9 +27,9 @@ export default async function CartPage() {
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-6 text-2xl font-semibold">Your order</h1>
         <p className="text-gray-500">Your order is empty.</p>
-        <a href="/protected/shop" className="mt-4 inline-block underline">
+        <Link href="/protected/shop" className="mt-4 inline-block underline">
           Browse the catalogue
-        </a>
+        </Link>
       </main>
     );
   }
@@ -54,9 +55,9 @@ export default async function CartPage() {
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-6 text-2xl font-semibold">Your order</h1>
         <p className="text-gray-500">Your order is empty.</p>
-        <a href="/protected/shop" className="mt-4 inline-block underline">
+        <Link href="/protected/shop" className="mt-4 inline-block underline">
           Browse the catalogue
-        </a>
+        </Link>
       </main>
     );
   }
@@ -98,9 +99,9 @@ export default async function CartPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <a href="/protected/shop" className="text-sm text-gray-500 underline">
+      <Link href="/protected/shop" className="text-sm text-gray-500 underline">
         Back to catalogue
-      </a>
+      </Link>
 
       <h1 className="mb-6 mt-4 text-2xl font-semibold">Your order</h1>
 

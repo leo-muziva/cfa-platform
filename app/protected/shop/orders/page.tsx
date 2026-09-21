@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 
 // Friendly labels for the status values stored in the database.
@@ -95,9 +96,9 @@ export default async function OrdersPage({
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <a href="/protected/shop" className="text-sm text-gray-500 underline">
+      <Link href="/protected/shop" className="text-sm text-gray-500 underline">
         Back to catalogue
-      </a>
+      </Link>
 
       <h1 className="mb-6 mt-4 text-2xl font-semibold">Your orders</h1>
 

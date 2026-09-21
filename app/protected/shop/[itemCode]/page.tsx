@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { AddToCartButton } from "../components/AddToCartButton";
 import Image from "next/image";
 import { productImageUrl } from "@/lib/productImage";
@@ -27,12 +28,12 @@ export default async function ProductPage({
   return (
     <main className="mx-auto max-w-3xl p-8">
            <div className="flex items-center justify-between">
-        <a href="/protected/shop" className="text-sm text-gray-500 underline">
+        <Link href="/protected/shop" className="text-sm text-gray-500 underline">
           Back to catalogue
-        </a>
-        <a href="/protected/shop/cart" className="text-sm underline">
+        </Link>
+        <Link href="/protected/shop/cart" className="text-sm underline">
           View order
-        </a>
+        </Link>
       </div>
 
       <div className="mt-6 grid gap-8 sm:grid-cols-2">

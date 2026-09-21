@@ -26,7 +26,7 @@ const status = spawnSync(supabaseBinary, ["status", "-o", "env"], {
 if (status.status !== 0) {
   process.stderr.write(status.stderr || status.stdout);
   console.error(
-    "\nLocal Supabase is not ready. Start Docker Desktop, run npx supabase start, then retry npm run dev:local.",
+    "\nLocal Supabase is not ready. Start Docker Desktop, run npx supabase start, then retry npm run dev.",
   );
   process.exit(status.status ?? 1);
 }

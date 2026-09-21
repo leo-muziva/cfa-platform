@@ -1,115 +1,65 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# CFA Platform v1.0
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+CFA Platform is the Cape Fencing Academy member portal. It supports account and membership workflows, household and payer relationships, private 30-minute lesson booking, coach availability management, lesson operations, and invoice-only lesson charging.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+## Architecture
 
-## Features
+- Next.js 16 App Router and TypeScript for the web application.
+- Tailwind and shared UI components for the portal.
+- Supabase Auth and Postgres with RLS for identity, authorization, data, and atomic booking workflows.
+- Pages call services in `lib/services/`; services call repositories in `lib/repositories/`. UI components do not query Supabase directly.
+- The current lesson workflow is v2 coach availability. The legacy capacity-slot booking RPC is not a supported public workflow.
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+## Local setup
 
-## Demo
+1. Install dependencies: `npm install`.
+2. Start Docker Desktop, then start Supabase: `npx supabase start`.
+3. Recreate the local database, migrations, and canonical fixtures: `npx supabase db reset`.
+4. Run the app against local Supabase: `npm run dev`. The server announces `http://localhost:3000`.
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+`npm run dev` is the standard local command. It reads the live local Supabase CLI configuration automatically, so no local credentials need to be copied into an environment file. Use `npm run dev:hosted` only when you intentionally configured a hosted Supabase project in `.env.local`.
 
-## Deploy to Vercel
+`supabase/seed.sql` is the automatic source of local demo fixtures. It is deliberately separate from production migrations.
 
-Vercel deployment will guide you through creating a Supabase account and project.
+Run verification with:
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+`npm test -- --run`
+`npm run test:db-workflows`
+`npm run lint`
+`npm run build`
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+## Lesson booking
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+Coaches publish standing availability and optional extra intervals. The booking calendar shows every 30-minute offered occurrence in the booking horizon. A time can be selectable or shown as **Unavailable**. The UI never says whether an unavailable time is blocked, closed, or already booked. Dates with scheduled times but no selectable time are disabled, while remaining visible.
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+Booking and rescheduling are rechecked atomically in Postgres. Cancellation and rescheduling enforce ownership and start-time rules server-side; lesson charges retain their lifecycle state for the corresponding cancellation or reschedule result.
 
-## Clone and run locally
+## Demo personas
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+Local reset creates these accounts, all using password `Test1234!`:
 
-2. Create a Next.js app using the Supabase Starter template npx command
+- `admin@cfa.test` - Alice Admin
+- `coach@cfa.test` - Dr. Misha Galukhin
+- `fencer@cfa.test` - Fiona Fencer
+- `guardian@cfa.test` - George Guardian, payer for Fiona
+- `jacques@cfa.test` and `jeremy@cfa.test` - additional coaches
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+The fixtures include the guardian/dependent household, coach offerings and rules, a blocked interval, club closure, scheduled lessons, participants, and provisional charges.
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+## Hosted staging demo data
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+Never run demo seeding against production. The guarded hosted seeder is manual only:
 
-3. Use `cd` to change into the app's directory
+`npm run seed:staging`
 
-   ```bash
-   cd with-supabase-app
-   ```
+It requires these non-secret configuration keys in `.env.local` (start from `.env.sample`):
 
-4. Choose the backend you want to use:
+`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `CFA_STAGING_SEED_CONFIRM=I_UNDERSTAND_THIS_IS_STAGING`.
 
-   - Local Supabase: start Docker Desktop, run `npx supabase start`, then
-     start the app with `npm run dev:local`. This reads the local public
-     connection values directly from the Supabase CLI.
-   - Hosted Supabase: copy `.env.template` to `.env.local` and replace the
-     placeholders with the public values from your Supabase project.
+The script rejects localhost and production-looking project URLs, requires the exact confirmation value, and is idempotent. It provisions the same canonical personas and related CFA demonstration data as the local fixture. Do not put service keys in source control.
 
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-   ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+## Inspecting hosted data
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+In the Supabase dashboard, use **Authentication → Users** to inspect demo accounts. Use **Table Editor** for `profiles`, `coach_availability_rules`, `coach_availability_exceptions`, `club_closures`, `bookings`, `booking_participants`, and `charges`.
 
-5. For a hosted Supabase configuration, run the Next.js development server:
-
-   ```bash
-   npm run dev
-   ```
-
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
-
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
-
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
-
-## Feedback and issues
-
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
-
-## More Supabase examples
-
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+The application reads these Supabase rows at runtime. “Hard-coded” means a value embedded in UI or code. “Pre-populated” means repeatable records inserted into the database fixture or explicit staging seed.

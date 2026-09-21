@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
+import { selectStaleAuthCookieNames } from "./auth-cookies";
 import { getSupabasePublicConfig } from "./config";
 
 export async function updateSession(request: NextRequest) {
@@ -46,15 +48,15 @@ export async function updateSession(request: NextRequest) {
   // deleted by a local database reset, so claims alone are not authoritative.
   const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error) {
-    const staleAuthCookies = request.cookies
-      .getAll()
-      .filter(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"));
+  if (error && !isAuthSessionMissingError(error)) {
+    const staleAuthCookies = selectStaleAuthCookieNames(
+      request.cookies.getAll().map(({ name }) => name),
+    );
 
-    authCookiesToClear = staleAuthCookies.map(({ name }) => name);
-    staleAuthCookies.forEach(({ name }) => request.cookies.delete(name));
+    authCookiesToClear = staleAuthCookies;
+    staleAuthCookies.forEach((name) => request.cookies.delete(name));
     supabaseResponse = NextResponse.next({ request });
-    staleAuthCookies.forEach(({ name }) => supabaseResponse.cookies.delete(name));
+    staleAuthCookies.forEach((name) => supabaseResponse.cookies.delete(name));
   }
 
   const publicPrefixes = [
