@@ -12,6 +12,7 @@
     "test": "vitest",
     "test:db-workflows": "npx supabase test db supabase/tests/database/member-workflows.test.sql supabase/tests/database/lesson-booking-demo.test.sql",
     "test:db-security": "npx supabase test db supabase/tests/database/trusted-staff.test.sql",
+    "test:db-payments": "npx supabase test db supabase/tests/database/provider-payments.test.sql",
     "seed:staging": "node scripts/seed-hosted-demo.mjs",
     "dev:hosted": "next dev --webpack"
   },

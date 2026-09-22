@@ -23,7 +23,7 @@ import {
   timesForLessonDate,
   toggleLessonParticipant,
 } from "@/lib/lesson-booking-ui";
-import { startCheckoutAction } from "@/app/actions/payments";
+import { CheckoutButton } from "@/components/payments/checkout-button";
 import type {
   LessonTimeOption,
   LessonBookingErrorCode,
@@ -280,14 +280,7 @@ export function CoachBookingCalendar({
           </Button>
         </form>
         {state.checkoutRequired && state.bookingId && quote && (
-          <form action={async (formData) => { await startCheckoutAction(formData); }} className="mt-4">
-            <input type="hidden" name="bookingId" value={state.bookingId} />
-            <input type="hidden" name="amountCents" value={quote.totalCents} />
-            <input type="hidden" name="idempotencyKey" value={`lesson:${state.bookingId}`} />
-            <Button type="submit" className="min-h-12 w-full rounded-full bg-[#f0c71b] text-[#25145c] hover:bg-[#f6d94e]">
-              Continue to secure checkout
-            </Button>
-          </form>
+          <CheckoutButton bookingId={state.bookingId} />
         )}
       </aside>
     </div>
