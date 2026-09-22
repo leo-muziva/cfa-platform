@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getPayerBilling } from '@/lib/services/PlatformService'
 import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
+import { CheckoutButton } from '@/components/payments/checkout-button'
 
 export default async function BillingPage() {
   const billing = await getPayerBilling()
@@ -59,7 +60,7 @@ export default async function BillingPage() {
 
       <section className="space-y-3">
         <div><h2 className="text-xl font-semibold">Invoices</h2><p className="text-sm text-muted-foreground">An invoice is a statement of your outstanding items, not an additional charge.</p></div>
-        {billing.invoices.length === 0 ? <p>No invoices yet.</p> : billing.invoices.map((invoice) => <Card key={invoice.id}><CardHeader><CardTitle className="flex justify-between"><span>{invoice.invoice_number}</span><Badge>{invoice.status}</Badge></CardTitle></CardHeader><CardContent><p>R{Number(invoice.total).toFixed(2)}</p><ul className="mt-3 space-y-1 text-sm text-muted-foreground">{invoice.lines?.map((line) => <li key={line.id}>{line.participant?.full_name || 'Participant'} - {line.description}: R{Number(line.amount).toFixed(2)}</li>)}</ul></CardContent></Card>)}
+        {billing.invoices.length === 0 ? <p>No invoices yet.</p> : billing.invoices.map((invoice) => <Card key={invoice.id}><CardHeader><CardTitle className="flex justify-between"><span>{invoice.invoice_number}</span><Badge>{invoice.status}</Badge></CardTitle></CardHeader><CardContent><p>R{Number(invoice.total).toFixed(2)}</p><ul className="mt-3 space-y-1 text-sm text-muted-foreground">{invoice.lines?.map((line) => <li key={line.id}>{line.participant?.full_name || 'Participant'} - {line.description}: R{Number(line.amount).toFixed(2)}</li>)}</ul>{billing.providerAvailable && invoice.status !== 'paid' && <CheckoutButton invoiceId={invoice.id} />}</CardContent></Card>)}
       </section>
 
       <section className="space-y-3"><h2 className="text-xl font-semibold">Receipts</h2>{billing.receipts.length === 0 ? <p>No receipts yet.</p> : billing.receipts.map((receipt) => <Card key={receipt.id}><CardHeader><CardTitle>{receipt.receipt_number}</CardTitle></CardHeader><CardContent>R{Number(receipt.amount).toFixed(2)}</CardContent></Card>)}</section>

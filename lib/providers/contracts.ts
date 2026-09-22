@@ -1,5 +1,5 @@
 import 'server-only'
-import { isPeachSandboxEnabled } from '@/lib/providers/peach-sandbox'
+import { getPaymentGateway } from '@/lib/payments/registry'
 
 export interface PaymentLinkRequest {
   invoiceId: string
@@ -34,9 +34,8 @@ export class ProviderUnavailableError extends Error {
 }
 
 export function getPaymentProvider(): PaymentProvider | null {
-  // The hosted checkout flow uses signed form posts, not a browser SDK. This
-  // availability signal only controls payer-facing UI and never exposes keys.
-  return isPeachSandboxEnabled() ? { name: 'peach_sandbox', createPaymentLink: async () => { throw new ProviderUnavailableError('payment') }, verifyWebhook: async () => { throw new ProviderUnavailableError('payment') } } : null
+  const gateway = getPaymentGateway()
+  return gateway ? { name: gateway.name, createPaymentLink: async () => { throw new ProviderUnavailableError('payment') }, verifyWebhook: async () => { throw new ProviderUnavailableError('payment') } } : null
 }
 
 export function getEmailProvider(): EmailProvider | null {

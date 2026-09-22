@@ -6,6 +6,10 @@ import { selectStaleAuthCookieNames } from "./auth-cookies";
 import { getSupabasePublicConfig } from "./config";
 
 export async function updateSession(request: NextRequest) {
+  // PayFast has no browser session; this exact endpoint verifies signed ITNs.
+  if (request.nextUrl.pathname === "/api/payments/payfast/webhook") {
+    return NextResponse.next({ request });
+  }
   let authCookiesToClear: string[] = [];
   let supabaseResponse = NextResponse.next({
     request,

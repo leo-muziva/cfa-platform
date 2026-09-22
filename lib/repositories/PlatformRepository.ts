@@ -217,14 +217,8 @@ export async function listAllInvoices(): Promise<Invoice[]> {
 
 export async function recordManualPayment(invoiceId: string, adminId: string) {
   const db = await createClient()
-  const { data: invoice, error } = await db.from('invoices').select('*').eq('id', invoiceId).single()
-  if (error || !invoice || invoice.status === 'paid') return { error: 'Unpaid invoice not found' }
-  const { error: updateError } = await db.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', invoiceId)
-  if (updateError) return { error: updateError.message }
-  await db.from('charges').update({ status: 'paid', paid_at: new Date().toISOString() })
-    .in('id', (await db.from('invoice_lines').select('charge_id').eq('invoice_id', invoiceId)).data?.map((r) => r.charge_id) ?? [])
-  const { error: receiptError } = await db.from('receipts').insert({ payer_id: invoice.payer_id, invoice_id: invoiceId, amount: invoice.total })
-  if (receiptError) return { error: receiptError.message }
+  const { data, error } = await db.rpc('record_manual_invoice_payment', { target_invoice: invoiceId })
+  if (error || !data) return { error: error?.message ?? 'Unpaid invoice not found' }
   void adminId
   return { success: true as const }
 }

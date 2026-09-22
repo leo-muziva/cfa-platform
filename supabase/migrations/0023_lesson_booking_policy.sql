@@ -46,7 +46,7 @@ insert into public.lesson_products(code,display_name,customer_price_cents,coach_
 values
   ('standard_30','Standard 30-minute lesson',30000,25000,5000,false,false),
   ('intro','Intro lesson',15000,15000,0,true,true),
-  ('beginner_package','Beginner-package lesson',0,25000,0,false,true)
+  ('beginner_package','Beginner-package lesson',0,0,0,false,true)
 on conflict (code) do update set display_name=excluded.display_name, customer_price_cents=excluded.customer_price_cents,
   coach_allocation_cents=excluded.coach_allocation_cents, club_allocation_cents=excluded.club_allocation_cents,
   requires_pay_now=excluded.requires_pay_now, requires_entitlement=excluded.requires_entitlement;
