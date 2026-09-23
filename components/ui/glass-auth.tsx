@@ -371,7 +371,7 @@ export function GlassAuthShell({ children }: { children: React.ReactNode }) {
         {/* Adjacent text repeats the crest's meaning, so the image is
             decorative to assistive tech (empty alt avoids double-announcing). */}
         <Image
-          src="/cfa-crest.png"
+          src="/media/brand/cfa-crest.png"
           alt=""
           width={32}
           height={32}

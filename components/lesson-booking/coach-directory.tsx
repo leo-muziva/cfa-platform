@@ -11,15 +11,19 @@ const weaponLabels = {
 
 const coachPhotos: Record<string, { url: string; position: string }> = {
   "Dr. Misha Galukhin": {
-    url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=85&w=1200&auto=format&fit=crop",
+    url: "/media/coaches/coach_misha.png",
     position: "center 24%",
   },
   "Jacques Viljoen": {
-    url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=85&w=1200&auto=format&fit=crop",
+    url: "/media/coaches/coach_jacques.png",
     position: "center 24%",
   },
   "Jeremy Saner": {
-    url: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=85&w=1200&auto=format&fit=crop",
+    url: "/media/coaches/coach_jeremy.png",
+    position: "center 24%",
+  },
+  "Caden Sampson": {
+    url: "/media/coaches/coach_caden.png",
     position: "center 24%",
   },
 };

@@ -28,7 +28,7 @@ export function PublicNavigation({ authSlot }: { authSlot: React.ReactNode }) {
           className={`flex h-8 items-center gap-3 text-sm font-semibold uppercase tracking-widest text-white md:text-base ${FOCUS_RING}`}
         >
           <Image
-            src="/cfa-crest.png"
+            src="/media/brand/cfa-crest.png"
             alt=""
             width={40}
             height={40}
