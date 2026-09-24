@@ -9,3 +9,5 @@ export default async function AuthenticationEntryPage({
   const next = safeInternalNext((await searchParams).next);
   redirect(`/auth/login?next=${encodeURIComponent(next)}`);
 }
+
+
