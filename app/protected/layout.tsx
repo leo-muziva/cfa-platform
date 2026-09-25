@@ -5,6 +5,7 @@ import { hasEnvVars } from '@/lib/utils'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
 import { Suspense } from 'react'
 import { PortalNavigation, type PortalNavigationLink } from '@/components/portal/portal-navigation'
+import { SmokeMotionToggle, SmokeyBackground } from '@/components/ui/smokey-background'
 
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -22,16 +23,22 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   ]
   
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_hsl(var(--cfa-purple)/0.30),_transparent_34%),radial-gradient(circle_at_bottom_left,_hsl(var(--cfa-gold)/0.14),_transparent_32%),hsl(var(--background))] text-foreground">
+    // `isolate` keeps the SmokeyBackground's -z-10 canvas pinned inside this
+    // stacking context instead of falling behind the whole page.
+    <main className="relative isolate min-h-screen bg-[#140a2e] text-foreground">
+      <SmokeyBackground />
       <div className="flex min-h-screen w-full flex-col">
         <PortalNavigation links={links} authSlot={!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>} />
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-8 sm:py-10">
-          <div className="rounded-[2rem] border border-border bg-card/[0.96] p-5 text-card-foreground shadow-[0_28px_90px_rgba(0,0,0,0.30)] backdrop-blur-2xl sm:p-8">
+          <div className="portal-glass rounded-[2rem] border border-border bg-card/[0.92] p-5 text-card-foreground shadow-[0_28px_90px_rgba(0,0,0,0.30)] dark:border-white/15 dark:bg-[#140a2e]/70 dark:backdrop-blur-xl sm:p-8">
             {children}
           </div>
         </div>
-        <footer className="mx-auto flex w-full max-w-7xl items-center justify-between border-t border-border px-5 py-8 text-xs text-muted-foreground sm:px-8">
-          <p>&copy; 2026 Cape Fencing Academy</p><ThemeToggle />
+        <footer className="mx-auto w-full max-w-7xl px-4 pb-6 sm:px-8">
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/40 px-5 py-5 text-xs text-white/90 backdrop-blur-md sm:px-8">
+            <p>&copy; 2026 Cape Fencing Academy</p>
+            <div className="flex items-center gap-3"><SmokeMotionToggle /><ThemeToggle /></div>
+          </div>
         </footer>
       </div>
     </main>

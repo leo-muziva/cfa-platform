@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { GlassDialog } from "@/components/ui/glass-dialog";
+import { TiltCard } from "@/components/ui/tilt-card";
 import {
   PUBLIC_CONTACT_LINKS,
   PUBLIC_LEGAL_LINKS,
@@ -108,16 +109,23 @@ export function ContactFooter() {
               const Icon = CONTACT_ICONS[row.id];
               return (
                 <li key={row.label}>
-                  <a
-                    href={row.href}
-                    {...(row.external
-                      ? { target: "_blank", rel: "noopener noreferrer" }
-                      : {})}
-                    className="cfa-light-card rounded-2xl p-6 flex items-center gap-4 hover:text-[#8a6810] dark:hover:text-cfa-gold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-gold"
+                  <TiltCard
+                    className="cfa-light-card rounded-2xl"
+                    tiltLimit={6}
+                    scale={1.02}
+                    spotlightColor="rgba(255,210,28,0.18)"
                   >
-                    <Icon size={22} className="shrink-0" aria-hidden="true" />
-                    <span>{row.label}</span>
-                  </a>
+                    <a
+                      href={row.href}
+                      {...(row.external
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                      className="relative z-20 flex items-center gap-4 rounded-2xl p-6 hover:text-[#8a6810] dark:hover:text-cfa-gold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:[outline-offset:-4px] focus-visible:outline-cfa-purple dark:focus-visible:outline-cfa-gold"
+                    >
+                      <Icon size={22} className="shrink-0" aria-hidden="true" />
+                      <span>{row.label}</span>
+                    </a>
+                  </TiltCard>
                 </li>
               );
             })}
@@ -136,13 +144,21 @@ export function ContactFooter() {
             }
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-            className="cfa-light-card rounded-2xl p-6"
           >
-            <h3 className="text-lg font-medium mb-4">Training hours</h3>
-            <ul className="space-y-2 text-muted-foreground">
-              <li>Tue–Thu 18:30 – 21:30</li>
-              <li>Sat 11:00 – 13:30</li>
-            </ul>
+            <TiltCard
+              className="cfa-light-card h-full rounded-2xl p-6"
+              tiltLimit={6}
+              scale={1.02}
+              spotlightColor="rgba(255,210,28,0.18)"
+            >
+              <div className="relative z-20">
+                <h3 className="text-lg font-medium mb-4">Training hours</h3>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li>Tue–Thu 18:30 – 21:30</li>
+                  <li>Sat 11:00 – 13:30</li>
+                </ul>
+              </div>
+            </TiltCard>
           </motion.div>
         </div>
 
