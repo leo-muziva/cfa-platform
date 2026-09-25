@@ -663,6 +663,32 @@ input:-webkit-autofill:active {
   color-scheme: dark;
 }
 
+/* Light theme frosted glass: the smoke shows through the panel, so muted
+   text is darkened to keep 4.5:1 contrast on the tinted glass. */
+.portal-glass {
+  --muted-foreground: 257 14% 30%;
+}
+.dark .portal-glass {
+  --muted-foreground: 0 0% 63.9%;
+}
+
+.portal-glass .cfa-light-card {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.68), rgb(255 255 255 / 0.5));
+  border-color: rgb(255 255 255 / 0.7);
+  box-shadow: 0 20px 50px rgb(20 10 46 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+/* Solid white page surfaces (cards, lists, empty states) get the same frost
+   in light theme only; dark theme keeps its existing surfaces. */
+:root:not(.dark) .portal-glass :is([class~="bg-white"], [class~="bg-card"], [class~="bg-slate-50"]):not(.cfa-light-card) {
+  background-color: rgb(255 255 255 / 0.6);
+  border-color: rgb(255 255 255 / 0.7);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
 .portal-glass :is(
   input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
   select,
@@ -767,6 +793,7 @@ input:-webkit-autofill:active {
 .dark .portal-glass .cfa-light-card {
   background: rgb(20 10 46 / 0.55);
   border-color: rgb(255 255 255 / 0.15);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
 /* Windows High Contrast drops background images and box shadows, so give
