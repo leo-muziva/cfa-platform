@@ -167,7 +167,7 @@ export default async function ShopPage({
   return (
     <div className="relative">
         <img
-        src="/shop-hero.png"
+        src="/media/pages/cfa-side-profile-transparent.png"
         alt=""
         aria-hidden="true"
          style={{
