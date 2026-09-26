@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 
 // Adds a product to the logged-in user's cart.
 // The cart is their order with status 'draft'.
-export async function addToCart(productId: number, size: string | null) {
+export async function addToCart(
+  productId: number,
+  size: string | null,
+  handedness: string | null
+) {
   const supabase = await createClient();
 
   // Who is logged in? Returns null if nobody.
@@ -51,7 +55,8 @@ export async function addToCart(productId: number, size: string | null) {
     orderId = newOrder.id;
   }
 
-  // Is this product (in this size) already in the cart?
+  // Is this exact thing already in the cart? Same product, same size,
+  // same hand — otherwise it's a separate line.
   let existingQuery = supabase
     .from("order_items")
     .select("id, quantity")
@@ -62,6 +67,12 @@ export async function addToCart(productId: number, size: string | null) {
   existingQuery = size
     ? existingQuery.eq("size", size)
     : existingQuery.is("size", null);
+
+  // The same jacket in a different hand is a different line item,
+  // not another one of the same thing.
+  existingQuery = handedness
+    ? existingQuery.eq("handedness", handedness)
+    : existingQuery.is("handedness", null);
 
   const { data: existingItem } = await existingQuery.maybeSingle();
 
@@ -83,6 +94,7 @@ export async function addToCart(productId: number, size: string | null) {
       product_id: productId,
       quantity: 1,
       size: size,
+      handedness: handedness,
       unit_price: product.price,
     });
 
@@ -97,6 +109,7 @@ export async function addToCart(productId: number, size: string | null) {
 
   return { success: true };
 }
+
 // Changes how many of an item are in the cart.
 // Passing 0 or less removes the line entirely.
 export async function updateQuantity(itemId: string, quantity: number) {
@@ -140,10 +153,8 @@ export async function removeItem(itemId: string) {
     .delete()
     .eq("id", itemId);
 
-    if (error) {
-    console.log("SUBMIT ERROR:", error);
-    return { error: "Could not submit: " + error.message };
-  
+  if (error) {
+    return { error: "Could not remove that item." };
   }
 
   revalidatePath("/protected/shop/cart");

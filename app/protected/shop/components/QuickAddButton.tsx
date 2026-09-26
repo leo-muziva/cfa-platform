@@ -12,7 +12,7 @@ export function QuickAddButton({ productId }: { productId: number }) {
 
   async function handleClick() {
     setState("busy");
-    const result = await addToCart(productId, null);
+    const result = await addToCart(productId, null,null);
     setState(result.error ? "idle" : "done");
     // Return to the normal icon after a moment.
     if (!result.error) {

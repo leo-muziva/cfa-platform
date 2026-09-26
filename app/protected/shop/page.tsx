@@ -148,7 +148,7 @@ export default async function ShopPage({
         className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition hover:border-foreground/30 hover:shadow-sm"
       >
         <Link href={href} className="block">
-          <div className="relative flex h-40 items-center justify-center bg-muted">
+            <div className="relative flex h-40 items-center justify-center bg-white">
             <span className="absolute left-3 top-3 z-10 rounded-lg bg-background/90 px-2.5 py-1 font-mono text-xs text-muted-foreground shadow-sm">
               {p.item_code}
             </span>
