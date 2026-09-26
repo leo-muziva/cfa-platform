@@ -182,7 +182,7 @@ export function CircularCoachProfiles({
       <div className="grid items-center gap-16 md:grid-cols-2 md:gap-20">
         <div
           ref={imageContainerRef}
-          className="relative h-80 w-full perspective-[1000px] sm:h-96"
+          className="relative mx-auto aspect-[3/4] h-80 perspective-[1000px] sm:h-96"
         >
           {profiles.map((profile, index) => (
             // Stock images are intentionally rendered directly because these

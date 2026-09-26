@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Clock } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import { VerticalVideoReel } from "@/components/landing/vertical-video-reel";
+import { TiltCard } from "@/components/ui/tilt-card";
 
 const SESSIONS = [
   {
@@ -33,30 +35,58 @@ export function ScheduleSection() {
           Weekly schedule.
         </h2>
 
-        <div className="grid sm:grid-cols-2 gap-6 mt-12 md:mt-16">
-          {SESSIONS.map((session, index) => (
-            <motion.div
-              key={session.days}
-              initial={
-                shouldReduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, y: 24, filter: "blur(12px)" }
-              }
-              whileInView={
-                shouldReduceMotion
-                  ? { opacity: 1 }
-                  : { opacity: 1, y: 0, filter: "blur(0px)" }
-              }
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
-              className="cfa-light-card rounded-2xl p-6"
-            >
-              <Clock size={24} className="mb-4 text-cfa-purple" aria-hidden="true" />
-              <h3 className="text-xl font-medium mb-1">{session.days}</h3>
-              <p className="text-[#8a6810] dark:text-cfa-gold mb-3">{session.time}</p>
-              <p className="text-muted-foreground">{session.description}</p>
-            </motion.div>
-          ))}
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-start md:mt-16">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1">
+            {SESSIONS.map((session, index) => (
+              <motion.div
+                key={session.days}
+                initial={
+                  shouldReduceMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: 24, filter: "blur(12px)" }
+                }
+                whileInView={
+                  shouldReduceMotion
+                    ? { opacity: 1 }
+                    : { opacity: 1, y: 0, filter: "blur(0px)" }
+                }
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
+              >
+                <TiltCard
+                  className="cfa-light-card h-full rounded-2xl p-6"
+                  tiltLimit={6}
+                  scale={1.02}
+                  spotlightColor="rgba(255,210,28,0.18)"
+                >
+                  <div className="relative z-20">
+                    <Clock size={24} className="mb-4 text-cfa-purple" aria-hidden="true" />
+                    <h3 className="text-xl font-medium mb-1">{session.days}</h3>
+                    <p className="text-[#8a6810] dark:text-cfa-gold mb-3">{session.time}</p>
+                    <p className="text-muted-foreground">{session.description}</p>
+                  </div>
+                </TiltCard>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={
+              shouldReduceMotion
+                ? { opacity: 0 }
+                : { opacity: 0, y: 24, filter: "blur(12px)" }
+            }
+            whileInView={
+              shouldReduceMotion
+                ? { opacity: 1 }
+                : { opacity: 1, y: 0, filter: "blur(0px)" }
+            }
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: SESSIONS.length * 0.1 }}
+            className="mx-auto w-[240px] sm:w-[260px] lg:mx-0 lg:w-[280px]"
+          >
+            <VerticalVideoReel />
+          </motion.div>
         </div>
 
         {/* TODO: schedule + drop-in fee conflict across old-site pages — confirm with sponsor (SPONSOR-QUESTIONS #11) */}
