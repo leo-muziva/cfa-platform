@@ -164,7 +164,7 @@ export default async function ShopPage({
                 src={imageUrl}
                 alt={p.name}
                 fill
-                unoptimized
+                
                 className="object-contain p-6"
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
