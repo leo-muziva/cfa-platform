@@ -16,7 +16,7 @@ export function LogoutButton() {
   return (
     <Button
       variant="outline"
-      className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+      className="rounded-full border-[#140a2e]/20 bg-white/60 text-[#140a2e] hover:bg-white hover:text-[#140a2e] dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white"
       onClick={logout}
     >
       Logout

@@ -25,7 +25,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     // `isolate` keeps the SmokeyBackground's -z-10 canvas pinned inside this
     // stacking context instead of falling behind the whole page.
-    <main className="relative isolate min-h-screen bg-[#140a2e] text-foreground">
+    <main className="relative isolate min-h-screen bg-[#faf7ff] text-foreground dark:bg-[#140a2e]">
       <SmokeyBackground />
       <div className="flex min-h-screen w-full flex-col">
         <PortalNavigation links={links} authSlot={!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>} />
@@ -35,7 +35,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           </div>
         </div>
         <footer className="mx-auto w-full max-w-7xl px-4 pb-6 sm:px-8">
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/40 px-5 py-5 text-xs text-white/90 backdrop-blur-md sm:px-8">
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#140a2e]/10 bg-white/70 px-5 py-5 text-xs text-[#140a2e] backdrop-blur-md dark:border-white/10 dark:bg-black/40 dark:text-white/90 sm:px-8">
             <p>&copy; 2026 Cape Fencing Academy</p>
             <div className="flex items-center gap-3"><SmokeMotionToggle /><ThemeToggle /></div>
           </div>
