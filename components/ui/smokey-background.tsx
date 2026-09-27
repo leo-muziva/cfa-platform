@@ -106,9 +106,6 @@ export function SmokeyBackground({
   className,
 }: SmokeyBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Mouse position lives in refs, not state, so pointer movement never
-  // triggers a React re-render - the render loop reads the ref every frame.
-  const pointerRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -161,7 +158,8 @@ export function SmokeyBackground({
       gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(resolutionLocation, width, height);
       gl.uniform1f(timeLocation, elapsedSeconds);
-      gl.uniform2f(mouseLocation, pointerRef.current.x, pointerRef.current.y);
+      // The ripple stays centred: the smoke plays on its own and ignores the pointer.
+      gl.uniform2f(mouseLocation, width / 2, height / 2);
       gl.uniform3f(colorLocation, colorRgb[0], colorRgb[1], colorRgb[2]);
       gl.uniform3f(baseLocation, baseRgb[0], baseRgb[1], baseRgb[2]);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -205,23 +203,10 @@ export function SmokeyBackground({
       if (!rafId) drawFrame();
     };
 
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!rafId) return;
-      const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
-      pointerRef.current = {
-        x: (event.clientX - rect.left) * dpr,
-        y: (rect.height - (event.clientY - rect.top)) * dpr,
-      };
-    };
-
     resize();
-    // Default the ripple center to the middle until the pointer moves.
-    pointerRef.current = { x: width / 2, y: height / 2 };
     syncMotion();
 
     window.addEventListener("resize", resize);
-    window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener(PAUSE_EVENT, syncMotion);
     document.addEventListener("visibilitychange", syncMotion);
     reducedMotionQuery.addEventListener("change", syncMotion);
@@ -229,7 +214,6 @@ export function SmokeyBackground({
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener(PAUSE_EVENT, syncMotion);
       document.removeEventListener("visibilitychange", syncMotion);
       reducedMotionQuery.removeEventListener("change", syncMotion);

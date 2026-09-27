@@ -30,7 +30,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       <div className="flex min-h-screen w-full flex-col">
         <PortalNavigation links={links} authSlot={!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>} />
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-8 sm:py-10">
-          <div className="portal-glass rounded-[2rem] border border-border bg-card/[0.92] p-5 text-card-foreground shadow-[0_28px_90px_rgba(0,0,0,0.30)] dark:border-white/15 dark:bg-[#140a2e]/70 dark:backdrop-blur-xl sm:p-8">
+          <div className="portal-glass rounded-[2rem] border border-white/50 bg-white/[0.62] p-5 text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_28px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/15 dark:bg-[#140a2e]/70 dark:shadow-[0_28px_90px_rgba(0,0,0,0.30)] dark:backdrop-blur-xl sm:p-8">
             {children}
           </div>
         </div>
