@@ -54,7 +54,7 @@ export function PortalNavigation({
     href === "/protected" ? pathname === href : pathname.startsWith(href);
 
   return (
-    <nav aria-label="Member Portal navigation" className="sticky top-0 z-30 border-b border-white/15 bg-black/40 backdrop-blur-xl">
+    <nav aria-label="Member Portal navigation" className="sticky top-0 z-30 border-b border-white/15 bg-[#140a2e]/85 backdrop-blur-xl dark:bg-black/40">
       <div className="relative grid w-full grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 sm:px-8 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
         <div className="flex min-w-0 shrink-0 items-center gap-2 justify-self-start">
           <Link

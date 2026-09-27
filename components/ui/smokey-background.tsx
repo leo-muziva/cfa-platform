@@ -2,12 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 
 export interface SmokeyBackgroundProps {
-  /** Glow color as a hex string, e.g. "#7C3AED". */
+  /** Dark theme glow color as a hex string, e.g. "#7C3AED". */
   color?: string;
+  /** Dark theme base color the glow is mixed into. */
+  baseColor?: string;
+  /** Light theme glow color. */
+  lightColor?: string;
+  /** Light theme base color the glow is mixed into. */
+  lightBaseColor?: string;
   /** Tailwind backdrop-blur size applied to the overlay above the canvas. */
   backdropBlurAmount?: "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
   className?: string;
@@ -23,9 +30,11 @@ const BLUR_CLASS: Record<NonNullable<SmokeyBackgroundProps["backdropBlurAmount"]
   "3xl": "backdrop-blur-3xl",
 };
 
-// Deep smoke base; the portal layout uses the same value for its <main>
-// background so the canvas edges blend in before the first frame paints.
-const SMOKE_BASE_HEX = "#140a2e";
+// Smoke bases per theme: deep purple-black for dark, near-white for light.
+// The portal layout uses the same values for its <main> background so the
+// canvas edges blend in before the first frame paints.
+const DARK_BASE_HEX = "#140a2e";
+const LIGHT_BASE_HEX = "#faf7ff";
 
 const VERTEX_SOURCE = "attribute vec4 a_position; void main(){ gl_Position = a_position; }";
 
@@ -102,10 +111,14 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string):
 
 export function SmokeyBackground({
   color = "#7C3AED",
+  baseColor = DARK_BASE_HEX,
+  lightColor = "#7C3AED",
+  lightBaseColor = LIGHT_BASE_HEX,
   backdropBlurAmount = "none",
   className,
 }: SmokeyBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -141,8 +154,14 @@ export function SmokeyBackground({
     const colorLocation = gl.getUniformLocation(program, "u_color");
     const baseLocation = gl.getUniformLocation(program, "u_base");
 
-    const colorRgb = hexToRgb01(color);
-    const baseRgb = hexToRgb01(SMOKE_BASE_HEX);
+    // resolvedTheme is undefined until next-themes mounts; its pre-paint
+    // script has already set the class on <html>, so read that instead of
+    // flashing the wrong palette.
+    const isDark = resolvedTheme
+      ? resolvedTheme === "dark"
+      : document.documentElement.classList.contains("dark");
+    const colorRgb = hexToRgb01(isDark ? color : lightColor);
+    const baseRgb = hexToRgb01(isDark ? baseColor : lightBaseColor);
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let width = 0;
@@ -222,7 +241,7 @@ export function SmokeyBackground({
       gl.deleteShader(fragmentShader);
       gl.deleteBuffer(positionBuffer);
     };
-  }, [color]);
+  }, [color, baseColor, lightColor, lightBaseColor, resolvedTheme]);
 
   return (
     <div
@@ -231,7 +250,8 @@ export function SmokeyBackground({
         "pointer-events-none fixed inset-0 -z-10 overflow-hidden",
         // CSS fallback: shows through when WebGL is unavailable or the
         // shader fails to compile, so the page still reads as intentional.
-        "bg-[radial-gradient(circle_at_30%_20%,_#2a1458,_transparent_55%),linear-gradient(160deg,_#140a2e,_#0a0518)]",
+        "bg-[radial-gradient(circle_at_30%_20%,_#c4b5fd,_transparent_55%),linear-gradient(160deg,_#faf7ff,_#ede9fe)]",
+        "dark:bg-[radial-gradient(circle_at_30%_20%,_#2a1458,_transparent_55%),linear-gradient(160deg,_#140a2e,_#0a0518)]",
         className,
       )}
     >
