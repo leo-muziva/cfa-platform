@@ -15,7 +15,7 @@ export default async function ProductPage({
 
   const { data: product } = await supabase
     .from("products")
-    .select("id, item_code, name, description, price, image_path, sizes")
+    .select("id, item_code, name, description, price, image_path, sizes, needs_handedness")
     .eq("item_code", itemCode.toUpperCase())
     .single();
 
@@ -37,13 +37,12 @@ export default async function ProductPage({
       </div>
 
       <div className="mt-6 grid gap-8 sm:grid-cols-2">
-                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
-          {imageUrl ? (
+        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-border bg-white">          {imageUrl ? (
             <Image
               src={imageUrl}
               alt={product.name}
               fill
-              unoptimized 
+               
               className="object-contain p-4"
               sizes="(max-width: 640px) 100vw, 50vw"
             />
@@ -64,7 +63,7 @@ export default async function ProductPage({
             {product.description}
           </p>
 
-          <AddToCartButton productId={product.id} sizes={product.sizes} />
+          <AddToCartButton productId={product.id} sizes={product.sizes}  needsHandedness={product.needs_handedness} />
         </div>
       </div>
     </main>
