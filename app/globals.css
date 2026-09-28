@@ -252,6 +252,7 @@
  */
 :root {
   --cfa-purple: 262 60% 32%;
+  --cfa-purple-bright: 262 83% 66%;
   --cfa-gold: 45 95% 52%;
 }
 
@@ -643,5 +644,163 @@ input:-webkit-autofill:active {
   .animate-blur-fade-up {
     animation: none;
     opacity: 1;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Portal glass forms (member portal, `.portal-glass` on the content panel).
+ * Deliberately written as plain CSS below every @layer directive: Tailwind
+ * compiles `@layer utilities` after `@layer components` in the final
+ * stylesheet, so a same-specificity utility class on shadcn's <Input>/<Button>
+ * would otherwise win. Living outside the layers entirely sidesteps that
+ * ordering fight rather than relying on load order alone.
+ * ---------------------------------------------------------------------------
+ */
+.dark .portal-glass {
+  /* Native select popups and date pickers follow this, so options stay
+     readable instead of white-on-white. */
+  color-scheme: dark;
+}
+
+/* Light theme frosted glass: the smoke shows through the panel, so muted
+   text is darkened to keep 4.5:1 contrast on the tinted glass. */
+.portal-glass {
+  --muted-foreground: 257 14% 30%;
+}
+.dark .portal-glass {
+  --muted-foreground: 0 0% 63.9%;
+}
+
+.portal-glass .cfa-light-card {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.68), rgb(255 255 255 / 0.5));
+  border-color: rgb(255 255 255 / 0.7);
+  box-shadow: 0 20px 50px rgb(20 10 46 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+/* Solid white page surfaces (cards, lists, empty states) get the same frost
+   in light theme only; dark theme keeps its existing surfaces. */
+:root:not(.dark) .portal-glass :is([class~="bg-white"], [class~="bg-card"], [class~="bg-slate-50"]):not(.cfa-light-card) {
+  background-color: rgb(255 255 255 / 0.6);
+  border-color: rgb(255 255 255 / 0.7);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+.portal-glass :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
+  select,
+  textarea
+) {
+  background-color: transparent;
+  border-width: 0 0 2px 0;
+  /* Dark enough on white to clear WCAG 1.4.11's 3:1 non-text contrast; the
+     dark-theme override below swaps this for a translucent white line. */
+  border-color: hsl(var(--cfa-purple) / 0.65);
+  border-radius: 0;
+  box-shadow: none;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Selects keep their native arrow - only the box styling is stripped. */
+.portal-glass select {
+  appearance: auto;
+}
+
+/* Focus must be unmistakable for keyboard users (WCAG 2.4.7): the underline
+   turns solid dark purple and a second line appears beneath it, a thickness
+   change rather than only a hue shift. */
+.portal-glass :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
+  select,
+  textarea
+):focus-visible {
+  outline: none;
+  border-bottom-color: hsl(var(--cfa-purple));
+  box-shadow: 0 2px 0 0 hsl(var(--cfa-purple));
+}
+
+/* Keep validation feedback visible even though the underline rule above
+   outranks Tailwind's border utilities. */
+.portal-glass [aria-invalid="true"] {
+  border-bottom-color: hsl(var(--destructive));
+}
+
+/* Whole-class match (~=) so variants such as `hover:bg-primary` or
+   `bg-primary/10` tints are left alone; only solid primary buttons change. */
+.portal-glass :is(button, a)[class~="bg-primary"] {
+  /* The bright stop is darker than --cfa-purple-bright so white text keeps
+     4.5:1 contrast across the whole button. */
+  background-image: linear-gradient(135deg, hsl(var(--cfa-purple)), hsl(262 83% 55%));
+  color: #fff;
+  box-shadow: 0 10px 30px hsl(var(--cfa-purple) / 0.35);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.portal-glass :is(button, a)[class~="bg-primary"]:hover {
+  box-shadow: 0 14px 38px hsl(var(--cfa-purple) / 0.45);
+  transform: translateY(-1px);
+}
+
+.portal-glass :is(button, a)[class~="bg-primary"]:is(:disabled, [aria-disabled="true"]) {
+  transform: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-glass :is(button, a)[class~="bg-primary"]:hover {
+    transform: none;
+  }
+}
+
+.dark .portal-glass :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
+  select,
+  textarea
+) {
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.5);
+}
+
+.dark .portal-glass :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
+  select,
+  textarea
+)::placeholder {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.dark .portal-glass :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
+  select,
+  textarea
+):focus-visible {
+  border-bottom-color: #fff;
+  box-shadow: 0 2px 0 0 hsl(var(--cfa-gold));
+}
+
+.dark .portal-glass select option {
+  background-color: #140a2e;
+  color: #fff;
+}
+
+/* Cards are tinted with the deep smoke base rather than white so muted text
+   keeps 4.5:1 contrast even where the bright glow sits behind the panel. */
+.dark .portal-glass .cfa-light-card {
+  background: rgb(20 10 46 / 0.55);
+  border-color: rgb(255 255 255 / 0.15);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+/* Windows High Contrast drops background images and box shadows, so give
+   fields a real border to keep their boundaries visible. */
+@media (forced-colors: active) {
+  .portal-glass :is(input, select, textarea):focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
   }
 }

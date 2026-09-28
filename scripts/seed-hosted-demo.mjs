@@ -1,5 +1,5 @@
 /** Manual staging-only CFA demo seeder. Never runs during deployment. */
-import nextEnv from 'next/env';
+import nextEnv from '@next/env';
 import { createClient } from '@supabase/supabase-js';
 nextEnv.loadEnvConfig(process.cwd());
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL, key=process.env.SUPABASE_SECRET_KEY;
@@ -19,7 +19,9 @@ await must(await db.from('households').delete().eq('payer_id',fencer),'remove fe
 await must(await db.from('household_members').upsert({household_id:household,profile_id:fencer,household_role:'dependent',payer_consent_at:new Date().toISOString()},{onConflict:'household_id,profile_id'}),'household link');
 let link=await must(await db.from('family_links').select('id').eq('guardian_id',guardian).eq('dependent_id',fencer).eq('status','active').maybeSingle(),'family link');
 if(!link)link=await must(await db.from('family_links').insert({guardian_id:guardian,dependent_id:fencer,status:'active',requested_by:guardian,accepted_by:fencer,requested_at:new Date().toISOString(),accepted_at:new Date().toISOString()}).select('id').single(),'create family link');
-await must(await db.from('dependent_billing_links').upsert({household_id:household,guardian_id:guardian,dependent_id:fencer,family_link_id:link.id,effective_from:new Date().toISOString()},{onConflict:'dependent_id'}),'billing link');
+// The one-active-payer rule is a partial unique index, which upsert cannot target, so insert only when no active link exists.
+const billing=await must(await db.from('dependent_billing_links').select('id').eq('dependent_id',fencer).is('effective_to',null).maybeSingle(),'find billing link');
+if(!billing)await must(await db.from('dependent_billing_links').insert({household_id:household,guardian_id:guardian,dependent_id:fencer,family_link_id:link.id,effective_from:new Date().toISOString()}),'billing link');
 const day=(n)=>new Date(Date.now()+n*86400000).toISOString().slice(0,10),block=await must(await db.from('coach_availability_exceptions').select('id').eq('reason','Hosted demo coach development session').maybeSingle(),'find block');
 await must(block?await db.from('coach_availability_exceptions').update({starts_at:day(7)+'T17:00:00+02:00',ends_at:day(7)+'T18:00:00+02:00'}).eq('id',block.id):await db.from('coach_availability_exceptions').insert({coach_id:primaryCoach,exception_type:'block',starts_at:day(7)+'T17:00:00+02:00',ends_at:day(7)+'T18:00:00+02:00',reason:'Hosted demo coach development session',created_by:admin}),'demo block');
 const closure=await must(await db.from('club_closures').select('id').eq('reason','Hosted demo club closure').maybeSingle(),'find closure');

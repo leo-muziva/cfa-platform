@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +61,7 @@ export function GlassDialog({ open, onClose, labelledBy, label, className, child
   }, [open]);
 
   return (
-    <AnimatePresence>
+    <>
       {open && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
@@ -71,7 +71,6 @@ export function GlassDialog({ open, onClose, labelledBy, label, className, child
           aria-labelledby={labelledBy}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.2 }}
         >
           <motion.div
@@ -83,7 +82,6 @@ export function GlassDialog({ open, onClose, labelledBy, label, className, child
             )}
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.25, 1, 0.5, 1] }}
           >
             <button
@@ -98,6 +96,6 @@ export function GlassDialog({ open, onClose, labelledBy, label, className, child
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

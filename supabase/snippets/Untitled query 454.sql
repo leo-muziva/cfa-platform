@@ -1,1 +1,0 @@
-select email, role, is_staff, staff_type, is_active from public.profiles;

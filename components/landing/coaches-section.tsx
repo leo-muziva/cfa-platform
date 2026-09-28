@@ -8,28 +8,28 @@ const COACHES = [
     designation: "Founder & Head Coach",
     description:
       "Founder and head coach of Cape Fencing Academy, guiding the club's coaching programme and the development of its fencers.",
-    src: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=85&w=1200&auto=format&fit=crop",
+    src: "/media/coaches/coach_misha.png",
   },
   {
     name: "Jacques Viljoen",
     designation: "Senior Foil Coach",
     description:
       "Focused on foil coaching, technical foundations and helping fencers build precision, timing and confidence on the piste.",
-    src: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=85&w=1200&auto=format&fit=crop",
+    src: "/media/coaches/coach_jacques.png",
   },
   {
     name: "Jeremy Saner",
     designation: "Sabre · Épée · Foil",
     description:
       "Works across all three weapons, supporting fencers as they develop their technique, tactical awareness and competitive experience.",
-    src: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=85&w=1200&auto=format&fit=crop",
+    src: "/media/coaches/coach_jeremy.png",
   },
   {
     name: "Caden Sampson",
     designation: "Foil Coach",
     description:
       "Supports foil fencers with focused individual attention and practical coaching for training, sparring and competition.",
-    src: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?q=85&w=1200&auto=format&fit=crop",
+    src: "/media/coaches/coach_caden.png",
   },
 ] as const;
 

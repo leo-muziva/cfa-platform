@@ -46,7 +46,7 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
         muted
         playsInline
         aria-hidden="true"
-        src="/hero-video.mp4"
+        src="/media/video/hero-video.mp4"
       />
       <div
         className="pointer-events-none absolute inset-0 z-[1] backdrop-blur-xl"

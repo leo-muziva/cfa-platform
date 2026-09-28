@@ -8,7 +8,7 @@ export async function AuthButton() {
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "member";
 
   return profile ? (
-    <div className="flex items-center gap-3 text-sm text-white">
+    <div className="flex items-center gap-3 text-sm text-[#140a2e] dark:text-white">
       <span>Hello, {firstName}</span>
       <LogoutButton />
     </div>

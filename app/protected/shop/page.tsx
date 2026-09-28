@@ -215,7 +215,7 @@ export default async function ShopPage({
     <div className="relative">
       {/* Faded fencer behind the page. */}
       <img
-        src="/shop-hero.png"
+        src="/media/pages/cfa-side-profile-transparent.png"
         alt=""
         aria-hidden="true"
         style={{
