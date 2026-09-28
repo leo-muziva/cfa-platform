@@ -1,17 +1,20 @@
 "use client";
 
-import { CalendarDays, Check, Clock, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, Check, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassButton } from "@/components/ui/glass-auth";
+import { GlassCalendar } from "@/components/ui/glass-calendar";
 import { GlassDialog } from "@/components/ui/glass-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  capeTownDateKey,
   formatCapeTownCompactDate,
-  formatCapeTownDate,
   formatCapeTownLessonDate,
   formatCapeTownTime,
 } from "@/lib/booking-calendar";
+import { cn } from "@/lib/utils";
 import {
   BOOKING_CONTENTION_MESSAGE,
   isValidLessonParticipantSelection,
@@ -106,6 +109,10 @@ export function CoachBookingCalendar({
     router.refresh();
   }, [router, state, selected]);
 
+  // Only used for the "today" dot, so a server/client mismatch around
+  // midnight is harmless; it is fixed once on mount rather than per render.
+  const [todayKey] = useState(() => capeTownDateKey(new Date().toISOString()));
+
   const chooseDate = (date: string) => {
     setSelectedDate(date);
     setSelectedTime(firstAvailableLessonTime(times, date)?.startsAt ?? "");
@@ -163,29 +170,8 @@ export function CoachBookingCalendar({
           <div className="flex items-start gap-3">
             <CalendarDays className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
             <div>
-              <h2 id="lesson-date-heading" className="font-serif text-2xl text-slate-950">Choose a date</h2>
+              <h2 id="lesson-date-heading" className="font-serif text-2xl text-slate-950">Choose a date and time</h2>
               <p className="mt-1 text-sm text-slate-600">All dates and times use Cape Town time.</p>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-2" aria-label="Dates with scheduled lesson times">
-            {availableDates.map((date) => {
-              const isAvailable = lessonDateHasAvailableTime(times, date);
-              const isSelected = selectedDate === date;
-              return (
-                <button key={date} type="button" onClick={() => chooseDate(date)} disabled={!isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownCompactDate(date)}${isAvailable ? "" : ", unavailable"}`} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] " + (isSelected ? "bg-[#2d176b] text-white" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40") + (!isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70" : "")}>
-                  {formatCapeTownCompactDate(date)}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section aria-labelledby="lesson-time-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
-          <div className="flex items-start gap-3">
-            <Clock className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
-            <div>
-              <h2 id="lesson-time-heading" className="font-serif text-2xl text-slate-950">Choose a time</h2>
-              <p className="mt-1 text-sm text-slate-600">{selectedDate ? formatCapeTownDate(selectedDate) : "Choose a date first"}</p>
             </div>
           </div>
           {!hasAvailableTimes && (
@@ -193,21 +179,23 @@ export function CoachBookingCalendar({
               No bookable times are currently available. Scheduled times are shown below.
             </p>
           )}
-          {timesForDate.length === 0 ? (
-            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">There are no scheduled times on this date.</p>
-          ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Scheduled lesson times">
-              {timesForDate.map((time) => {
-                const isSelected = selectedTime === time.startsAt;
-                return (
-                  <button key={time.startsAt} type="button" onClick={() => time.isAvailable && setSelectedTime(time.startsAt)} disabled={!time.isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownTime(time.startsAt)}${time.isAvailable ? "" : ", unavailable"}`} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308]" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35") + (!time.isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70" : "")}>
-                    <span>{formatCapeTownTime(time.startsAt)}</span>
-                    {time.isAvailable ? (isSelected && <Check className="h-4 w-4" aria-hidden="true" />) : <span className="text-xs font-semibold uppercase tracking-wide">Unavailable</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <GlassCalendar
+            className="mt-5"
+            selectedDate={selectedDate}
+            onDateSelect={chooseDate}
+            isDateDisabled={(date) => !lessonDateHasAvailableTime(times, date)}
+            minMonth={availableDates[0]?.slice(0, 7)}
+            maxMonth={availableDates.at(-1)?.slice(0, 7)}
+            todayKey={todayKey}
+            aside={
+              <TimeSlotColumn
+                selectedDate={selectedDate}
+                times={timesForDate}
+                selectedTime={selectedTime}
+                onSelect={setSelectedTime}
+              />
+            }
+          />
         </section>
 
         <section aria-labelledby="lesson-participants-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
@@ -283,6 +271,63 @@ export function CoachBookingCalendar({
           <CheckoutButton bookingId={state.bookingId} />
         )}
       </aside>
+    </div>
+  );
+}
+
+function TimeSlotColumn({
+  selectedDate,
+  times,
+  selectedTime,
+  onSelect,
+}: {
+  selectedDate: string;
+  times: LessonTimeOption[];
+  selectedTime: string;
+  onSelect: (startsAt: string) => void;
+}) {
+  // Absolutely filled so the column takes the calendar's height and scrolls
+  // on its own instead of stretching the glass panel.
+  return (
+    <div className="absolute inset-0 py-4">
+      <ScrollArea className="h-full [&_[data-orientation=vertical]>div]:bg-white/30">
+        <div className="space-y-3">
+          <p className="px-5 text-sm font-semibold text-white">
+            {selectedDate ? formatCapeTownCompactDate(selectedDate) : "Choose a date"}
+          </p>
+          {times.length === 0 ? (
+            <p className="px-5 text-sm text-white/70">There are no scheduled times on this date.</p>
+          ) : (
+            <div className="grid gap-1.5 px-5 max-sm:grid-cols-2" role="group" aria-label="Scheduled lesson times">
+              {times.map((time) => {
+                const isSelected = selectedTime === time.startsAt;
+                return (
+                  <button
+                    key={time.startsAt}
+                    type="button"
+                    onClick={() => time.isAvailable && onSelect(time.startsAt)}
+                    disabled={!time.isAvailable}
+                    aria-pressed={isSelected}
+                    aria-label={`${formatCapeTownTime(time.startsAt)}${time.isAvailable ? "" : ", unavailable"}`}
+                    className={cn(
+                      "flex min-h-10 w-full items-center justify-between rounded-xl border px-3 text-sm font-medium transition-colors",
+                      "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-cfa-gold",
+                      isSelected
+                        ? "border-cfa-gold bg-cfa-gold/20 text-white"
+                        : time.isAvailable
+                          ? "border-white/20 bg-white/5 text-white hover:border-white/45 hover:bg-white/15"
+                          : "cursor-not-allowed border-white/10 text-white/40 line-through",
+                    )}
+                  >
+                    <span>{formatCapeTownTime(time.startsAt)}</span>
+                    {isSelected && <Check className="h-4 w-4 text-cfa-gold" aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
