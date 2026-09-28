@@ -670,6 +670,15 @@ input:-webkit-autofill:active {
 }
 .dark .portal-glass {
   --muted-foreground: 0 0% 63.9%;
+  /* The global dark tokens are neutral greys, which read as flat black/grey
+     slabs on the purple smoke. Inside the portal they take the smoke-purple
+     family instead, so `bg-card/80`, `bg-muted`, hover accents and borders
+     match the hand-tinted surfaces. */
+  --card: 257 64% 11%;
+  --muted: 257 40% 17%;
+  --accent: 257 40% 20%;
+  --secondary: 257 40% 20%;
+  --border: 257 30% 26%;
 }
 
 .portal-glass .cfa-light-card {
