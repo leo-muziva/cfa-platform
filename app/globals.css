@@ -796,6 +796,16 @@ input:-webkit-autofill:active {
   box-shadow: 0 20px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
+/* Horizontal strips (the booking calendar's day row) scroll by touch, wheel
+   or keyboard focus without showing a scrollbar track. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Windows High Contrast drops background images and box shadows, so give
    fields a real border to keep their boundaries visible. */
 @media (forced-colors: active) {

@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, ShieldCheck } from "lucide-react";
+import { Fragment } from "react";
+import { ArrowUpRight, CalendarClock, Swords } from "lucide-react";
 import { formatCapeTownLessonDate } from "@/lib/booking-calendar";
 import type { LessonCoachSummary } from "@/types/domain";
 
@@ -51,55 +53,72 @@ export function CoachDirectory({ coaches }: { coaches: LessonCoachDirectoryEntry
       {coaches.map((coach) => {
         const photo = coachPhotos[coach.fullName] ?? fallbackCoachPhoto;
 
+        const href = "/protected/book/" + coach.coachId;
+
+        // Layout mirrors the DOMA workspace card: full-bleed portrait, a dark
+        // bottom fade, and an inset frosted panel carrying the details.
         return (
           <li key={coach.coachId}>
-            <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-[#2d176b]/10 bg-[linear-gradient(145deg,#ffffff,#faf8ff)] shadow-[0_16px_45px_rgba(37,20,92,0.08)]">
-              <div className="relative h-44 overflow-hidden bg-[#2d176b]">
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-cover transition-transform duration-500 group-hover:scale-105"
-                  style={{ backgroundImage: `url("${photo.url}")`, backgroundPosition: photo.position }}
-                />
-                <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(120deg,rgba(37,20,92,0.78),rgba(37,20,92,0.12))]" />
-                <p className="absolute bottom-5 left-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
-                  CFA coach
-                </p>
-                <span className="absolute right-5 top-5 rounded-full bg-emerald-50 p-2 text-emerald-700 shadow-sm" title="Taking bookings">
-                  <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Taking bookings</span>
-                </span>
-              </div>
+            <article className="group relative isolate aspect-[4/4.3] overflow-hidden rounded-[22px] bg-[#25145c] shadow-[0_20px_50px_rgba(20,10,46,0.18)]">
+              <Image
+                src={photo.url}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                className="-z-10 object-cover transition-transform ease-out [transition-duration:600ms] group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                style={{ objectPosition: photo.position }}
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 -z-10 bg-[linear-gradient(to_top,rgba(20,10,46,0.82)_0%,rgba(20,10,46,0.2)_50%,transparent_75%)]"
+              />
+              <p className="absolute left-[18px] top-4 font-mono text-[10px] uppercase tracking-[0.14em] text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+                {coach.nextAvailableAt ? "Taking bookings" : "No free times"}
+              </p>
 
-              <div className="flex flex-1 flex-col p-6">
-                <h2 className="font-serif text-3xl font-light text-slate-950">
-                  {coach.fullName}
-                </h2>
-
-                <div className="mt-5 flex flex-wrap gap-2" aria-label="Weapons offered">
-                  {coach.weapons.map((weapon) => (
-                    <span
-                      key={weapon}
-                      className="rounded-full border border-[#2d176b]/15 bg-white px-3 py-1 text-sm text-[#423368]"
+              <div className="absolute inset-x-3.5 bottom-3.5 grid grid-cols-[1fr_auto] items-start gap-x-3 gap-y-1.5 rounded-[18px] border border-white/25 bg-white/[0.13] px-[18px] pb-[18px] pt-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[22px] backdrop-saturate-150">
+                <div className="min-w-0">
+                  <p className="mb-2 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-white/85">
+                    <Swords className="h-[13px] w-[13px]" aria-hidden="true" />
+                    CFA coach
+                  </p>
+                  <h2 className="text-[21px] font-semibold leading-tight">
+                    <Link
+                      href={href}
+                      className="rounded-sm underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     >
-                      {weaponLabels[weapon]}
-                    </span>
-                  ))}
+                      {coach.fullName}
+                    </Link>
+                  </h2>
                 </div>
+                <Link
+                  href={href}
+                  aria-label={"View available times with " + coach.fullName}
+                  className="grid h-[38px] w-[38px] place-items-center rounded-xl border border-white/40 bg-white/10 text-white transition-colors hover:bg-white hover:text-[#25145c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <ArrowUpRight className="h-[19px] w-[19px]" aria-hidden="true" />
+                </Link>
 
-                <p className="mt-6 flex items-center gap-2 text-sm text-slate-600">
-                  <CalendarClock className="h-4 w-4 shrink-0 text-[#2d176b]" aria-hidden="true" />
-                  {coach.nextAvailableAt
-                    ? "Next free: " + formatCapeTownLessonDate(coach.nextAvailableAt)
-                    : "No free times in the current booking window"}
+                <p className="col-span-2 mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-white/85">
+                  <span className="sr-only">Weapons offered:</span>
+                  {coach.weapons.map((weapon, index) => (
+                    <Fragment key={weapon}>
+                      {index > 0 && <i aria-hidden="true" className="h-[3px] w-[3px] rounded-full bg-white/70" />}
+                      <span>{weaponLabels[weapon]}</span>
+                    </Fragment>
+                  ))}
                 </p>
 
-                <Link
-                  href={"/protected/book/" + coach.coachId}
-                  className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#2d176b] px-5 py-3 font-medium text-white transition-colors hover:bg-[#43258c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b]"
-                >
-                  View available times
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </Link>
+                <p className="col-span-2 mt-3.5 flex items-center gap-2 border-t border-white/25 pt-3.5 text-[13px] text-white/85">
+                  <CalendarClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {coach.nextAvailableAt ? (
+                    <span>
+                      Next free <strong className="font-mono text-[14px] font-semibold tracking-[0.02em] text-white">{formatCapeTownLessonDate(coach.nextAvailableAt)}</strong>
+                    </span>
+                  ) : (
+                    "No free times in the current booking window"
+                  )}
+                </p>
               </div>
             </article>
           </li>
