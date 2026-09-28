@@ -26,7 +26,7 @@ export default async function CartPage() {
     return (
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-6 text-2xl font-semibold">Your order</h1>
-        <p className="text-gray-500">Your order is empty.</p>
+        <p className="text-gray-500 dark:text-white/60">Your order is empty.</p>
         <Link href="/protected/shop" className="mt-4 inline-block underline">
           Browse the catalogue
         </Link>
@@ -54,7 +54,7 @@ export default async function CartPage() {
     return (
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-6 text-2xl font-semibold">Your order</h1>
-        <p className="text-gray-500">Your order is empty.</p>
+        <p className="text-gray-500 dark:text-white/60">Your order is empty.</p>
         <Link href="/protected/shop" className="mt-4 inline-block underline">
           Browse the catalogue
         </Link>
@@ -75,14 +75,14 @@ export default async function CartPage() {
         className="flex items-center justify-between border-b py-4"
       >
         <div>
-          <p className="font-mono text-xs text-gray-500">
+          <p className="font-mono text-xs text-gray-500 dark:text-white/60">
             {product?.item_code}
           </p>
           <p className="font-medium">{product?.name}</p>
           {line.size ? (
-            <p className="text-sm text-gray-600">Size: {line.size}</p>
+            <p className="text-sm text-gray-600 dark:text-white/75">Size: {line.size}</p>
           ) : null}
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-white/60">
             R{Number(line.unit_price).toFixed(2)} each
           </p>
         </div>
@@ -99,7 +99,7 @@ export default async function CartPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <Link href="/protected/shop" className="text-sm text-gray-500 underline">
+      <Link href="/protected/shop" className="text-sm text-gray-500 underline dark:text-white/60">
         Back to catalogue
       </Link>
 

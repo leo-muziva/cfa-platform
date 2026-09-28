@@ -36,7 +36,7 @@ export function partitionCoachAgenda(items: CoachAgendaLesson[], now = new Date(
 function LessonIdentity({ lesson }: { lesson: CoachAgendaLesson }) {
   return (
     <div className="min-w-0 space-y-2">
-      <p className="font-semibold text-slate-950">{formatCapeTownLessonDate(lesson.startsAt)}</p>
+      <p className="font-semibold text-slate-950 dark:text-white">{formatCapeTownLessonDate(lesson.startsAt)}</p>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-1"><Clock3 className="h-4 w-4" aria-hidden="true" />{formatCapeTownTime(lesson.startsAt)} - {formatCapeTownTime(lesson.endsAt)}</span>
         <span className="inline-flex items-center gap-1 capitalize"><Users className="h-4 w-4" aria-hidden="true" />{lesson.participantNames.join(" and ")}</span>
@@ -101,7 +101,7 @@ function AgendaSection({
       ) : (
         <div className="grid gap-3">
           {items.map((lesson) => (
-            <Card key={lesson.bookingId} className={outcomeRequired ? "border-amber-300 bg-amber-50/60" : undefined}>
+            <Card key={lesson.bookingId} className={outcomeRequired ? "border-amber-300 bg-amber-50/60 dark:border-amber-400/30 dark:bg-amber-950/40" : undefined}>
               <CardContent className="flex flex-col gap-4 pt-6 lg:flex-row lg:items-center lg:justify-between">
                 <LessonIdentity lesson={lesson} />
                 {outcomeRequired ? <OutcomeControls lesson={lesson} action={outcomeAction} /> : null}

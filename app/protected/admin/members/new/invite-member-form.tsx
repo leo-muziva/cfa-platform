@@ -57,7 +57,7 @@ export function InviteMemberForm() {
           <div className="grid gap-4 sm:grid-cols-2"><div className="flex items-center gap-2"><input id="is_staff" name="is_staff" type="checkbox" className="h-4 w-4 rounded border-input accent-primary"/><Label htmlFor="is_staff">Staff account</Label></div><div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue="" className={selectClasses}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div></div>
 
           {state.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
-          {state.success && <p className="text-sm text-green-600" role="status">{state.message}</p>}
+          {state.success && <p className="text-sm text-green-600 dark:text-green-400" role="status">{state.message}</p>}
 
           <Button type="submit" disabled={isPending} className="w-fit">
             {isPending ? 'Sending invite...' : 'Send invite'}

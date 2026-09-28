@@ -84,7 +84,7 @@ export function AvailabilityManager({
           </div>
         </section>
 
-        <Card className="h-fit border-indigo-200 bg-indigo-50/40">
+        <Card className="h-fit border-indigo-200 bg-indigo-50/40 dark:border-white/15 dark:bg-[#140a2e]/55">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5" aria-hidden="true" />Add weekly range</CardTitle>
             <CardDescription>Times use the club&apos;s Cape Town timezone.</CardDescription>
@@ -112,7 +112,7 @@ export function AvailabilityManager({
           <div><h2 id="exceptions-heading" className="text-xl font-semibold">Exceptions</h2><p className="text-sm text-muted-foreground">Extra hours add availability. Blocks remove availability from the selected range.</p></div>
           <div className="grid gap-3">
             {exceptions.length === 0 ? <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">No availability exceptions.</div> : exceptions.map((exception) => (
-              <Card key={exception.id} className={exception.exceptionType === "block" ? "border-amber-300" : "border-emerald-200"}>
+              <Card key={exception.id} className={exception.exceptionType === "block" ? "border-amber-300 dark:border-amber-400/30" : "border-emerald-200 dark:border-emerald-400/30"}>
                 <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <div><p className="font-semibold capitalize">{exception.exceptionType}</p><p className="text-sm text-muted-foreground">{localDateTime(exception.startsAt)} - {localDateTime(exception.endsAt)}</p>{exception.reason ? <p className="mt-1 text-sm">{exception.reason}</p> : null}</div>
                   <OperationForm action={deleteExceptionAction} submitLabel="Remove" pendingLabel="Removing..." variant="ghost" className="space-y-1">

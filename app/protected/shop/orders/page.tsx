@@ -59,7 +59,7 @@ export default async function OrdersPage({
       return (
         <div key={line.id} className="flex justify-between py-1 text-sm">
           <span>
-            <span className="font-mono text-xs text-gray-500">
+            <span className="font-mono text-xs text-gray-500 dark:text-white/60">
               {product?.item_code}
             </span>{" "}
             {product?.name}
@@ -75,7 +75,7 @@ export default async function OrdersPage({
       <div key={order.id} className="mb-4 rounded-lg border p-4">
         <div className="mb-3 flex items-start justify-between">
           <div>
-            <p className="text-sm text-gray-500">{date}</p>
+            <p className="text-sm text-gray-500 dark:text-white/60">{date}</p>
             <p className="mt-1 font-medium">
               {STATUS_LABELS[order.status] ?? order.status}
             </p>
@@ -86,7 +86,7 @@ export default async function OrdersPage({
         <div className="border-t pt-2">{lines}</div>
 
         {order.notes ? (
-          <p className="mt-3 border-t pt-2 text-sm text-gray-600">
+          <p className="mt-3 border-t pt-2 text-sm text-gray-600 dark:text-white/75">
             Your note: {order.notes}
           </p>
         ) : null}
@@ -96,7 +96,7 @@ export default async function OrdersPage({
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <Link href="/protected/shop" className="text-sm text-gray-500 underline">
+      <Link href="/protected/shop" className="text-sm text-gray-500 underline dark:text-white/60">
         Back to catalogue
       </Link>
 
@@ -104,16 +104,16 @@ export default async function OrdersPage({
 
       {/* Shown once, right after submitting. */}
       {sp.submitted ? (
-        <div className="mb-6 rounded-lg border border-green-600 bg-green-50 p-4">
-          <p className="font-medium text-green-900">Order submitted</p>
-          <p className="mt-1 text-sm text-green-800">
+        <div className="mb-6 rounded-lg border border-green-600 bg-green-50 p-4 dark:border-green-400/30 dark:bg-green-950/40">
+          <p className="font-medium text-green-900 dark:text-green-100">Order submitted</p>
+          <p className="mt-1 text-sm text-green-800 dark:text-green-100">
             Your items will be included in CFA&apos;s next bulk order.
           </p>
         </div>
       ) : null}
 
       {list.length === 0 ? (
-        <p className="text-gray-500">You have not placed any orders yet.</p>
+        <p className="text-gray-500 dark:text-white/60">You have not placed any orders yet.</p>
       ) : (
         cards
       )}

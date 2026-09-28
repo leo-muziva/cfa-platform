@@ -796,14 +796,18 @@ input:-webkit-autofill:active {
   box-shadow: 0 20px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
-/* Horizontal strips (the booking calendar's day row) scroll by touch, wheel
-   or keyboard focus without showing a scrollbar track. */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Dark theme counterpart of the light frost rule above: plain token cards
+   (`bg-card` is near-black in dark) take the same smoke-purple surface as
+   .cfa-light-card so every portal page reads as one dark system. */
+.dark .portal-glass [class~="bg-card"]:not(.cfa-light-card) {
+  background-color: rgb(20 10 46 / 0.55);
+  border-color: rgb(255 255 255 / 0.15);
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+
+/* The dark --destructive token is tuned for button fills and is only ~1.8:1
+   as text on the dark panel; error messages get a light red instead. */
+.dark .portal-glass .text-destructive {
+  color: #fca5a5;
 }
 
 /* Windows High Contrast drops background images and box shadows, so give

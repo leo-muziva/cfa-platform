@@ -30,10 +30,10 @@ export function CoachSetup({ coaches, saveAction, cancelFutureAction }: {
             <fieldset className="space-y-2"><legend className="text-sm font-medium">Weapons offered</legend><div className="grid grid-cols-3 gap-2">{WEAPONS.map((weapon) => <label key={weapon} className="flex items-center gap-2 rounded-lg border bg-background p-3 text-sm capitalize"><input type="checkbox" name="weapons" value={weapon} defaultChecked={coach.weapons.includes(weapon)} className="h-4 w-4" />{weapon}</label>)}</div></fieldset>
             <label className="flex items-start gap-3 rounded-lg border p-3 text-sm"><input type="checkbox" name="isActive" value="true" defaultChecked={coach.isActive} className="mt-1 h-4 w-4" /><span><strong className="block">Accept new lesson bookings</strong>Turning this off preserves all history and existing future bookings.</span></label>
           </OperationForm>
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-            <h3 className="flex items-center gap-2 font-semibold text-amber-950"><AlertTriangle className="h-4 w-4" aria-hidden="true" />Future lesson cancellations</h3>
-            <p className="mt-1 text-sm text-amber-900">This is separate from deactivation. It cancels every scheduled future lesson for this coach at no charge and cannot be undone.</p>
-            {typeof coach.futureBookingCount === "number" ? <p className="mt-2 text-sm font-medium text-amber-950">{coach.futureBookingCount} future booking{coach.futureBookingCount === 1 ? "" : "s"}</p> : null}
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-100">
+            <h3 className="flex items-center gap-2 font-semibold text-amber-950 dark:text-amber-100"><AlertTriangle className="h-4 w-4" aria-hidden="true" />Future lesson cancellations</h3>
+            <p className="mt-1 text-sm text-amber-900 dark:text-amber-100">This is separate from deactivation. It cancels every scheduled future lesson for this coach at no charge and cannot be undone.</p>
+            {typeof coach.futureBookingCount === "number" ? <p className="mt-2 text-sm font-medium text-amber-950 dark:text-amber-100">{coach.futureBookingCount} future booking{coach.futureBookingCount === 1 ? "" : "s"}</p> : null}
             <OperationForm action={cancelFutureAction} submitLabel="Cancel future bookings" pendingLabel="Cancelling..." variant="destructive" className="mt-4 space-y-3">
               <input type="hidden" name="coachId" value={coach.coachId} />
               <div className="space-y-2"><Label htmlFor={`cancel-reason-${coach.coachId}`}>Cancellation reason</Label><Input id={`cancel-reason-${coach.coachId}`} name="reason" required minLength={3} maxLength={240} /></div>

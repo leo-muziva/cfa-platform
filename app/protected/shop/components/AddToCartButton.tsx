@@ -41,7 +41,7 @@ export function AddToCartButton({
     <div className="mt-8">
       {sizeOptions.length > 0 ? (
         <div className="mb-3">
-          <label className="mb-1 block text-sm text-gray-600">Size</label>
+          <label className="mb-1 block text-sm text-gray-600 dark:text-white/75">Size</label>
           <select
             value={selectedSize}
             onChange={function (e) {
@@ -65,12 +65,12 @@ export function AddToCartButton({
       <button
         onClick={handleClick}
         disabled={busy}
-        className="w-full rounded-lg bg-black px-4 py-3 text-white disabled:bg-gray-400"
+        className="w-full rounded-lg bg-black px-4 py-3 text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20"
       >
         {busy ? "Adding..." : "Add to order"}
       </button>
 
-      {status ? <p className="mt-2 text-sm text-gray-600">{status}</p> : null}
+      {status ? <p className="mt-2 text-sm text-gray-600 dark:text-white/75">{status}</p> : null}
     </div>
   );
 }

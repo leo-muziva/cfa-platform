@@ -33,7 +33,7 @@ export function CartItemControls({
             change(quantity - 1);
           }}
           disabled={busy}
-          className="px-3 py-1 hover:bg-gray-100 disabled:opacity-40"
+          className="px-3 py-1 hover:bg-gray-100 disabled:opacity-40 dark:hover:bg-white/10"
           aria-label="Decrease quantity"
         >
           −
@@ -44,7 +44,7 @@ export function CartItemControls({
             change(quantity + 1);
           }}
           disabled={busy}
-          className="px-3 py-1 hover:bg-gray-100 disabled:opacity-40"
+          className="px-3 py-1 hover:bg-gray-100 disabled:opacity-40 dark:hover:bg-white/10"
           aria-label="Increase quantity"
         >
           +
@@ -54,7 +54,7 @@ export function CartItemControls({
       <button
         onClick={remove}
         disabled={busy}
-        className="text-sm text-gray-500 underline disabled:opacity-40"
+        className="text-sm text-gray-500 underline disabled:opacity-40 dark:text-white/60"
       >
         Remove
       </button>

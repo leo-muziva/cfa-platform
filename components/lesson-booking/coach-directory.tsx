@@ -39,9 +39,9 @@ export type LessonCoachDirectoryEntry = LessonCoachSummary & {
 export function CoachDirectory({ coaches }: { coaches: LessonCoachDirectoryEntry[] }) {
   if (coaches.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-        <h2 className="font-serif text-2xl text-slate-950">No coaches are taking bookings</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-white/10 dark:bg-white/5">
+        <h2 className="font-serif text-2xl text-slate-950 dark:text-white">No coaches are taking bookings</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-white/75">
           Check again soon. Existing lessons are still available in your lesson history.
         </p>
       </div>

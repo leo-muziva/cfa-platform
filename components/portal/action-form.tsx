@@ -16,7 +16,7 @@ export function ActionForm({ action, children, submitLabel, className = 'space-y
     <form action={formAction} className={className}>
       {children}
       {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
-      {state.success && <p role="status" className="text-sm text-green-600">{state.success}</p>}
+      {state.success && <p role="status" className="text-sm text-green-600 dark:text-green-400">{state.success}</p>}
       <Button type="submit" disabled={pending} className={submitClassName}>{pending ? 'Working…' : submitLabel}</Button>
     </form>
   )
