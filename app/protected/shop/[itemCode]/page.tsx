@@ -15,7 +15,7 @@ export default async function ProductPage({
 
   const { data: product } = await supabase
     .from("products")
-    .select("id, item_code, name, description, price, image_path, sizes")
+    .select("id, item_code, name, description, price, image_path, sizes, needs_handedness")
     .eq("item_code", itemCode.toUpperCase())
     .single();
 
@@ -28,7 +28,7 @@ export default async function ProductPage({
   return (
     <main className="mx-auto max-w-3xl p-8">
            <div className="flex items-center justify-between">
-        <Link href="/protected/shop" className="text-sm text-gray-500 underline dark:text-white/60">
+        <Link href="/protected/shop" className="text-sm text-gray-500 underline">
           Back to catalogue
         </Link>
         <Link href="/protected/shop/cart" className="text-sm underline">
@@ -37,34 +37,33 @@ export default async function ProductPage({
       </div>
 
       <div className="mt-6 grid gap-8 sm:grid-cols-2">
-                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-gray-50 dark:border-white/10 dark:bg-white/5">
-          {imageUrl ? (
+        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-border bg-white">          {imageUrl ? (
             <Image
               src={imageUrl}
               alt={product.name}
               fill
-              unoptimized 
+               
               className="object-contain p-4"
               sizes="(max-width: 640px) 100vw, 50vw"
             />
           ) : (
-            <span className="text-sm text-gray-400 dark:text-white/60">No image</span>
+            <span className="text-sm text-gray-400">No image</span>
           )}
         </div>
 
         <div>
-          <p className="font-mono text-sm text-gray-500 dark:text-white/60">{product.item_code}</p>
+          <p className="font-mono text-sm text-gray-500">{product.item_code}</p>
           <h1 className="mt-1 text-2xl font-semibold">{product.name}</h1>
           <p className="mt-4 text-xl font-semibold">
             {Number(product.price) === 0
               ? "Price on request"
               : "R" + Number(product.price).toFixed(2)}
           </p>
-          <p className="mt-4 whitespace-pre-line text-gray-700 dark:text-white/75">
+          <p className="mt-4 whitespace-pre-line text-gray-700">
             {product.description}
           </p>
 
-          <AddToCartButton productId={product.id} sizes={product.sizes} />
+          <AddToCartButton productId={product.id} sizes={product.sizes}  needsHandedness={product.needs_handedness} />
         </div>
       </div>
     </main>

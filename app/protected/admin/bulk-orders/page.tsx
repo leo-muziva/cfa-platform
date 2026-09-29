@@ -18,7 +18,8 @@ export default async function BulkOrdersPage() {
   const { data: bulkOrders } = await supabase
     .from("bulk_orders")
     .select(
-      "id, reference, status, threshold, placed_at, estimated_arrival, created_at, orders (id, user_id, created_at, profiles (full_name, email), order_items (quantity, unit_price, size, products (item_code, name)))"
+      "id, reference, status, threshold, placed_at, estimated_arrival, created_at, orders (id, user_id, created_at, profiles (full_name, email), order_items (quantity, unit_price, size, handedness, products (item_code, name)))"
+    
     )
     .order("created_at", { ascending: false });
 
@@ -56,7 +57,10 @@ export default async function BulkOrdersPage() {
         return (
           <p key={i} className="text-xs text-muted-foreground">
             {product?.item_code} {product?.name}
-            {line.size ? " (" + line.size + ")" : ""} &times; {line.quantity}
+            {line.size ? " (" + line.size + ")" : ""}
+             {line.handedness ? " " + (line.handedness === "right" ? "RH" : "LH") : ""}
+              &times; {line.quantity}
+          
           </p>
         );
       });
