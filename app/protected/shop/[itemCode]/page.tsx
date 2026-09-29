@@ -28,7 +28,7 @@ export default async function ProductPage({
   return (
     <main className="mx-auto max-w-3xl p-8">
            <div className="flex items-center justify-between">
-        <Link href="/protected/shop" className="text-sm text-gray-500 underline">
+        <Link href="/protected/shop" className="text-sm text-gray-500 underline dark:text-white/60">
           Back to catalogue
         </Link>
         <Link href="/protected/shop/cart" className="text-sm underline">
@@ -52,14 +52,14 @@ export default async function ProductPage({
         </div>
 
         <div>
-          <p className="font-mono text-sm text-gray-500">{product.item_code}</p>
+          <p className="font-mono text-sm text-gray-500 dark:text-white/60">{product.item_code}</p>
           <h1 className="mt-1 text-2xl font-semibold">{product.name}</h1>
           <p className="mt-4 text-xl font-semibold">
             {Number(product.price) === 0
               ? "Price on request"
               : "R" + Number(product.price).toFixed(2)}
           </p>
-          <p className="mt-4 whitespace-pre-line text-gray-700">
+          <p className="mt-4 whitespace-pre-line text-gray-700 dark:text-white/75">
             {product.description}
           </p>
 

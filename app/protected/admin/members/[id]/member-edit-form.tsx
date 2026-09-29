@@ -90,7 +90,7 @@ export function MemberEditForm({
           </p>
 
           {state.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
-          {state.success && <p className="text-sm text-green-600" role="status">{state.message}</p>}
+          {state.success && <p className="text-sm text-green-600 dark:text-green-400" role="status">{state.message}</p>}
 
           <Button type="submit" disabled={isPending} className="w-fit">
             {isPending ? 'Saving...' : 'Save Changes'}

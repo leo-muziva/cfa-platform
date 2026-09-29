@@ -23,7 +23,7 @@ export function MembershipDecisionForm({ applicationId, privateNotes }: {
         <textarea id={`notes-${applicationId}`} name="private_notes" defaultValue={privateNotes ?? ''} className="min-h-20 w-full rounded-md border bg-background p-3" />
       </div>
       {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
-      {state.success && <p role="status" className="text-sm text-green-600">{state.success}</p>}
+      {state.success && <p role="status" className="text-sm text-green-600 dark:text-green-400">{state.success}</p>}
       <div className="flex flex-wrap gap-2">
         <Button name="decision" value="approve" disabled={pending}>Approve</Button>
         <Button name="decision" value="request_changes" variant="outline" disabled={pending}>Request changes</Button>

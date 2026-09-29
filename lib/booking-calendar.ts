@@ -1,35 +1,4 @@
-import { addMonths, format, getDaysInMonth } from "date-fns";
 import type { BookableLessonSlot } from "@/types/domain";
-
-// Calendar arithmetic works on "YYYY-MM" / "YYYY-MM-DD" keys that are already
-// in Cape Town time. Local Date objects are only built from the key's parts, so
-// the browser's own time zone never shifts a day.
-function monthStart(monthKey: string): Date {
-  const [year, month] = monthKey.split("-").map(Number);
-  return new Date(year, month - 1, 1);
-}
-
-export function monthDateKeys(monthKey: string): string[] {
-  const start = monthStart(monthKey);
-  return Array.from({ length: getDaysInMonth(start) }, (_, index) =>
-    format(new Date(start.getFullYear(), start.getMonth(), index + 1), "yyyy-MM-dd"),
-  );
-}
-
-export function shiftMonthKey(monthKey: string, delta: number): string {
-  return format(addMonths(monthStart(monthKey), delta), "yyyy-MM");
-}
-
-export function formatMonthKey(monthKey: string): { month: string; year: string } {
-  const start = monthStart(monthKey);
-  return { month: format(start, "MMMM"), year: format(start, "yyyy") };
-}
-
-/** Single-letter weekday for a date key, e.g. "M" for a Monday. */
-export function weekdayInitial(dateKey: string): string {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  return format(new Date(year, month - 1, day), "EEEEE");
-}
 
 const CAPE_TOWN_TIME_ZONE = "Africa/Johannesburg";
 

@@ -46,7 +46,7 @@ export default async function BookLessonPage() {
       {result.success ? (
         <CoachDirectory coaches={coaches} />
       ) : (
-        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-900">
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-900 dark:border-red-400/30 dark:bg-red-950/40 dark:text-red-100">
           {result.error}
         </div>
       )}

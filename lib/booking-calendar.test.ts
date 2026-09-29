@@ -5,12 +5,8 @@ import {
   formatCapeTownDate,
   formatCapeTownLessonDate,
   getAvailableDateKeys,
-  formatMonthKey,
   getInitialBookingSelection,
-  monthDateKeys,
   safeBookingSlot,
-  shiftMonthKey,
-  weekdayInitial,
 } from "./booking-calendar";
 import type { BookableLessonSlot } from "@/types/domain";
 
@@ -85,28 +81,5 @@ describe("booking calendar helpers", () => {
       selectedSlotId: "available",
       requestedSlotUnavailable: true,
     });
-  });
-});
-
-describe("month date keys", () => {
-  it("lists every day of a leap-year February", () => {
-    const days = monthDateKeys("2028-02");
-    expect(days).toHaveLength(29);
-    expect(days[0]).toBe("2028-02-01");
-    expect(days.at(-1)).toBe("2028-02-29");
-  });
-
-  it("lists 30 days for a 30-day month", () => {
-    expect(monthDateKeys("2026-09")).toHaveLength(30);
-  });
-
-  it("shifts months across year boundaries", () => {
-    expect(shiftMonthKey("2026-12", 1)).toBe("2027-01");
-    expect(shiftMonthKey("2027-01", -1)).toBe("2026-12");
-  });
-
-  it("formats the month and year and weekday initials", () => {
-    expect(formatMonthKey("2026-10")).toEqual({ month: "October", year: "2026" });
-    expect(weekdayInitial("2026-09-28")).toBe("M");
   });
 });

@@ -45,7 +45,7 @@ export function OperationForm({
       {children}
       <div aria-live="polite" aria-atomic="true" className="min-h-5">
         {state.error ? <p role="alert" className="text-sm text-destructive">{state.error}</p> : null}
-        {state.success ? <p role="status" className="text-sm text-emerald-700">{state.success}</p> : null}
+        {state.success ? <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">{state.success}</p> : null}
       </div>
       <Button type="submit" disabled={pending} variant={variant} className={submitClassName}>
         {pending ? pendingLabel : submitLabel}

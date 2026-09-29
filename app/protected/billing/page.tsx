@@ -45,7 +45,7 @@ export default async function BillingPage() {
           <Card>
             <CardContent className="flex items-center justify-between pt-6">
               <div><p className="font-medium">Account credits and adjustments</p><p className="text-sm text-muted-foreground">Credits reduce what you owe.</p></div>
-              <span className="font-semibold text-emerald-700">-R{billing.creditTotal.toFixed(2)}</span>
+              <span className="font-semibold text-emerald-700 dark:text-emerald-300">-R{billing.creditTotal.toFixed(2)}</span>
             </CardContent>
           </Card>
         )}

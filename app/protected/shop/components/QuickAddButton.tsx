@@ -30,8 +30,8 @@ export function QuickAddButton({ productId }: { productId: number }) {
       className={
         "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition " +
         (state === "done"
-          ? "border-green-600 bg-green-50 text-green-700"
-          : "border-slate-300 hover:border-slate-900 hover:bg-slate-900 hover:text-white")
+          ? "border-green-600 bg-green-50 text-green-700 dark:border-green-400 dark:bg-green-950/40 dark:text-green-300"
+          : "border-slate-300 hover:border-slate-900 hover:bg-slate-900 hover:text-white dark:border-white/40 dark:hover:border-violet-300 dark:hover:bg-violet-600 dark:hover:text-white")
       }
     >
       {state === "done" ? (

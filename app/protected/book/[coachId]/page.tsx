@@ -23,7 +23,7 @@ export default async function CoachLessonBookingPage({
     }
     if (data.errorCode === "not_found") notFound();
     return (
-      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900">
+      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/30 dark:bg-red-950/40 dark:text-red-100">
         {data.error}
       </div>
     );
@@ -51,7 +51,7 @@ export default async function CoachLessonBookingPage({
   return (
     <div className="space-y-7">
       <header>
-        <Link href="/protected/book" className="inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-medium text-cfa-purple hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-purple">
+        <Link href="/protected/book" className="inline-flex min-h-11 items-center gap-2 rounded-full px-1 text-sm font-medium text-cfa-purple hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-purple dark:text-violet-300 dark:focus-visible:outline-violet-300">
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           All coaches
         </Link>

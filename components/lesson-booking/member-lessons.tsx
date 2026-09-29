@@ -71,7 +71,7 @@ export function MemberLessons({
               <CancelForm lesson={lesson} action={cancelAction} />
             </div>
             {lesson.cancellationDeadline && (
-              <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+              <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 Free cancellation deadline: {formatCapeTownLessonDate(
                   lesson.cancellationDeadline,
@@ -112,11 +112,11 @@ function LessonSection({
   return (
     <section aria-labelledby={id}>
       <div>
-        <h2 id={id} className="font-serif text-3xl font-light text-slate-950">{title}</h2>
-        <p className="mt-1 text-sm text-slate-600">{description}</p>
+        <h2 id={id} className="font-serif text-3xl font-light text-slate-950 dark:text-white">{title}</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-white/75">{description}</p>
       </div>
       {lessons.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
+        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-white/20 dark:bg-white/5 dark:text-white/75">
           {empty}
         </div>
       ) : (
@@ -136,14 +136,14 @@ function LessonCard({
   children?: React.ReactNode;
 }) {
   return (
-    <Card className="overflow-hidden border-[#2d176b]/10 shadow-[0_12px_35px_rgba(37,20,92,0.06)]">
-      <CardHeader className="border-b border-slate-100 bg-[linear-gradient(110deg,#fbfaff,#ffffff)]">
+    <Card className="overflow-hidden border-[#2d176b]/10 shadow-[0_12px_35px_rgba(37,20,92,0.06)] dark:border-white/15 dark:bg-[#140a2e]/55">
+      <CardHeader className="border-b border-slate-100 bg-[linear-gradient(110deg,#fbfaff,#ffffff)] dark:border-white/10 dark:bg-none dark:bg-white/5">
         <CardTitle className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <span>
-            <span className="block font-serif text-2xl font-light text-slate-950">
+            <span className="block font-serif text-2xl font-light text-slate-950 dark:text-white">
               {formatCapeTownLessonDate(lesson.startsAt)}
             </span>
-            <span className="mt-1 block text-sm font-normal text-slate-600">
+            <span className="mt-1 block text-sm font-normal text-slate-600 dark:text-white/75">
               with {lesson.coachName}
             </span>
           </span>
@@ -153,21 +153,21 @@ function LessonCard({
       <CardContent className="pt-5">
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div className="flex items-center gap-2">
-            <CalendarClock className="h-4 w-4 text-[#2d176b]" aria-hidden="true" />
+            <CalendarClock className="h-4 w-4 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <dt className="sr-only">Lesson</dt>
             <dd>{weaponLabels[lesson.weapon]} · {formatCapeTownTime(lesson.startsAt)} to {formatCapeTownTime(lesson.endsAt)}</dd>
           </div>
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#2d176b]" aria-hidden="true" />
+            <Users className="h-4 w-4 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <dt className="sr-only">Participants</dt>
             <dd>{lesson.participants.map((participant) => participant.fullName).join(", ")}</dd>
           </div>
         </dl>
         {lesson.cancellationReason && (
-          <p className="mt-4 text-sm text-slate-600">Reason: {lesson.cancellationReason}</p>
+          <p className="mt-4 text-sm text-slate-600 dark:text-white/75">Reason: {lesson.cancellationReason}</p>
         )}
         {lesson.status === "rescheduled" && lesson.rescheduledToBookingId && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-slate-600">
+          <p className="mt-4 flex items-center gap-2 text-sm text-slate-600 dark:text-white/75">
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             This lesson was moved to a new time.
           </p>
@@ -190,9 +190,9 @@ function RescheduleForm({
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const alternatives = times.filter((time) => time.startsAt !== lesson.startsAt);
   return (
-    <form action={formAction} className="rounded-2xl border border-slate-200 p-4">
+    <form action={formAction} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
       <input type="hidden" name="bookingId" value={lesson.id} />
-      <label htmlFor={"reschedule-" + lesson.id} className="block text-sm font-medium text-slate-900">
+      <label htmlFor={"reschedule-" + lesson.id} className="block text-sm font-medium text-slate-900 dark:text-white">
         Move this lesson
         <select
           id={"reschedule-" + lesson.id}
@@ -211,7 +211,7 @@ function RescheduleForm({
         </select>
       </label>
       {alternatives.length === 0 && (
-        <p className="mt-2 text-xs text-slate-600">
+        <p className="mt-2 text-xs text-slate-600 dark:text-white/75">
           No alternative times are currently free. You can check the coach calendar again later.
         </p>
       )}
@@ -232,9 +232,9 @@ function CancelForm({
 }) {
   const [state, formAction, pending] = useActionState(action, initialActionState);
   return (
-    <form action={formAction} className="rounded-2xl border border-slate-200 p-4">
+    <form action={formAction} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
       <input type="hidden" name="bookingId" value={lesson.id} />
-      <label htmlFor={"cancel-reason-" + lesson.id} className="block text-sm font-medium text-slate-900">
+      <label htmlFor={"cancel-reason-" + lesson.id} className="block text-sm font-medium text-slate-900 dark:text-white">
         Cancellation reason
         <input
           id={"cancel-reason-" + lesson.id}
@@ -246,7 +246,7 @@ function CancelForm({
         />
       </label>
       <ActionMessage state={state} />
-      <Button type="submit" variant="outline" disabled={pending} className="mt-3 min-h-11 w-full border-red-200 text-red-800 hover:bg-red-50">
+      <Button type="submit" variant="outline" disabled={pending} className="mt-3 min-h-11 w-full border-red-200 text-red-800 hover:bg-red-50 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-950/40">
         {pending ? "Cancelling…" : "Cancel lesson"}
       </Button>
     </form>
@@ -254,14 +254,14 @@ function CancelForm({
 }
 
 function ActionMessage({ state }: { state: LessonMemberActionState }) {
-  if (state.error) return <p role="alert" className="mt-3 text-sm text-red-700">{state.error}</p>;
-  if (state.success) return <p role="status" className="mt-3 text-sm text-emerald-700">{state.success}</p>;
+  if (state.error) return <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{state.error}</p>;
+  if (state.success) return <p role="status" className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">{state.success}</p>;
   return null;
 }
 
 export function LessonsEmptyCallToAction() {
   return (
-    <Link href="/protected/book" className="inline-flex min-h-11 items-center rounded-full bg-[#2d176b] px-5 py-3 font-medium text-white">
+    <Link href="/protected/book" className="inline-flex min-h-11 items-center rounded-full bg-[#2d176b] px-5 py-3 font-medium text-white dark:bg-violet-600">
       Book a lesson
     </Link>
   );

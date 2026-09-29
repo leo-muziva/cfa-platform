@@ -57,7 +57,7 @@ export function ClosurePreviewCard({
     : [];
 
   return (
-    <Card className="h-fit border-indigo-200 bg-indigo-50/40">
+    <Card className="h-fit border-indigo-200 bg-indigo-50/40 dark:border-white/15 dark:bg-[#140a2e]/55">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarOff className="h-5 w-5" aria-hidden="true" />
