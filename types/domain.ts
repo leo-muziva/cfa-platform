@@ -430,6 +430,20 @@ export interface LessonBooking {
   cancellationReason: string | null
   rescheduledFromBookingId: string | null
   rescheduledToBookingId: string | null
+  /** True while a pay-now hold is live. Money-free, so dependents may see it. */
+  awaitingPayment?: boolean
+  holdExpiresAt?: string | null
+}
+
+/** Payer-only row for a pay-now lesson whose hold can still be paid. */
+export interface PayableLessonHold {
+  bookingId: string
+  coachName: string
+  startsAt: string
+  weapon: Weapon
+  participantNames: string[]
+  amountCents: string
+  holdExpiresAt: string
 }
 
 export interface CoachAvailabilityRule {
@@ -526,6 +540,11 @@ export type LessonBookingErrorCode =
   | 'affected_bookings_require_confirmation'
   | 'invalid_closure'
   | 'waiver_reason_required'
+  | 'pay_now_required'
+  | 'entitlement_unavailable'
+  | 'invalid_product'
+  | 'checkout_unavailable'
+  | 'payments_unavailable'
   | 'not_found'
   | 'request_failed'
 

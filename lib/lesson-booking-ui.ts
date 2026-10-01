@@ -63,8 +63,11 @@ export function lessonBillingCopy({
   return quote ? formatLessonQuote(quote) + " will be added to your account" : "Choose a payment option";
 }
 
-export function lessonBillingDetailCopy(canSeeQuote: boolean): string | null {
-  return canSeeQuote ? "Pay later on your invoice, or hold the lesson while you pay now." : null;
+export function lessonBillingDetailCopy(canSeeQuote: boolean, paymentsAvailable = true): string | null {
+  if (!canSeeQuote) return null;
+  return paymentsAvailable
+    ? "Pay later on your monthly invoice, or pay now with secure checkout."
+    : "Lessons are added to your monthly invoice.";
 }
 
 export function splitMemberLessons(
