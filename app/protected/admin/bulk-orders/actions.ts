@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/services/MemberService";
+import { validationFailure } from "@/lib/validations/form-errors";
 import {
   buildDistributionCsv,
   buildSupplierCsv,
@@ -211,7 +212,7 @@ export async function setEstimatedArrival(bulkOrderId: string, date: string): Pr
 
   const parsed = estimatedArrivalSchema.safeParse({ bulkOrderId, date });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid date." };
+    return { error: validationFailure(parsed.error).error };
   }
 
   const { data, error } = await supabase

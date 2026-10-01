@@ -1,4 +1,17 @@
 import 'server-only'
+import { validationFailure, type ValidationFailure } from '@/lib/validations/form-errors'
+
+// Field names as the profile forms label them, for validation messages.
+const PROFILE_FIELD_LABELS: Record<string, string> = {
+  full_name: 'Full name',
+  phone: 'Phone',
+  date_of_birth: 'Date of birth',
+  emergency_contact_name: 'Emergency contact',
+  emergency_contact_phone: 'Emergency phone',
+  terms_accepted: 'Terms and Conditions',
+  privacy_accepted: 'Privacy notice',
+  payer_consent: 'Payer consent',
+}
 import { createClient } from '@/lib/supabase/server'
 import {
   getProfileById, updateProfile, getProfilesPage, adminUpdateProfile,
@@ -66,18 +79,18 @@ export async function requireStaff(): Promise<{ profile: Profile } | { error: st
   return { profile }
 }
 
-export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
+export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = profileUpdateSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   const updated = await updateProfile(profile.id, parsed.data)
   return updated ? { profile: updated } : { error: 'Failed to update profile' }
 }
 
-export async function completeCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
+export async function completeCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = registrationDetailsSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   const details = {
@@ -118,9 +131,9 @@ export async function getMemberEditDataForAdmin(targetId: string): Promise<
   return profile ? { profile, membershipTypes: await getMembershipTypes(), membership: await getMembership(targetId) } : { error: 'Member not found' }
 }
 
-export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
+export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = adminProfileUpdateSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const profile = await adminUpdateProfile(targetId, parsed.data)
@@ -129,7 +142,7 @@ export async function adminUpdateMember(targetId: string, rawData: unknown): Pro
 
 export async function inviteMemberForAdmin(rawData: unknown): Promise<{ success: true } | { error: string }> {
   const parsed = inviteMemberSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const invited = await inviteMemberByEmail(

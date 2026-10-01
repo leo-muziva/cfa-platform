@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/services/MemberService";
 import { productIdSchema, productInputSchema } from "@/lib/validations/product.schema";
 import { revalidatePath } from "next/cache";
+import type { ZodError } from "zod";
+import { validationFailure } from "@/lib/validations/form-errors";
 
 // Everything a product form sends us.
 export type ProductInput = {
@@ -25,8 +27,8 @@ async function requireAdminClient() {
   return createClient();
 }
 
-function firstIssue(error: { issues: { message: string }[] }) {
-  return error.issues[0]?.message ?? "Please check the product details.";
+function firstIssue(error: ZodError) {
+  return validationFailure(error).error;
 }
 
 function refreshShop() {

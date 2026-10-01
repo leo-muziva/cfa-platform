@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { ActionState } from '@/app/actions/platform'
+import { failureState } from '@/lib/validations/form-errors'
 import {
   completeManualRefund, decideRefund, raiseRefundForPayer, requestRefund, resolveProcessingRefund,
   sendProviderRefund,
@@ -26,7 +27,7 @@ export async function requestRefundAction(_: ActionState, formData: FormData): P
   const result = await requestRefund({
     attemptId: field(formData, 'attemptId'), amount: field(formData, 'amount'), reason: field(formData, 'reason'),
   })
-  if (!result.ok) return { error: result.error }
+  if (!result.ok) return failureState(result)
   revalidateRefundPages()
   redirect('/protected/refunds?requested=1')
 }
@@ -35,7 +36,7 @@ export async function staffRaiseRefundAction(_: ActionState, formData: FormData)
   const result = await raiseRefundForPayer({
     attemptId: field(formData, 'attemptId'), amount: field(formData, 'amount'), reason: field(formData, 'reason'),
   })
-  if (!result.ok) return { error: result.error }
+  if (!result.ok) return failureState(result)
   revalidateRefundPages()
   return { success: 'Refund request raised' }
 }
@@ -45,7 +46,7 @@ export async function decideRefundAction(_: ActionState, formData: FormData): Pr
     refundId: field(formData, 'refundId'), decision: field(formData, 'decision'), method: field(formData, 'method'),
     note: field(formData, 'note'), amount: field(formData, 'amount'),
   })
-  if (!result.ok) return { error: result.error }
+  if (!result.ok) return failureState(result)
   revalidateRefundPages()
   return { success: result.data.decision === 'approve' ? 'Refund approved' : 'Refund rejected' }
 }
@@ -54,7 +55,7 @@ export async function completeManualRefundAction(_: ActionState, formData: FormD
   const result = await completeManualRefund({
     refundId: field(formData, 'refundId'), reference: field(formData, 'reference'),
   })
-  if (!result.ok) return { error: result.error }
+  if (!result.ok) return failureState(result)
   revalidateRefundPages()
   return { success: result.data.alreadyProcessed ? 'Refund was already marked as paid' : 'Refund marked as paid' }
 }
@@ -63,7 +64,7 @@ export async function sendProviderRefundAction(_: ActionState, formData: FormDat
   const result = await sendProviderRefund({ refundId: field(formData, 'refundId') })
   // Even an uncertain PayFast answer changes the refund to 'processing'.
   revalidateRefundPages()
-  if (!result.ok) return { error: result.error }
+  if (!result.ok) return failureState(result)
   if (result.data.status === 'failed') return { error: `PayFast rejected the refund: ${result.data.reason}` }
   return { success: 'Refund sent through PayFast' }
 }
@@ -73,7 +74,7 @@ export async function resolveProcessingRefundAction(_: ActionState, formData: Fo
     refundId: field(formData, 'refundId'), outcome: field(formData, 'outcome'),
     reference: field(formData, 'reference'), note: field(formData, 'note'),
   })
-  if (!result.ok) return { error: result.error }
+  if (!result.ok) return failureState(result)
   revalidateRefundPages()
   return { success: result.data.outcome === 'processed' ? 'Refund recorded as paid' : 'Refund recorded as failed' }
 }

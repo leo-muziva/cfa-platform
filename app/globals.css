@@ -809,8 +809,28 @@ input:-webkit-autofill:active {
 
 /* Keep validation feedback visible even though the underline rule above
    outranks Tailwind's border utilities. */
+/* !important because the underline rules above use long :not() chains whose
+   specificity would otherwise win over this, in both themes. */
 .portal-glass [aria-invalid="true"] {
-  border-bottom-color: hsl(var(--destructive));
+  border-bottom-color: hsl(var(--destructive)) !important;
+  box-shadow: 0 2px 0 0 hsl(var(--destructive)) !important;
+  background-color: hsl(var(--destructive) / 0.06) !important;
+}
+
+.portal-glass input[type="checkbox"][aria-invalid="true"] {
+  outline: 2px solid hsl(var(--destructive));
+  outline-offset: 2px;
+}
+
+/* The dark theme's --destructive is too dim against the smoke background. */
+.dark .portal-glass [aria-invalid="true"] {
+  border-bottom-color: rgb(248 113 113) !important;
+  box-shadow: 0 2px 0 0 rgb(248 113 113) !important;
+  background-color: rgb(248 113 113 / 0.08) !important;
+}
+
+.dark .portal-glass input[type="checkbox"][aria-invalid="true"] {
+  outline-color: rgb(248 113 113);
 }
 
 /* Whole-class match (~=) so variants such as `hover:bg-primary` or
@@ -900,4 +920,76 @@ input:-webkit-autofill:active {
     outline: 2px solid CanvasText;
     outline-offset: 2px;
   }
+}
+
+/* Date picker calendar (react-day-picker). Rendered in a popover portal, so it
+   sits outside .portal-glass and needs its own theme. */
+.rdp-root.cfa-calendar {
+  --rdp-accent-color: hsl(var(--cfa-purple));
+  --rdp-accent-background-color: hsl(var(--cfa-purple) / 0.1);
+  --rdp-day-height: 2.5rem;
+  --rdp-day-width: 2.5rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-today-color: hsl(var(--cfa-purple));
+  font-size: 0.875rem;
+}
+
+.cfa-calendar .rdp-day_button:hover:not(:disabled) {
+  background-color: hsl(var(--cfa-purple) / 0.1);
+}
+
+.cfa-calendar .rdp-selected .rdp-day_button {
+  background-color: hsl(var(--cfa-purple));
+  border-color: hsl(var(--cfa-purple));
+  color: #fff;
+  font-weight: 600;
+}
+
+.cfa-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
+  font-weight: 700;
+}
+
+.cfa-calendar .rdp-day_button:focus-visible {
+  outline: 2px solid hsl(var(--cfa-purple));
+  outline-offset: 2px;
+}
+
+.cfa-calendar .rdp-dropdown_root {
+  border-radius: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background-color: hsl(var(--cfa-purple) / 0.08);
+}
+
+.cfa-calendar .rdp-dropdown_root:focus-within {
+  outline: 2px solid hsl(var(--cfa-purple));
+}
+
+.dark .rdp-root.cfa-calendar {
+  --rdp-accent-color: hsl(var(--cfa-purple-bright));
+  --rdp-today-color: hsl(var(--cfa-gold));
+}
+
+.dark .cfa-calendar .rdp-selected .rdp-day_button {
+  background-color: hsl(var(--cfa-purple-bright));
+  border-color: hsl(var(--cfa-purple-bright));
+  color: #140a2e;
+}
+
+.dark .cfa-calendar .rdp-day_button:hover:not(:disabled),
+.dark .cfa-calendar .rdp-dropdown_root {
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+.dark .cfa-calendar .rdp-dropdown option {
+  background-color: #140a2e;
+  color: #fff;
+}
+
+.cfa-calendar .rdp-chevron {
+  fill: hsl(var(--cfa-purple));
+}
+
+.dark .cfa-calendar .rdp-chevron {
+  fill: #fff;
 }

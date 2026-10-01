@@ -2,9 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { adminUpdateMember, inviteMemberForAdmin, attachDependentForAdmin } from '@/lib/services/MemberService'
+import { failureState } from '@/lib/validations/form-errors'
+import type { FormFieldState } from '@/types/domain'
 
-export type AdminMemberActionState = {
-  error?: string
+export type AdminMemberActionState = FormFieldState & {
   success?: boolean
   message?: string
 }
@@ -37,7 +38,7 @@ export async function adminUpdateMemberAction(
   const result = await adminUpdateMember(targetId, rawData)
 
   if ('error' in result) {
-    return { error: result.error }
+    return failureState(result)
   }
 
   revalidatePath('/protected/admin/members')
@@ -59,7 +60,7 @@ export async function inviteMemberAction(
   const result = await inviteMemberForAdmin(rawData)
 
   if ('error' in result) {
-    return { error: result.error }
+    return failureState(result)
   }
 
   revalidatePath('/protected/admin/members')

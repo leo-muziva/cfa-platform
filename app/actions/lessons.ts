@@ -21,21 +21,20 @@ import {
   updateLessonSettingsForAdmin,
   waiveLessonChargesForAdmin,
 } from '@/lib/services/LessonBookingService'
-import type { ClosureAffectedBooking, LessonBookingErrorCode } from '@/types/domain'
+import type { ClosureAffectedBooking, FormFieldState, LessonBookingErrorCode } from '@/types/domain'
 import { capeTownDateTimeToIso } from '@/lib/cape-town-time'
 
-export type LessonActionState = {
-  error?: string
+export type LessonActionState = FormFieldState & {
   errorCode?: LessonBookingErrorCode
   success?: string
   bookingId?: string
   checkoutRequired?: boolean
 }
 
-type OperationResult = { success: true; data: unknown } | { success: false; error: string; errorCode: LessonBookingErrorCode }
+type OperationResult = { success: true; data: unknown } | { success: false; error: string; errorCode: LessonBookingErrorCode; fieldErrors?: Record<string, string> }
 
 function actionResult(result: OperationResult, success: string): LessonActionState {
-  return result.success ? { success } : { error: result.error, errorCode: result.errorCode }
+  return result.success ? { success } : { error: result.error, errorCode: result.errorCode, fieldErrors: result.fieldErrors }
 }
 
 // Preview actions return the affected-bookings list itself, not a status
