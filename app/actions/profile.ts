@@ -1,9 +1,10 @@
 'use server'
 
 import { updateCurrentProfile } from '@/lib/services/MemberService'
+import { failureState } from '@/lib/validations/form-errors'
+import type { FormFieldState } from '@/types/domain'
 
-export type ProfileActionState = {
-  error?: string
+export type ProfileActionState = FormFieldState & {
   success?: boolean
   message?: string
 }
@@ -22,7 +23,7 @@ export async function updateProfileAction(
   const result = await updateCurrentProfile(rawData)
 
   if ('error' in result) {
-    return { error: result.error }
+    return failureState(result)
   }
 
   return { success: true, message: 'Profile updated successfully' }

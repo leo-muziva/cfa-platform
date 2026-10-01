@@ -550,7 +550,7 @@ export type LessonBookingErrorCode =
 
 export type LessonBookingResult<T> =
   | { success: true; data: T }
-  | { success: false; errorCode: LessonBookingErrorCode; error: string }
+  | { success: false; errorCode: LessonBookingErrorCode; error: string; fieldErrors?: Record<string, string> }
 
 export interface ShopCartLine {
   id: string
@@ -612,4 +612,16 @@ export interface RefundRequest {
   createdAt: string
   decidedAt: string | null
   processedAt: string | null
+}
+
+/**
+ * Validation details a Server Action form state can carry. `fieldErrors` comes
+ * from the server; `values` and `submission` are filled in on the client after
+ * a failed submit so valid input survives React's form reset.
+ */
+export interface FormFieldState {
+  error?: string
+  fieldErrors?: Record<string, string>
+  values?: Record<string, string[]>
+  submission?: number
 }

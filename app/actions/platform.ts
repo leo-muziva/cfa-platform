@@ -8,8 +8,10 @@ import {
   answerFamilyLink, endActiveFamilyLink,
 } from '@/lib/services/PlatformService'
 import { bookingErrorMessage } from '@/lib/booking-errors'
+import { failureState } from '@/lib/validations/form-errors'
+import type { FormFieldState } from '@/types/domain'
 
-export type ActionState = { error?: string; success?: string }
+export type ActionState = FormFieldState & { success?: string }
 
 export async function bookLessonAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await bookLesson({
@@ -30,14 +32,14 @@ export async function createSlotAction(_: ActionState, formData: FormData): Prom
     coach_id: formData.get('coach_id') || null,
     access_rule: formData.get('access_rule'),
   })
-  if ('error' in result) return { error: result.error }
+  if ('error' in result) return failureState(result)
   revalidatePath('/protected/admin/lessons')
   return { success: 'Lesson slot opened' }
 }
 
 export async function requestMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await requestMembership({ membership_type_id: formData.get('membership_type_id') })
-  if ('error' in result) return { error: result.error }
+  if ('error' in result) return failureState(result)
   revalidatePath('/protected')
   return { success: 'Membership request submitted for staff approval' }
 }
@@ -45,7 +47,7 @@ export async function requestMembershipAction(_: ActionState, formData: FormData
 export async function decideMembershipRequestAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await decideMembershipRequest({ application_id: formData.get('application_id'), decision: formData.get('decision'),
     visible_response: formData.get('visible_response'), private_notes: formData.get('private_notes') })
-  if ('error' in result) return { error: result.error }
+  if ('error' in result) return failureState(result)
   revalidatePath('/protected/admin/membership-requests')
   revalidatePath('/protected')
   return { success: 'Membership request updated successfully' }
@@ -53,7 +55,7 @@ export async function decideMembershipRequestAction(_: ActionState, formData: Fo
 
 export async function resubmitMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await resubmitMembershipRequest({ application_id: formData.get('application_id'), membership_type_id: formData.get('membership_type_id') })
-  if ('error' in result) return { error: result.error }
+  if ('error' in result) return failureState(result)
   revalidatePath('/protected'); return { success: 'Membership application resubmitted' }
 }
 
@@ -69,7 +71,7 @@ export async function changeMembershipStatusAction(formData: FormData) {
 
 export async function requestFamilyLinkAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await requestExistingAccountLink({ email: formData.get('email') })
-  if ('error' in result) return { error: result.error }
+  if ('error' in result) return failureState(result)
   revalidatePath('/protected/family'); return { success: 'If that account exists, a request has been sent' }
 }
 

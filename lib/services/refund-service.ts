@@ -1,6 +1,7 @@
 import "server-only";
 import { getRefundClient, providerRefundsEnabled as registryProviderRefundsEnabled } from "@/lib/payments/registry";
 import type { ProviderRefundResult } from "@/lib/payments/payfast-refunds";
+import { validationFailure, type FieldErrors } from "@/lib/validations/form-errors";
 import {
   completeManualRefund as completeManualRefundRow,
   decideRefund as decideRefundRow,
@@ -22,7 +23,7 @@ import {
 } from "@/lib/validations/refund.schema";
 import type { RefundablePayment, RefundRequest } from "@/types/domain";
 
-export type RefundFailure = { ok: false; error: string; code?: RefundErrorCode };
+export type RefundFailure = { ok: false; error: string; code?: RefundErrorCode; fieldErrors?: FieldErrors };
 export type RefundResult<T> = { ok: true; data: T } | RefundFailure;
 
 export type ProviderRefundOutcome =
@@ -107,7 +108,7 @@ export async function getMyRefundablePayment(attemptId: string): Promise<RefundR
 
 export async function requestRefund(raw: unknown): Promise<RefundResult<{ refundId: string }>> {
   const parsed = requestRefundSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ERROR_MESSAGES.invalid_input, code: "invalid_input" };
+  if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
   const payment = await getMyRefundablePayment(parsed.data.attemptId);
   if (!payment.ok) return payment;
   if (!payment.data) return fail("payment_not_found");
@@ -140,7 +141,7 @@ export async function raiseRefundForPayer(raw: unknown): Promise<RefundResult<{ 
   const denied = await staffGuard();
   if (denied) return denied;
   const parsed = requestRefundSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ERROR_MESSAGES.invalid_input, code: "invalid_input" };
+  if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
   const result = await requestRefundRow(parsed.data.attemptId, parsed.data.amountCents, parsed.data.reason);
   if (!result.ok) return fail(result.code, true);
   return { ok: true, data: { refundId: result.data } };
@@ -150,7 +151,7 @@ export async function decideRefund(raw: unknown): Promise<RefundResult<{ decisio
   const denied = await staffGuard();
   if (denied) return denied;
   const parsed = decideRefundSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ERROR_MESSAGES.invalid_input, code: "invalid_input" };
+  if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
   const approve = parsed.data.decision === "approve";
   const result = await decideRefundRow({
     refundId: parsed.data.refundId,
@@ -167,7 +168,7 @@ export async function completeManualRefund(raw: unknown): Promise<RefundResult<{
   const denied = await staffGuard();
   if (denied) return denied;
   const parsed = completeManualRefundSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ERROR_MESSAGES.reference_required, code: "invalid_input" };
+  if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
   const result = await completeManualRefundRow(parsed.data.refundId, parsed.data.reference);
   if (!result.ok) return fail(result.code, true);
   return { ok: true, data: { alreadyProcessed: !result.data } };
@@ -177,7 +178,7 @@ export async function resolveProcessingRefund(raw: unknown): Promise<RefundResul
   const denied = await staffGuard();
   if (denied) return denied;
   const parsed = resolveProcessingRefundSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ERROR_MESSAGES.invalid_input, code: "invalid_input" };
+  if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
   const { refundId, outcome, reference, note } = parsed.data;
   const result = await resolveProcessingRefundRow({
     refundId, processed: outcome === "processed", reference: reference || null, note,
@@ -194,7 +195,7 @@ export async function sendProviderRefund(raw: unknown): Promise<RefundResult<Pro
   const denied = await staffGuard();
   if (denied) return denied;
   const parsed = providerRefundSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ERROR_MESSAGES.invalid_input, code: "invalid_input" };
+  if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
 
   // Check the provider client before claiming, so a disabled environment
   // leaves the refund 'approved' for a manual transfer.

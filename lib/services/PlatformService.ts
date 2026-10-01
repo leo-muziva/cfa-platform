@@ -1,4 +1,5 @@
 import 'server-only'
+import { validationFailure } from '@/lib/validations/form-errors'
 import { getCurrentAccountContext, getCurrentProfile, requireAdmin, requireStaff } from '@/lib/services/MemberService'
 import { getMembershipTypes } from '@/lib/repositories/MemberRepository'
 import {
@@ -54,7 +55,7 @@ export async function getLessonHistory(): Promise<{ items: LessonHistoryItem[] }
 
 export async function createLessonSlotForAdmin(raw: unknown) {
   const parsed = lessonSlotSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const slot = await createSlot({ ...parsed.data, capacity: parsed.data.capacity ?? null, coach_id: parsed.data.coach_id ?? null }, guard.profile.id)
@@ -63,7 +64,7 @@ export async function createLessonSlotForAdmin(raw: unknown) {
 
 export async function requestMembership(raw: unknown) {
   const parsed = membershipRequestSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   if (profile.membership_status === 'member') return { error: 'This account is already a member' }
@@ -84,14 +85,14 @@ export async function getMembershipRequestsForAdmin() {
 
 export async function decideMembershipRequest(raw: unknown) {
   const parsed = membershipReviewSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? guard : safeMembershipResult(await reviewMembershipRequest(parsed.data.application_id, parsed.data.decision, parsed.data.visible_response, parsed.data.private_notes))
 }
 
 export async function resubmitMembershipRequest(raw: unknown) {
   const parsed = membershipResubmissionSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   if (!await getCurrentProfile()) return { error: 'Not authenticated' }
   return safeMembershipResult(await resubmitMembership(parsed.data.application_id, parsed.data.membership_type_id))
 }
@@ -105,7 +106,7 @@ export async function cancelCurrentMembership(confirmed: boolean) {
 
 export async function changeMembershipForAdmin(raw: unknown) {
   const parsed = membershipStatusChangeSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? guard : safeMembershipResult(await changeMembershipStatus(parsed.data.profile_id, parsed.data.status))
 }
@@ -118,20 +119,20 @@ export async function getFamilyAccountsPageData() {
 
 export async function requestExistingAccountLink(raw: unknown) {
   const parsed = familyLinkRequestSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   if (!await getCurrentProfile()) return { error: 'Not authenticated' }
   return requestFamilyLink(parsed.data.email)
 }
 
 export async function answerFamilyLink(raw: unknown) {
   const parsed = familyLinkResponseSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   return respondFamilyLink(parsed.data.link_id, parsed.data.response)
 }
 
 export async function endActiveFamilyLink(raw: unknown) {
   const parsed = familyLinkEndSchema.safeParse(raw)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   return endFamilyLink(parsed.data.link_id)
 }
 

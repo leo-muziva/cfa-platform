@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction, ValidatedForm } from '@/components/forms/form-state'
 import { decideMembershipRequestAction } from '@/app/actions/platform'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -9,10 +9,10 @@ export function MembershipDecisionForm({ applicationId, privateNotes }: {
   applicationId: string
   privateNotes: string | null
 }) {
-  const [state, formAction, pending] = useActionState(decideMembershipRequestAction, {})
+  const [state, formAction, pending] = useFormAction(decideMembershipRequestAction, {})
 
   return (
-    <form action={formAction} className="space-y-4">
+    <ValidatedForm action={formAction} state={state} className="space-y-4">
       <input type="hidden" name="application_id" value={applicationId} />
       <div>
         <Label htmlFor={`response-${applicationId}`}>Response visible to applicant</Label>
@@ -29,6 +29,6 @@ export function MembershipDecisionForm({ applicationId, privateNotes }: {
         <Button name="decision" value="request_changes" variant="outline" disabled={pending}>Request changes</Button>
         <Button name="decision" value="reject" variant="outline" disabled={pending}>Reject</Button>
       </div>
-    </form>
+    </ValidatedForm>
   )
 }

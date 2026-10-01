@@ -1,8 +1,8 @@
 "use client";
 
+import { useFormAction, ValidatedForm } from "@/components/forms/form-state";
 import Link from "next/link";
 import { CalendarClock, Clock3, RotateCcw, Users } from "lucide-react";
-import { useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -211,10 +211,10 @@ function RescheduleForm({
   times: AvailableLessonTime[];
   action: LessonMemberFormAction;
 }) {
-  const [state, formAction, pending] = useActionState(action, initialActionState);
+  const [state, formAction, pending] = useFormAction(action, initialActionState);
   const alternatives = times.filter((time) => time.startsAt !== lesson.startsAt);
   return (
-    <form action={formAction} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
+    <ValidatedForm action={formAction} state={state} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
       <input type="hidden" name="bookingId" value={lesson.id} />
       <label htmlFor={"reschedule-" + lesson.id} className="block text-sm font-medium text-slate-900 dark:text-white">
         Move this lesson
@@ -243,7 +243,7 @@ function RescheduleForm({
       <Button type="submit" variant="outline" disabled={pending || alternatives.length === 0} className="mt-3 min-h-11 w-full">
         {pending ? "Moving…" : "Reschedule"}
       </Button>
-    </form>
+    </ValidatedForm>
   );
 }
 
@@ -254,9 +254,9 @@ function CancelForm({
   lesson: LessonBooking;
   action: LessonMemberFormAction;
 }) {
-  const [state, formAction, pending] = useActionState(action, initialActionState);
+  const [state, formAction, pending] = useFormAction(action, initialActionState);
   return (
-    <form action={formAction} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
+    <ValidatedForm action={formAction} state={state} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
       <input type="hidden" name="bookingId" value={lesson.id} />
       <label htmlFor={"cancel-reason-" + lesson.id} className="block text-sm font-medium text-slate-900 dark:text-white">
         Cancellation reason
@@ -273,7 +273,7 @@ function CancelForm({
       <Button type="submit" variant="outline" disabled={pending} className="mt-3 min-h-11 w-full border-red-200 text-red-800 hover:bg-red-50 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-950/40">
         {pending ? "Cancelling…" : "Cancel lesson"}
       </Button>
-    </form>
+    </ValidatedForm>
   );
 }
 

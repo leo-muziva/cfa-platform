@@ -2,7 +2,8 @@
 
 import { CalendarDays, Check, Clock, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useFormAction, ValidatedForm } from "@/components/forms/form-state";
 import { Button } from "@/components/ui/button";
 import { GlassButton } from "@/components/ui/glass-auth";
 import { GlassDialog } from "@/components/ui/glass-dialog";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/lesson-booking-ui";
 import Link from "next/link";
 import type {
+  FormFieldState,
   LessonTimeOption,
   LessonBookingErrorCode,
   LessonCoachSummary,
@@ -33,9 +35,8 @@ import type {
   Weapon,
 } from "@/types/domain";
 
-export interface LessonMemberActionState {
+export interface LessonMemberActionState extends FormFieldState {
   success?: string;
-  error?: string;
   errorCode?: LessonBookingErrorCode;
   bookingId?: string;
   checkoutRequired?: boolean;
@@ -82,7 +83,7 @@ export function CoachBookingCalendar({
     defaultParticipant ? [defaultParticipant.id] : [],
   );
   const [attemptedSlot, setAttemptedSlot] = useState<LessonTimeOption | null>(null);
-  const [state, formAction, pending] = useActionState(createAction, initialActionState);
+  const [state, formAction, pending] = useFormAction(createAction, initialActionState);
 
   const timesForDate = timesForLessonDate(times, selectedDate);
   const hasAvailableTimes = times.some((time) => time.isAvailable);
@@ -264,7 +265,7 @@ export function CoachBookingCalendar({
             <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable)}</p>
           )}
         </div>
-        <form action={formAction} className="mt-6 space-y-4">
+        <ValidatedForm action={formAction} state={state} className="mt-6 space-y-4">
           <input type="hidden" name="coachId" value={coach.coachId} />
           <input type="hidden" name="startsAt" value={selectedTime} />
           <input type="hidden" name="weapon" value={selectedWeapon} />
@@ -295,7 +296,7 @@ export function CoachBookingCalendar({
           <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
             {pending ? "Booking…" : requiresPayNow ? "Book and pay now" : "Confirm booking"}
           </Button>
-        </form>
+        </ValidatedForm>
       </aside>
     </div>
   );
