@@ -1,54 +1,47 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { listOrders } from "@/lib/services/shop-order-service";
+import { listMyRefundablePayments } from "@/lib/services/refund-service";
 import { statusView } from "./orderStatus";
+
+const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
+
+function formatCents(cents: number) {
+  return zar.format(cents / 100);
+}
 
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ submitted?: string; show?: string }>;
+  searchParams: Promise<{ show?: string }>;
 }) {
   const sp = await searchParams;
-  const supabase = await createClient();
+  const [result, refundable] = await Promise.all([listOrders(), listMyRefundablePayments()]);
 
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) {
+  if (!result.ok) {
     redirect("/auth/login?next=%2Fprotected%2Fshop%2Forders");
+  }
+
+  // Paid orders link to a refund request for the payment that settled them.
+  // If the lookup fails the links are simply left out.
+  const refundAttemptByOrder = new Map<string, string>();
+  if (refundable.ok) {
+    for (const payment of refundable.data) {
+      if (payment.orderId && payment.refundableCents > 0) {
+        refundAttemptByOrder.set(payment.orderId, payment.attemptId);
+      }
+    }
   }
 
   // Which filter is active. Blank means show everything.
   const show = sp.show ?? "";
 
-  // Fetch the orders, their items, and the bulk order each one joined.
-  // That last part is what lets us show the real status instead of
-  // a fixed label.
-  const { data: orders } = await supabase
-    .from("orders")
-    .select(
-      "id, status, notes, created_at, bulk_orders (status, estimated_arrival), order_items (id, quantity, size, handedness, unit_price, products (item_code, name))"
-    )
-    .eq("user_id", auth.user.id)
-    .neq("status", "draft")
-    .order("created_at", { ascending: false });
-
-  const all = orders ?? [];
-
-  // Work out each order's status and total once, so the filter and the
-  // display both use the same answer.
-  const decorated = all.map(function (order) {
-    // Supabase types a joined row as an array, so take the first entry.
-    const bulk = Array.isArray(order.bulk_orders)
-      ? order.bulk_orders[0]
-      : order.bulk_orders;
-
-    const view = statusView(order.status, bulk?.status ?? null);
-
-    let total = 0;
-    for (const line of order.order_items ?? []) {
-      total = total + Number(line.unit_price) * line.quantity;
-    }
-
-    return { order, bulk, view, total };
+  // Work out each order's status once, so the filter and the display both
+  // use the same answer. The bulk order each one joined is what lets us
+  // show the real stage instead of a fixed label.
+  const decorated = result.orders.map(function (order) {
+    const view = statusView(order.status, order.bulkStatus);
+    return { order, view };
   });
 
   // Counts for the filter buttons.
@@ -71,35 +64,34 @@ export default async function OrdersPage({
   ];
 
   const cards = list.map(function (d) {
-    const { order, bulk, view, total } = d;
+    const { order, view } = d;
 
-    const date = new Date(order.created_at).toLocaleDateString("en-ZA", {
+    const date = new Date(order.createdAt).toLocaleDateString("en-ZA", {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
 
+    const refundAttempt =
+      order.status === "paid" ? refundAttemptByOrder.get(order.id) : undefined;
+
     // Only worth showing the expected date while it's still coming.
     const arrival =
-      bulk?.estimated_arrival && view.group === "progress"
-        ? new Date(bulk.estimated_arrival).toLocaleDateString("en-ZA", {
+      order.estimatedArrival && order.status !== "pending_payment" && view.group === "progress"
+        ? new Date(order.estimatedArrival).toLocaleDateString("en-ZA", {
             day: "numeric",
             month: "long",
           })
         : null;
 
-    const lines = (order.order_items ?? []).map(function (line) {
-      const product = Array.isArray(line.products)
-        ? line.products[0]
-        : line.products;
-
+    const lines = order.lines.map(function (line) {
       return (
         <div key={line.id} className="flex justify-between py-1 text-sm">
           <span className="text-foreground">
             <span className="font-mono text-xs text-muted-foreground">
-              {product?.item_code}
+              {line.itemCode}
             </span>{" "}
-            {product?.name}
+            {line.name}
             {line.size ? " (" + line.size + ")" : ""}
             {line.handedness
               ? " " + (line.handedness === "right" ? "RH" : "LH")
@@ -107,7 +99,7 @@ export default async function OrdersPage({
             {line.quantity > 1 ? " × " + line.quantity : ""}
           </span>
           <span className="text-foreground">
-            R{(Number(line.unit_price) * line.quantity).toFixed(2)}
+            {formatCents(line.unitPriceCents * line.quantity)}
           </span>
         </div>
       );
@@ -138,10 +130,29 @@ export default async function OrdersPage({
             ) : view.note ? (
               <p className="mt-2 text-sm text-muted-foreground">{view.note}</p>
             ) : null}
+
+            {view.linkToCart ? (
+              <Link
+                href="/protected/shop/cart"
+                className="mt-1 inline-block text-sm underline underline-offset-4"
+              >
+                Go to your cart to finish paying
+              </Link>
+            ) : null}
+
+            {refundAttempt ? (
+              <Link
+                href={"/protected/refunds/new?attempt=" + encodeURIComponent(refundAttempt)}
+                className="mt-1 block text-sm underline underline-offset-4"
+              >
+                Request refund
+                <span className="sr-only"> for the order placed {date}</span>
+              </Link>
+            ) : null}
           </div>
 
           <p className="shrink-0 font-semibold text-foreground">
-            R{total.toFixed(2)}
+            {formatCents(order.totalCents)}
           </p>
         </div>
 
@@ -168,18 +179,6 @@ export default async function OrdersPage({
       <h1 className="mb-6 mt-4 text-2xl font-semibold text-foreground">
         Your orders
       </h1>
-
-      {/* Shown once, straight after submitting. */}
-      {sp.submitted ? (
-        <div className="mb-6 rounded-2xl border border-green-600/40 bg-green-600/10 p-4">
-          <p className="font-medium text-green-700 dark:text-green-400">
-            Order submitted
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Your items will be included in CFA&apos;s next bulk order.
-          </p>
-        </div>
-      ) : null}
 
       {decorated.length === 0 ? (
         <p className="text-muted-foreground">

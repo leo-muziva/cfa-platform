@@ -23,6 +23,29 @@ function signature(payload: string, passphrase: string): string {
   return createHash("md5").update(`${payload}&passphrase=${encode(passphrase.trim())}`).digest("hex");
 }
 
+/** PHP-urlencode compatible encoding used by every PayFast signature. */
+export function encodePayFastValue(value: string): string {
+  return encode(value);
+}
+
+/**
+ * Signature for PayFast's REST API (api.payfast.co.za), which differs from checkout/ITN signing:
+ * the passphrase joins the fields, keys are sorted alphabetically, values are PHP-urlencoded,
+ * joined as k=v with "&" and hashed with lowercase hex MD5. Any "signature" key is ignored.
+ * Source: https://github.com/Payfast/payfast-php-sdk/blob/master/lib/Auth.php (generateApiSignature)
+ * and lib/Request.php, which signs the merged headers (merchant-id, version, timestamp), query
+ * params (excluding the sandbox "testing" flag) and JSON body params.
+ */
+export function payFastApiSignature(fields: Record<string, string>, passphrase: string): string {
+  const signed: Record<string, string> = { ...fields, passphrase: passphrase.trim() };
+  const payload = Object.keys(signed)
+    .filter((key) => key !== "signature")
+    .sort()
+    .map((key) => `${key}=${encode(signed[key])}`)
+    .join("&");
+  return createHash("md5").update(payload).digest("hex");
+}
+
 function parseNotification(body: string): [string, string][] | null {
   if (!body || body.length > 32_768) return null;
   const entries: [string, string][] = [];

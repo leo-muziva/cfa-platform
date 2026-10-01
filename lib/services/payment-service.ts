@@ -3,9 +3,20 @@ import { createClient } from "@/lib/supabase/server";
 import { getPaymentGateway, getPaymentOrigin } from "@/lib/payments/registry";
 import type { CheckoutResponse } from "@/lib/payments/gateway";
 import { findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent } from "@/lib/repositories/payment-repository";
+import type { PreparePaymentErrorCode } from "@/lib/repositories/payment-repository";
 import { paymentAttemptSchema, paymentEventSchema, paymentTargetSchema } from "@/lib/validations/payment.schema";
 
 type Failure = { ok: false; error: string };
+
+export type StartPaymentResult =
+  | { ok: true; attemptId: string; pricesChanged: boolean }
+  | { ok: false; error: string; code?: PreparePaymentErrorCode };
+
+const ORDER_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
+  forbidden: "Only the account payer can pay for this order. Ask your guardian to pay.",
+  empty_order: "Your order is empty.",
+  product_unavailable: "An item in your order is no longer available. Remove it and try again.",
+};
 
 async function isSignedIn() {
   const db = await createClient();
@@ -13,15 +24,25 @@ async function isSignedIn() {
   return Boolean(user);
 }
 
-export async function startPayment(raw: unknown): Promise<{ ok: true; attemptId: string } | Failure> {
+// Lets the UI hide pay buttons when this environment cannot take payments.
+export function onlinePaymentsAvailable(): boolean {
+  return Boolean(getPaymentGateway() && getPaymentOrigin());
+}
+
+export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   const target = paymentTargetSchema.safeParse(raw);
-  if (!target.success) return { ok: false, error: "Choose one valid lesson or invoice to pay." };
+  if (!target.success) return { ok: false, error: "Choose one valid lesson, invoice or order to pay." };
   if (!await isSignedIn()) return { ok: false, error: "Please sign in before starting a payment." };
   const provider = getPaymentGateway();
   if (!provider || !getPaymentOrigin()) return { ok: false, error: "Online payments are not configured for this environment." };
-  const attempt = await preparePayment(target.data, provider.name);
-  if (!attempt) return { ok: false, error: "This payment is unavailable. Refresh to check the balance or lesson hold." };
-  return { ok: true, attemptId: attempt.attempt_id };
+  const result = await preparePayment(target.data, provider.name);
+  if (!result.ok) {
+    const error = target.data.orderId
+      ? ORDER_MESSAGES[result.code] ?? "This order can't be paid right now. Refresh and try again."
+      : "This payment is unavailable. Refresh to check the balance or lesson hold.";
+    return { ok: false, error, code: result.code };
+  }
+  return { ok: true, attemptId: result.attempt.attempt_id, pricesChanged: result.attempt.prices_changed };
 }
 
 export async function buildCheckout(attemptId: unknown): Promise<{ ok: true; checkout: CheckoutResponse } | Failure> {

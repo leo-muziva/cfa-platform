@@ -46,7 +46,7 @@ export function AddToCartButton({
     );
 
     setBusy(false);
-    setStatus(result.error ? result.error : "Added to your order.");
+    setStatus("error" in result ? result.error : "Added to your order.");
   }
 
   return (
@@ -134,7 +134,9 @@ export function AddToCartButton({
       </button>
 
       {status ? (
-        <p className="mt-2 text-sm text-muted-foreground">{status}</p>
+        <p role="status" className="mt-2 text-sm text-muted-foreground">
+          {status}
+        </p>
       ) : null}
     </div>
   );

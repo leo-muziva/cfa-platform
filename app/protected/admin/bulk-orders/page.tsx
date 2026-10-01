@@ -11,6 +11,30 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
+const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
+
+// Only paid orders count towards the threshold and go to the supplier.
+// 'submitted' orders joined bulk orders before checkout existed and were
+// never paid.
+function orderBadge(status: string) {
+  if (status === "paid") {
+    return {
+      label: "Paid",
+      className: "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
+    };
+  }
+  if (status === "submitted") {
+    return {
+      label: "Unpaid (legacy)",
+      className: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
+    };
+  }
+  return {
+    label: status === "cancelled" ? "Cancelled" : "Unpaid",
+    className: "bg-muted text-muted-foreground",
+  };
+}
+
 export default async function BulkOrdersPage() {
   const supabase = await createClient();
 
@@ -18,8 +42,7 @@ export default async function BulkOrdersPage() {
   const { data: bulkOrders } = await supabase
     .from("bulk_orders")
     .select(
-      "id, reference, status, threshold, placed_at, estimated_arrival, created_at, orders (id, user_id, created_at, profiles (full_name, email), order_items (quantity, unit_price, size, handedness, products (item_code, name)))"
-    
+      "id, reference, status, threshold, placed_at, estimated_arrival, created_at, orders (id, user_id, status, created_at, profiles (full_name, email), order_items (quantity, unit_price, size, handedness, products (item_code, name)))"
     )
     .order("created_at", { ascending: false });
 
@@ -27,10 +50,16 @@ export default async function BulkOrdersPage() {
 
   const cards = list.map(function (bulk) {
     const orders = bulk.orders ?? [];
+    const paidOrders = orders.filter(function (order) {
+      return order.status === "paid";
+    });
+    const legacyUnpaidCount = orders.filter(function (order) {
+      return order.status === "submitted";
+    }).length;
 
     let total = 0;
     let itemCount = 0;
-    for (const order of orders) {
+    for (const order of paidOrders) {
       for (const line of order.order_items ?? []) {
         total = total + Number(line.unit_price) * line.quantity;
         itemCount = itemCount + line.quantity;
@@ -38,7 +67,8 @@ export default async function BulkOrdersPage() {
     }
 
     const threshold = Number(bulk.threshold);
-    const percent = Math.min(100, Math.round((total / threshold) * 100));
+    const percent =
+      threshold > 0 ? Math.min(100, Math.round((total / threshold) * 100)) : 100;
 
     const customerRows = orders.map(function (order) {
       const profile = Array.isArray(order.profiles)
@@ -58,20 +88,28 @@ export default async function BulkOrdersPage() {
           <p key={i} className="text-xs text-muted-foreground">
             {product?.item_code} {product?.name}
             {line.size ? " (" + line.size + ")" : ""}
-             {line.handedness ? " " + (line.handedness === "right" ? "RH" : "LH") : ""}
-              &times; {line.quantity}
-          
+            {line.handedness ? " " + (line.handedness === "right" ? "RH" : "LH") : ""}
+            {" "}&times; {line.quantity}
           </p>
         );
       });
 
+      const badge = orderBadge(order.status);
+
       return (
         <div key={order.id} className="border-t border-border py-3">
-          <div className="flex justify-between">
-            <p className="text-sm font-medium">
+          <div className="flex justify-between gap-2">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
               {profile?.full_name || profile?.email || "Unknown customer"}
+              <span
+                className={
+                  "rounded-full px-2 py-0.5 text-xs font-medium " + badge.className
+                }
+              >
+                {badge.label}
+              </span>
             </p>
-            <p className="text-sm font-semibold">R{orderTotal.toFixed(2)}</p>
+            <p className="text-sm font-semibold">{zar.format(orderTotal)}</p>
           </div>
           <div className="mt-1">{itemLines}</div>
         </div>
@@ -93,9 +131,9 @@ export default async function BulkOrdersPage() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xl font-semibold">R{total.toFixed(2)}</p>
+            <p className="text-xl font-semibold">{zar.format(total)}</p>
             <p className="text-sm text-muted-foreground">
-              of R{threshold.toFixed(2)}
+              of {zar.format(threshold)} paid
             </p>
           </div>
         </div>
@@ -111,10 +149,17 @@ export default async function BulkOrdersPage() {
         </div>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          {orders.length} order{orders.length === 1 ? "" : "s"} &middot;{" "}
+          {paidOrders.length} paid order{paidOrders.length === 1 ? "" : "s"} &middot;{" "}
           {itemCount} item{itemCount === 1 ? "" : "s"}
           {total >= threshold ? " · threshold reached" : ""}
         </p>
+
+        {legacyUnpaidCount > 0 ? (
+          <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+            {legacyUnpaidCount} legacy unpaid order
+            {legacyUnpaidCount === 1 ? " is" : "s are"} not counted and not exported.
+          </p>
+        ) : null}
 
         {orders.length > 0 ? (
           <div className="mt-4">{customerRows}</div>

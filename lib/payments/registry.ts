@@ -1,6 +1,7 @@
 import "server-only";
 import type { PaymentGateway } from "./gateway";
 import { createPayFastGateway } from "./payfast";
+import { createPayFastRefundClient, type ProviderRefundClient } from "./payfast-refunds";
 
 export function getPaymentOrigin(): string | null {
   try {
@@ -19,4 +20,18 @@ export function getPaymentGateway(provider: string | undefined = process.env.PAY
   const passphrase = process.env.PAYFAST_PASSPHRASE;
   if (!merchantId?.trim() || !merchantKey?.trim() || !passphrase?.trim()) return null;
   return createPayFastGateway({ merchantId, merchantKey, passphrase });
+}
+
+export function providerRefundsEnabled(): boolean {
+  return process.env.PAYFAST_REFUNDS_ENABLED === "true";
+}
+
+// Provider refunds are opt-in and sandbox-only for now. PayFast does not offer refunds in sandbox,
+// so this path is unverified against the live API; see lib/payments/payfast-refunds.ts.
+export function getRefundClient(provider: string | undefined = process.env.PAYMENT_PROVIDER): ProviderRefundClient | null {
+  if (!providerRefundsEnabled() || provider !== "payfast_sandbox") return null;
+  const merchantId = process.env.PAYFAST_MERCHANT_ID;
+  const passphrase = process.env.PAYFAST_PASSPHRASE;
+  if (!merchantId?.trim() || !passphrase?.trim()) return null;
+  return createPayFastRefundClient({ merchantId, passphrase }, { testing: true });
 }

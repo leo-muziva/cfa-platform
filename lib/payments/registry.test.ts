@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { getPaymentGateway, getPaymentOrigin } from "./registry";
+import { getPaymentGateway, getPaymentOrigin, getRefundClient, providerRefundsEnabled } from "./registry";
 
 afterEach(() => vi.unstubAllEnvs());
 describe("payment configuration", () => {
@@ -25,5 +25,34 @@ describe("payment configuration", () => {
   it("normalizes an explicit HTTPS origin", () => {
     vi.stubEnv("PAYMENT_PUBLIC_ORIGIN", "https://stage.example/");
     expect(getPaymentOrigin()).toBe("https://stage.example");
+  });
+});
+
+describe("refund client configuration", () => {
+  function configure() {
+    vi.stubEnv("PAYMENT_PROVIDER", "payfast_sandbox");
+    vi.stubEnv("PAYFAST_MERCHANT_ID", "10000100");
+    vi.stubEnv("PAYFAST_PASSPHRASE", "test-phrase");
+  }
+  it("returns null when the refunds flag is unset or not exactly true", () => {
+    configure();
+    vi.stubEnv("PAYFAST_REFUNDS_ENABLED", "");
+    expect(providerRefundsEnabled()).toBe(false);
+    expect(getRefundClient()).toBeNull();
+    vi.stubEnv("PAYFAST_REFUNDS_ENABLED", "TRUE");
+    expect(getRefundClient()).toBeNull();
+  });
+  it("requires configuration and the sandbox provider", () => {
+    configure();
+    vi.stubEnv("PAYFAST_REFUNDS_ENABLED", "true");
+    expect(providerRefundsEnabled()).toBe(true);
+    expect(getRefundClient()?.name).toBe("payfast_sandbox");
+    expect(getRefundClient("payfast")).toBeNull();
+    expect(getRefundClient("peach_sandbox")).toBeNull();
+    vi.stubEnv("PAYFAST_PASSPHRASE", " ");
+    expect(getRefundClient()).toBeNull();
+    vi.stubEnv("PAYFAST_PASSPHRASE", "test-phrase");
+    vi.stubEnv("PAYFAST_MERCHANT_ID", "");
+    expect(getRefundClient()).toBeNull();
   });
 });
