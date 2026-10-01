@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckoutButton } from "@/components/payments/checkout-button";
 import {
   formatCapeTownLessonDate,
   formatCapeTownTime,
@@ -43,10 +44,13 @@ export function MemberLessons({
   nowIso,
   cancelAction,
   rescheduleAction,
+  canPayOnline = false,
 }: {
   lessons: LessonBooking[];
   availableTimesByBooking: Record<string, AvailableLessonTime[]>;
   nowIso: string;
+  /** The viewer is the payer and this environment can take online payments. */
+  canPayOnline?: boolean;
   cancelAction: LessonMemberFormAction;
   rescheduleAction: LessonMemberFormAction;
 }) {
@@ -60,7 +64,25 @@ export function MemberLessons({
         description="Manage scheduled lessons before they begin."
         empty="You have no upcoming lessons."
         lessons={upcoming}
-        renderLesson={(lesson) => (
+        renderLesson={(lesson) => lesson.awaitingPayment ? (
+          <LessonCard key={lesson.id} lesson={lesson}>
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-100">
+                <p className="font-semibold">Waiting for payment</p>
+                <p className="mt-1 leading-6">
+                  This time is held until {lesson.holdExpiresAt ? formatCapeTownTime(lesson.holdExpiresAt) : "the hold expires"}.
+                  {" "}If payment is not completed by then, the lesson is released.
+                </p>
+                {canPayOnline ? (
+                  <CheckoutButton bookingId={lesson.id} />
+                ) : (
+                  <p className="mt-2 leading-6">Your account payer needs to complete payment for this lesson.</p>
+                )}
+              </div>
+              <CancelForm lesson={lesson} action={cancelAction} />
+            </div>
+          </LessonCard>
+        ) : (
           <LessonCard key={lesson.id} lesson={lesson}>
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
               <RescheduleForm
@@ -147,7 +169,9 @@ function LessonCard({
               with {lesson.coachName}
             </span>
           </span>
-          <Badge variant="secondary">{statusLabels[lesson.status]}</Badge>
+          <Badge variant={lesson.awaitingPayment ? "outline" : "secondary"}>
+            {lesson.awaitingPayment ? "Awaiting payment" : statusLabels[lesson.status]}
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-5">

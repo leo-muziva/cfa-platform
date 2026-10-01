@@ -4,14 +4,23 @@ import { getPaymentStatus } from "@/lib/services/payment-service";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaymentResultPage({ params }: { params: Promise<{ attemptId: string }> }) {
+export default async function PaymentResultPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ attemptId: string }>;
+  searchParams: Promise<{ cancelled?: string }>;
+}) {
   const { attemptId } = await params;
+  const { cancelled } = await searchParams;
   const payment = await getPaymentStatus(attemptId);
   if (!payment) notFound();
   const successMessage = payment.credited
     ? payment.kind === "order"
       ? "Payment received, but your order changed before it was confirmed, so the payment was kept as account credit. Check your billing page for details."
-      : "Payment received. Some or all of this payment was recorded as account credit. Check your billing page for details."
+      : payment.kind === "booking"
+        ? "Payment received after your lesson hold expired, so the lesson was released and the payment was kept as account credit. Check your billing page for details."
+        : "Payment received. Some or all of this payment was recorded as account credit. Check your billing page for details."
     : payment.kind === "booking"
       ? "Payment confirmed. Your lesson is booked."
       : payment.kind === "order"
@@ -19,6 +28,10 @@ export default async function PaymentResultPage({ params }: { params: Promise<{ 
         : "Payment confirmed. Your invoice balance has been updated.";
   const message = payment.status === "succeeded"
     ? successMessage
+    : payment.status === "pending" && cancelled === "1"
+      ? payment.kind === "booking"
+        ? "Checkout was cancelled. Your lesson stays held until the hold expires, so you can still pay from My lessons or Billing."
+        : "Checkout was cancelled. No payment was taken. You can start checkout again when you are ready."
     : payment.status === "pending"
       ? "Waiting for payment confirmation. Returning from checkout does not confirm payment. If you cancelled checkout, no payment is confirmed here. Refresh after a few moments."
       : "Payment was not completed. Check your billing or lesson page before starting another payment.";

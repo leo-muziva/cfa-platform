@@ -71,6 +71,20 @@ describe("lesson booking UI helpers", () => {
     expect(lessonBillingDetailCopy(false)).toBeNull();
     expect(lessonBillingCopy({ canSeeQuote: true, quote })).toContain("R");
     expect(lessonBillingDetailCopy(true)).toMatch(/invoice/i);
+    expect(lessonBillingDetailCopy(true, true)).toMatch(/pay now/i);
+    expect(lessonBillingDetailCopy(true, false)).not.toMatch(/pay now/i);
+  });
+
+  it("keeps a lesson awaiting payment in upcoming until it is released", () => {
+    const base = {
+      coachId: "coach", coachName: "Coach", endsAt: "2099-01-01T10:30:00.000Z", weapon: "foil" as const,
+      participants: [], cancelledAt: null, cancellationReason: null, rescheduledFromBookingId: null, rescheduledToBookingId: null,
+    };
+    const held = { ...base, id: "held", startsAt: "2099-01-01T10:00:00.000Z", status: "scheduled" as const, awaitingPayment: true, holdExpiresAt: "2098-12-31T10:00:00.000Z" };
+    const released = { ...base, id: "released", startsAt: "2099-01-02T10:00:00.000Z", status: "cancelled" as const, cancellationReason: "Payment hold expired" };
+    const { upcoming, history } = splitMemberLessons([held, released], new Date("2098-12-31T09:45:00.000Z"));
+    expect(upcoming.map((lesson) => lesson.id)).toEqual(["held"]);
+    expect(history.map((lesson) => lesson.id)).toEqual(["released"]);
   });
 
   it("publishes the exact accessible contention recovery message", () => {

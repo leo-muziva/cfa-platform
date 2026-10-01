@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { staffRaiseRefundAction } from '@/app/actions/refunds'
 import { getInvoicesForAdmin } from '@/lib/services/PlatformService'
 import { listRefundablePaymentsForStaff } from '@/lib/services/refund-service'
+import { getPaymentSetupIssues } from '@/lib/services/payment-service'
 import type { PaymentKind } from '@/types/domain'
 
 export const dynamic = 'force-dynamic'
@@ -21,9 +22,23 @@ export default async function PaymentsPage() {
   const [result, settled] = await Promise.all([getInvoicesForAdmin(), listRefundablePaymentsForStaff()])
   const invoices = 'invoices' in result ? result.invoices : []
   const outstanding = invoices.filter((i) => i.status !== 'paid')
+  const setupIssues = getPaymentSetupIssues()
   return (
     <div className="space-y-6">
       <div><h1 className="text-3xl font-bold">Payments and arrears</h1><p className="text-muted-foreground">No booking suspension or late fees are applied while arrears policy is pending.</p></div>
+      <Card>
+        <CardHeader><CardTitle>Payment setup</CardTitle></CardHeader>
+        <CardContent>
+          {setupIssues.length === 0 ? (
+            <p className="text-sm">Online payments and scheduled jobs are configured for this environment.</p>
+          ) : (
+            <div role="alert" className="space-y-2 text-sm">
+              <p>Fix these deployment settings, then redeploy:</p>
+              <ul className="list-disc space-y-1 pl-5">{setupIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <Card><CardHeader><CardTitle>Outstanding invoices</CardTitle></CardHeader><CardContent>{outstanding.length}</CardContent></Card>
       {outstanding.map((invoice) => <Card key={invoice.id}><CardContent className="pt-6">{invoice.invoice_number} - R{Number(invoice.total).toFixed(2)}</CardContent></Card>)}
 

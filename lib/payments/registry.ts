@@ -22,6 +22,29 @@ export function getPaymentGateway(provider: string | undefined = process.env.PAY
   return createPayFastGateway({ merchantId, merchantKey, passphrase });
 }
 
+/**
+ * Names the settings that stop online payments in this environment, so staff
+ * can fix a deployment. Reports setting names only, never their values.
+ */
+export function paymentSetupIssues(env: NodeJS.ProcessEnv = process.env): string[] {
+  const issues: string[] = [];
+  if (env.PAYMENT_PROVIDER !== "payfast_sandbox") issues.push("PAYMENT_PROVIDER must be payfast_sandbox");
+  if (env.PAYFAST_SANDBOX_ENABLED !== "true") issues.push("PAYFAST_SANDBOX_ENABLED must be true");
+  for (const name of ["PAYFAST_MERCHANT_ID", "PAYFAST_MERCHANT_KEY", "PAYFAST_PASSPHRASE", "SUPABASE_SECRET_KEY"] as const) {
+    if (!env[name]?.trim()) issues.push(`${name} is not set`);
+  }
+  try {
+    const url = new URL(env.PAYMENT_PUBLIC_ORIGIN ?? "");
+    if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+      issues.push("PAYMENT_PUBLIC_ORIGIN must be a bare https origin, for example https://your-site.vercel.app");
+    }
+  } catch {
+    issues.push("PAYMENT_PUBLIC_ORIGIN is not set");
+  }
+  if (!env.CRON_SECRET?.trim()) issues.push("CRON_SECRET is not set (scheduled hold expiry and invoicing are disabled)");
+  return issues;
+}
+
 export function providerRefundsEnabled(): boolean {
   return process.env.PAYFAST_REFUNDS_ENABLED === "true";
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { getPaymentGateway, getPaymentOrigin } from "@/lib/payments/registry";
+import { getPaymentGateway, getPaymentOrigin, paymentSetupIssues } from "@/lib/payments/registry";
 import type { CheckoutResponse } from "@/lib/payments/gateway";
 import { findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent } from "@/lib/repositories/payment-repository";
 import type { PreparePaymentErrorCode } from "@/lib/repositories/payment-repository";
@@ -27,6 +27,11 @@ async function isSignedIn() {
 // Lets the UI hide pay buttons when this environment cannot take payments.
 export function onlinePaymentsAvailable(): boolean {
   return Boolean(getPaymentGateway() && getPaymentOrigin());
+}
+
+// Setting names only; the admin payments page shows these to staff.
+export function getPaymentSetupIssues(): string[] {
+  return paymentSetupIssues();
 }
 
 export async function startPayment(raw: unknown): Promise<StartPaymentResult> {

@@ -6,7 +6,7 @@ This guide is a setup and acceptance checklist, not evidence of a successful dep
 
 ## Staging setup
 
-1. Deploy the application changes and apply `0025_provider_neutral_payments.sql` after `0024_peach_sandbox_checkout.sql` to the staging database. For shop checkout, also apply `0029_shop_order_payments.sql` after `0028_order_handedness.sql`. It adds the `pending_payment` and `paid` order states, links shop charges and payment attempts to orders and replaces the shared checkout, status and settlement routines. For refunds, apply `0030_enable_rls_ledger_lesson_tables.sql` and then `0031_refunds.sql` after 0029. 0030 enables row level security on the remaining ledger and lesson tables; 0031 adds refund requests, the refund routines, the `refunded` order state, a read policy for payment allocations and closes anonymous reads of bulk orders. Deployment and hosted migration are separate operational steps; do not reset the hosted database.
+1. Deploy the application changes and apply `0025_provider_neutral_payments.sql` after `0024_peach_sandbox_checkout.sql` to the staging database. For shop checkout, also apply `0029_shop_order_payments.sql` after `0028_order_handedness.sql`. It adds the `pending_payment` and `paid` order states, links shop charges and payment attempts to orders and replaces the shared checkout, status and settlement routines. For refunds, apply `0030_enable_rls_ledger_lesson_tables.sql` and then `0031_refunds.sql` after 0029. 0030 enables row level security on the remaining ledger and lesson tables; 0031 adds refund requests, the refund routines, the `refunded` order state, a read policy for payment allocations and closes anonymous reads of bulk orders. For pay-now lessons, apply `0033_pay_now_lessons.sql` after 0032. It adds the hold state to the member lesson list, the payer-only list of payable holds, and lets any active staff member (or the scheduled job) run invoicing. Deployment and hosted migration are separate operational steps; do not reset the hosted database.
 2. Keep the existing Supabase public configuration and server-only `SUPABASE_SECRET_KEY` configured for the same staging project. Settlement needs the privileged server client. Never expose that key through a `NEXT_PUBLIC_` variable.
 3. In PayFast's sandbox Account Information screen, set a Salt Passphrase. Copy the sandbox merchant ID, merchant key and passphrase directly into the hosting platform's environment settings. Do not paste credentials into chat, source files, screenshots or logs.
 4. Configure the values below and redeploy so the server receives them. `PAYMENT_PUBLIC_ORIGIN` must be the public HTTPS staging origin, with no route, query or fragment.
@@ -20,7 +20,13 @@ PAYFAST_MERCHANT_KEY=<sandbox merchant key>
 PAYFAST_PASSPHRASE=<sandbox Salt Passphrase>
 # Optional, off by default. Enables the unverified PayFast refund API path.
 PAYFAST_REFUNDS_ENABLED=false
+# Long random value. Vercel Cron sends it to /api/cron/* automatically.
+CRON_SECRET=<random secret>
 ```
+
+The admin Payments page has a Payment setup card that names any missing or invalid setting (names only, never values). Check it after every redeploy.
+
+`vercel.json` schedules two jobs. `expire-holds` runs daily at 05:00 Cape Town time, and the lessons, booking and billing pages also release lapsed holds whenever they load, so slots free up promptly on the Hobby plan. `monthly-invoices` runs at 00:00 Cape Town time on the 25th and invoices the current business month. Both return 401 without the `CRON_SECRET` bearer token.
 
 The safe `.env.sample` lists configuration names, not real credentials. The former `CFA_PAYMENT_PROVIDER=mock` selector does not select this checkout implementation. Incomplete or disabled sandbox configuration must leave online checkout unavailable.
 
@@ -48,11 +54,12 @@ Only a verified notification followed by successful shared settlement can mark a
 
 ### Held lesson, pay now
 
-1. Sign in as the authorized payer using synthetic data. Choose an available lesson and the pay-now option.
-2. Continue through the generated CFA checkout attempt to PayFast sandbox. Complete the sandbox wallet payment; never enter real card details or use a live merchant account.
+1. Sign in as the authorized payer using synthetic data. Choose an available lesson and the pay-now option. Guest lessons always use pay now. A dependent cannot start pay-now and is told to ask the payer.
+2. Confirming the booking goes straight to PayFast sandbox. Complete the sandbox wallet payment; never enter real card details or use a live merchant account.
 3. Return to CFA. Confirm the attempt becomes paid and the held lesson becomes confirmed only after the validated ITN is processed.
 4. In PayFast's Transactions and ITNs screens, compare the transaction/reference with CFA's result. Record sanitized evidence and timestamps.
-5. Check that the charge/payment is recorded once. A payment arriving after hold expiry must follow the implemented late-payment credit rules rather than silently restoring the expired slot.
+5. Cancel a second pay-now checkout instead. The lesson stays in My lessons as Awaiting payment, and Billing lists it under Lessons waiting for payment with its amount and a Pay now button until the hold expires. After expiry it moves to History as Payment hold expired and the slot is offered again.
+6. Check that the charge/payment is recorded once. A payment arriving after hold expiry must follow the implemented late-payment credit rules rather than silently restoring the expired slot.
 
 ### Outstanding issued invoice
 

@@ -72,6 +72,7 @@ export default async function CoachLessonBookingPage({
         participants={participants}
         quotes={data.capabilities.canSeeHouseholdMoney ? quotes : []}
         canSeeQuote={data.capabilities.canSeeHouseholdMoney}
+        paymentsAvailable={data.paymentsAvailable}
         createAction={createLessonBookingAction}
       />
     </div>

@@ -6,6 +6,9 @@ import { getPayerBilling } from '@/lib/services/PlatformService'
 import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
 import { CheckoutButton } from '@/components/payments/checkout-button'
 import { listMyRefundablePayments } from '@/lib/services/refund-service'
+import { getPayableLessonHolds } from '@/lib/services/LessonBookingService'
+import { formatCapeTownTime } from '@/lib/booking-calendar'
+import { formatZar } from '@/lib/money'
 
 export default async function BillingPage() {
   const billing = await getPayerBilling()
@@ -16,7 +19,8 @@ export default async function BillingPage() {
 
   // Receipts only carry a number, so match them to refundable payments by it.
   // A failed lookup just hides the per-receipt links; the Refunds page still works.
-  const refundable = await listMyRefundablePayments()
+  const [refundable, holdsResult] = await Promise.all([listMyRefundablePayments(), getPayableLessonHolds()])
+  const heldLessons = holdsResult.success ? holdsResult.data : []
   const refundAttemptByReceipt = new Map<string, string>()
   if (refundable.ok) {
     for (const payment of refundable.data) {
@@ -62,6 +66,24 @@ export default async function BillingPage() {
           </Card>
         )}
       </section>
+
+      {heldLessons.length > 0 && (
+        <section className="space-y-3" aria-labelledby="held-lessons-heading">
+          <div><h2 id="held-lessons-heading" className="text-xl font-semibold">Lessons waiting for payment</h2><p className="text-sm text-muted-foreground">These pay-now lessons are held for you. Unpaid holds are released when they expire.</p></div>
+          {heldLessons.map((hold) => (
+            <Card key={hold.bookingId}>
+              <CardContent className="space-y-1 pt-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <span><span className="font-medium">{hold.participantNames.join(' and ')}</span> - {formatCapeTownLessonDate(hold.startsAt)} with {hold.coachName}</span>
+                  <span className="font-semibold">{formatZar(hold.amountCents)}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Held until {formatCapeTownTime(hold.holdExpiresAt)}</p>
+                {billing.providerAvailable ? <CheckoutButton bookingId={hold.bookingId} /> : <p className="text-sm text-muted-foreground">Online payments are unavailable right now.</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      )}
 
       <section className="space-y-3" aria-labelledby="pending-lessons-heading">
         <div><h2 id="pending-lessons-heading" className="text-xl font-semibold">Upcoming lessons - not yet outstanding</h2><p className="text-sm text-muted-foreground">An upcoming lesson only adds to your amount outstanding after it happens, or after a late cancellation.</p></div>
