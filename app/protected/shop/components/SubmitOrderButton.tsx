@@ -1,59 +1,94 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { submitOrder } from "../actions/cart";
+import { checkoutOrder } from "../actions/cart";
 
-export function SubmitOrderButton() {
-  const router = useRouter();
-  const [notes, setNotes] = useState("");
+// Pay-now control for a draft cart. CFA holds no stock, so the full amount
+// is paid up front; the order joins the next bulk order once PayFast
+// confirms the payment. On success the action redirects to PayFast.
+export function PayNowButton({
+  totalLabel,
+  canPay,
+  paymentsAvailable,
+  initialNotes = "",
+}: {
+  totalLabel: string;
+  canPay: boolean;
+  paymentsAvailable: boolean;
+  initialNotes?: string;
+}) {
+  const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function handleSubmit() {
+  async function handlePay() {
     setBusy(true);
     setError("");
 
-    const result = await submitOrder(notes);
+    // Only returns when checkout could not start; success navigates away.
+    const result = await checkoutOrder(notes);
 
-    if (result.error) {
+    if (result?.error) {
       setError(result.error);
-      setBusy(false);
-      return;
     }
-
-    // Worked — send them to their order history.
-    router.push("/protected/shop/orders?submitted=1");
+    setBusy(false);
   }
 
   return (
     <div className="mt-8">
-      <label className="mb-1 block text-sm text-gray-600 dark:text-white/75">
+      <label
+        htmlFor="order-notes"
+        className="mb-1 block text-sm text-gray-600 dark:text-white/75"
+      >
         Notes for CFA (optional)
       </label>
       <textarea
+        id="order-notes"
         value={notes}
         onChange={function (e) {
           setNotes(e.target.value);
         }}
         rows={3}
+        maxLength={500}
         placeholder="Anything CFA should know about this order"
         className="w-full rounded-lg border px-3 py-2 text-sm"
       />
 
-      <button
-        onClick={handleSubmit}
-        disabled={busy}
-        className="mt-3 w-full rounded-lg bg-black px-4 py-3 text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20"
-      >
-        {busy ? "Submitting..." : "Submit order"}
-      </button>
+      {/* Dependents and minors cannot pay; their guardian does. */}
+      {canPay ? (
+        <>
+          <button
+            type="button"
+            onClick={handlePay}
+            disabled={busy || !paymentsAvailable}
+            className="mt-3 w-full rounded-lg bg-black px-4 py-3 text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20"
+          >
+            {busy ? "Starting payment..." : "Pay now - " + totalLabel}
+          </button>
+          {!paymentsAvailable ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Online payment is not available right now.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Your guardian needs to pay for this order.
+        </p>
+      )}
 
-      {error ? <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      ) : null}
 
       <p className="mt-3 text-xs text-gray-500 dark:text-white/60">
-        Your items join CFA&apos;s next bulk order. You will be notified when it
-        is placed.
+        Payment is taken now through PayFast. Your order joins CFA&apos;s next
+        bulk order once payment is confirmed.
+      </p>
+      <p className="mt-1 text-xs text-gray-500 dark:text-white/60">
+        Sandbox demonstration - no real money is charged.
       </p>
     </div>
   );

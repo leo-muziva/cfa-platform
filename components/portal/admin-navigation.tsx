@@ -14,6 +14,7 @@ const links = [
   { href: '/protected/admin/lesson-settings', label: 'Lesson settings' },
   { href: '/protected/admin/invoicing', label: 'Invoicing' },
   { href: '/protected/admin/payments', label: 'Payments' },
+  { href: '/protected/admin/refunds', label: 'Refunds' },
   { href: '/protected/admin/products', label: 'Products' },
   { href: '/protected/admin/bulk-orders', label: 'Bulk orders' },
 ]

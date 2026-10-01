@@ -1,26 +1,31 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getCart } from "@/lib/services/shop-order-service";
+import { continueCheckout, reopenOrder } from "../actions/cart";
 import { CartItemControls } from "../components/CartItemControls";
-import { SubmitOrderButton } from "../components/SubmitOrderButton";
+import { PayNowButton } from "../components/SubmitOrderButton";
 
-export default async function CartPage() {
-  const supabase = await createClient();
+const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) {
+function formatCents(cents: number) {
+  return zar.format(cents / 100);
+}
+
+export default async function CartPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ prices?: string; checkout?: string; reopen?: string }>;
+}) {
+  const sp = await searchParams;
+  const result = await getCart();
+
+  if (!result.ok) {
     redirect("/auth/login?next=%2Fprotected%2Fshop%2Fcart");
   }
 
-  // Find this user's draft order — their cart.
-  const { data: order } = await supabase
-    .from("orders")
-    .select("id")
-    .eq("user_id", auth.user.id)
-    .eq("status", "draft")
-    .maybeSingle();
+  const { cart, canPay, paymentsAvailable } = result;
 
-  if (!order) {
+  if (!cart || cart.lines.length === 0) {
     return (
       <div>
         <h1 className="mb-6 text-2xl font-semibold text-foreground">
@@ -37,46 +42,9 @@ export default async function CartPage() {
     );
   }
 
-  // Get the items, pulling each product's name and code along with them.
-  const { data: items } = await supabase
-    .from("order_items")
-    .select(
-      "id, quantity, size, handedness, unit_price, products (item_code, name)"
-    )
-    .eq("order_id", order.id)
-    .order("created_at");
+  const pending = cart.status === "pending_payment";
 
-  const lines = items ?? [];
-
-  let total = 0;
-  for (const line of lines) {
-    total = total + Number(line.unit_price) * line.quantity;
-  }
-
-  if (lines.length === 0) {
-    return (
-      <div>
-        <h1 className="mb-6 text-2xl font-semibold text-foreground">
-          Your order
-        </h1>
-        <p className="text-muted-foreground">Your order is empty.</p>
-        <Link
-          href="/protected/shop"
-          className="mt-4 inline-block underline underline-offset-4"
-        >
-          Browse the catalogue
-        </Link>
-      </div>
-    );
-  }
-
-  const rows = lines.map(function (line) {
-    // Supabase types related data as an array, so pull out the first entry.
-    const product = Array.isArray(line.products)
-      ? line.products[0]
-      : line.products;
-    const lineTotal = Number(line.unit_price) * line.quantity;
-
+  const rows = cart.lines.map(function (line) {
     return (
       <div
         key={line.id}
@@ -84,9 +52,9 @@ export default async function CartPage() {
       >
         <div>
           <p className="font-mono text-xs text-muted-foreground">
-            {product?.item_code}
+            {line.itemCode}
           </p>
-          <p className="font-medium text-foreground">{product?.name}</p>
+          <p className="font-medium text-foreground">{line.name}</p>
 
           {line.size ? (
             <p className="text-sm text-muted-foreground">Size: {line.size}</p>
@@ -99,14 +67,21 @@ export default async function CartPage() {
           ) : null}
 
           <p className="mt-1 text-sm text-muted-foreground">
-            R{Number(line.unit_price).toFixed(2)} each
+            {formatCents(line.unitPriceCents)} each
           </p>
         </div>
 
         <div className="flex items-center gap-6">
-          <CartItemControls itemId={line.id} quantity={line.quantity} />
+          {/* A pending order is locked until the customer chooses Edit order. */}
+          {pending ? (
+            <span className="text-sm text-muted-foreground">
+              Qty {line.quantity}
+            </span>
+          ) : (
+            <CartItemControls itemId={line.id} quantity={line.quantity} />
+          )}
           <p className="w-24 text-right font-semibold text-foreground">
-            R{lineTotal.toFixed(2)}
+            {formatCents(line.unitPriceCents * line.quantity)}
           </p>
         </div>
       </div>
@@ -126,18 +101,101 @@ export default async function CartPage() {
         Your order
       </h1>
 
+      {sp.prices === "changed" && pending ? (
+        <div
+          role="status"
+          className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4"
+        >
+          <p className="font-medium text-amber-700 dark:text-amber-400">
+            Prices have changed
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Some catalogue prices changed since you added these items. Check
+            the new total, then continue to payment.
+          </p>
+        </div>
+      ) : null}
+
+      {sp.checkout === "failed" || sp.reopen === "failed" ? (
+        <p role="alert" className="mb-6 text-sm text-red-600 dark:text-red-400">
+          {sp.checkout === "failed"
+            ? "Could not start the payment. Please try again."
+            : "Could not reopen your order. Please try again."}
+        </p>
+      ) : null}
+
+      {pending ? (
+        <div className="mb-6 rounded-2xl border border-border bg-card/80 p-4 backdrop-blur-sm">
+          <p className="font-medium text-foreground">Awaiting payment</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            This order is locked while payment is in progress. Continue to
+            payment, or choose Edit order to change it.
+          </p>
+        </div>
+      ) : null}
+
       <div className="rounded-2xl border border-border bg-card/80 p-5 backdrop-blur-sm">
         <div className="border-t border-border">{rows}</div>
 
         <div className="mt-6 flex items-center justify-between">
           <p className="text-lg text-foreground">Total</p>
           <p className="text-xl font-semibold text-foreground">
-            R{total.toFixed(2)}
+            {formatCents(cart.totalCents)}
           </p>
         </div>
       </div>
 
-      <SubmitOrderButton />
+      {pending ? (
+        <div className="mt-8">
+          {cart.notes ? (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Your note: {cart.notes}
+            </p>
+          ) : null}
+
+          {/* Dependents and minors cannot pay; their guardian does. */}
+          {!canPay ? (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Your guardian needs to pay for this order.
+            </p>
+          ) : (
+            <form action={continueCheckout}>
+              <button
+                type="submit"
+                disabled={!paymentsAvailable}
+                className="w-full rounded-lg bg-black px-4 py-3 text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20"
+              >
+                Continue to payment - {formatCents(cart.totalCents)}
+              </button>
+              {!paymentsAvailable ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Online payment is not available right now.
+                </p>
+              ) : null}
+            </form>
+          )}
+
+          <form action={reopenOrder} className="mt-3">
+            <button
+              type="submit"
+              className="w-full rounded-lg border border-border px-4 py-3 text-foreground hover:bg-accent"
+            >
+              Edit order
+            </button>
+          </form>
+
+          <p className="mt-3 text-xs text-gray-500 dark:text-white/60">
+            Sandbox demonstration - no real money is charged.
+          </p>
+        </div>
+      ) : (
+        <PayNowButton
+          totalLabel={formatCents(cart.totalCents)}
+          canPay={canPay}
+          paymentsAvailable={paymentsAvailable}
+          initialNotes={cart.notes ?? ""}
+        />
+      )}
     </div>
   );
 }

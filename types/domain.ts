@@ -16,7 +16,10 @@ export type PaymentOption = 'pay_now' | 'pay_later'
 export type ReminderPreference = 'email' | 'whatsapp' | 'both'
 export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
 export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
-export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee'
+export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee' | 'lesson_adjustment' | 'shop'
+// 'submitted' is historical: orders placed before pay-now checkout existed.
+export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'submitted' | 'cancelled' | 'refunded'
+export type Handedness = 'right' | 'left'
 export type FinancialStatus = 'unpaid' | 'paid' | 'overdue'
 
 export interface MembershipType {
@@ -254,6 +257,7 @@ export interface PaymentAttempt {
   id: string
   payer_id: string
   invoice_id: string | null
+  order_id: string | null
   provider: string | null
   provider_reference: string | null
   status: 'pending' | 'succeeded' | 'failed'
@@ -528,3 +532,65 @@ export type LessonBookingErrorCode =
 export type LessonBookingResult<T> =
   | { success: true; data: T }
   | { success: false; errorCode: LessonBookingErrorCode; error: string }
+
+export interface ShopCartLine {
+  id: string
+  productId: number
+  itemCode: string
+  name: string
+  imagePath: string | null
+  size: string | null
+  handedness: Handedness | null
+  quantity: number
+  unitPriceCents: number
+}
+
+export interface ShopCart {
+  orderId: string
+  status: Extract<OrderStatus, 'draft' | 'pending_payment'>
+  notes: string | null
+  lines: ShopCartLine[]
+  totalCents: number
+}
+
+export type RefundStatus = 'requested' | 'approved' | 'rejected' | 'processing' | 'processed' | 'failed'
+export type RefundMethod = 'manual_bank' | 'provider'
+export type PaymentKind = 'booking' | 'order' | 'invoice'
+
+// A settled payment and how much of it can still be refunded.
+export interface RefundablePayment {
+  attemptId: string
+  payerId: string
+  payerName: string
+  kind: PaymentKind
+  provider: string | null
+  amountCents: number
+  refundableCents: number
+  completedAt: string | null
+  receiptNumber: string | null
+  orderId: string | null
+  invoiceNumber: string | null
+}
+
+export interface RefundRequest {
+  id: string
+  refundNumber: string
+  paymentAttemptId: string
+  payerId: string
+  payerName: string
+  kind: PaymentKind
+  paymentAmountCents: number
+  refundableCents: number
+  amountCents: number
+  reason: string
+  status: RefundStatus
+  method: RefundMethod | null
+  decisionNote: string | null
+  externalReference: string | null
+  failureReason: string | null
+  provider: string | null
+  hasProviderPayment: boolean
+  createdAt: string
+  decidedAt: string | null
+  processedAt: string | null
+}

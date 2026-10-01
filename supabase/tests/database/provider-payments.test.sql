@@ -67,7 +67,7 @@ select is((select amount_cents from public.ledger_credits where booking_id='eeee
 insert into public.charges(id,fencer_id,payer_id,type,amount_cents,status,period,description,lifecycle_state)
 values('cc250000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','membership',55000,'unpaid','2090-01-01','Synthetic invoice charge','finalized');
 insert into public.invoices(id,payer_id,period,total) values('aa250000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','2090-01-01',550);
-insert into public.invoice_lines(invoice_id,charge_id,description,amount) values('aa250000-0000-4000-8000-000000000001','cc250000-0000-4000-8000-000000000001','Synthetic invoice charge',550);
+insert into public.invoice_lines(invoice_id,charge_id,participant_id,description,amount) values('aa250000-0000-4000-8000-000000000001','cc250000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','Synthetic invoice charge',550);
 set local role authenticated;
 select lives_ok($$select public.prepare_payment_checkout(null,'aa250000-0000-4000-8000-000000000001')$$,'invoice checkout prepares');
 select lives_ok($$select public.prepare_payment_checkout(null,'aa250000-0000-4000-8000-000000000001','peach_sandbox')$$,'second provider may have an outstanding attempt');
@@ -95,17 +95,22 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',true);
 select lives_ok($$select public.get_invoice_payment_balances()$$,'staff acting as guardian retains own financial access');
 reset role;
+-- Fixture edits run as the seed admin; the profile guard checks the JWT subject.
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
 update public.profiles set is_staff=false,staff_type=null,date_of_birth=current_date-interval '12 years'
 where id='44444444-4444-4444-8444-444444444444';
 set local role authenticated;
+select set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',true);
 select throws_ok($$select public.get_invoice_payment_balances()$$,'P0001','forbidden','minor without guardian link still cannot access payments');
 reset role;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
 update public.profiles set date_of_birth=null where id='44444444-4444-4444-8444-444444444444';
+select set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',true);
 
 insert into public.charges(id,fencer_id,payer_id,type,amount_cents,status,period,description,lifecycle_state)
 values('cc250000-0000-4000-8000-000000000002','44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','membership',55000,'unpaid','2090-02-01','Manual overlap','finalized');
 insert into public.invoices(id,payer_id,period,total) values('aa250000-0000-4000-8000-000000000002','44444444-4444-4444-8444-444444444444','2090-02-01',550);
-insert into public.invoice_lines(invoice_id,charge_id,description,amount) values('aa250000-0000-4000-8000-000000000002','cc250000-0000-4000-8000-000000000002','Manual overlap',550);
+insert into public.invoice_lines(invoice_id,charge_id,participant_id,description,amount) values('aa250000-0000-4000-8000-000000000002','cc250000-0000-4000-8000-000000000002','44444444-4444-4444-8444-444444444444','Manual overlap',550);
 set local role authenticated;
 select lives_ok($$select public.prepare_payment_checkout(null,'aa250000-0000-4000-8000-000000000002')$$,'online attempt precedes manual payment');
 select throws_ok($$select public.record_manual_invoice_payment('aa250000-0000-4000-8000-000000000002')$$,'P0001','forbidden','payer cannot record manual settlement');

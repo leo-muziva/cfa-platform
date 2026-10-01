@@ -63,7 +63,7 @@ export default async function ShopPage({
   // Build the product query in pieces — each filter is optional.
   let query = supabase
     .from("products")
-    .select("id, item_code, name, price, category, sizes, image_path");
+    .select("id, item_code, name, price, category, sizes, needs_handedness, image_path");
 
   if (category) {
     query = query.eq("category", category);
@@ -140,6 +140,8 @@ export default async function ShopPage({
   const cards = products.map(function (p) {
     const imageUrl = productImageUrl(p.image_path);
     const hasSizes = Boolean(p.sizes);
+    // Sizes and weapon hand are chosen on the detail page.
+    const needsChoice = hasSizes || Boolean(p.needs_handedness);
     const href = "/protected/shop/" + p.item_code;
 
     return (
@@ -193,14 +195,14 @@ export default async function ShopPage({
               </span>
             </div>
 
-            {/* Sized products must open the page to pick a size.
-                One-size products can be added straight from here. */}
-            {hasSizes ? (
+            {/* Products with a size or hand to choose must open the page.
+                Everything else can be added straight from here. */}
+            {needsChoice ? (
               <Link
                 href={href}
                 className="shrink-0 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground"
               >
-                Choose size
+                {hasSizes ? "Choose size" : "Choose hand"}
               </Link>
             ) : (
               <QuickAddButton productId={p.id} />
