@@ -29,9 +29,9 @@ export default async function CartPage({
     return (
       <div>
         <h1 className="mb-6 text-2xl font-semibold text-foreground">
-          Your order
+          Your cart
         </h1>
-        <p className="text-muted-foreground">Your order is empty.</p>
+        <p className="text-muted-foreground">Your cart is empty.</p>
         <Link
           href="/protected/shop"
           className="mt-4 inline-block underline underline-offset-4"
@@ -72,7 +72,7 @@ export default async function CartPage({
         </div>
 
         <div className="flex items-center gap-6">
-          {/* A pending order is locked until the customer chooses Edit order. */}
+          {/* A pending order is locked until the customer chooses Edit cart. */}
           {pending ? (
             <span className="text-sm text-muted-foreground">
               Qty {line.quantity}
@@ -98,7 +98,7 @@ export default async function CartPage({
       </Link>
 
       <h1 className="mb-6 mt-4 text-2xl font-semibold text-foreground">
-        Your order
+        Your cart
       </h1>
 
       {sp.prices === "changed" && pending ? (
@@ -120,7 +120,7 @@ export default async function CartPage({
         <p role="alert" className="mb-6 text-sm text-red-600 dark:text-red-400">
           {sp.checkout === "failed"
             ? "Could not start the payment. Please try again."
-            : "Could not reopen your order. Please try again."}
+            : "Could not reopen your cart. Please try again."}
         </p>
       ) : null}
 
@@ -128,8 +128,8 @@ export default async function CartPage({
         <div className="mb-6 rounded-2xl border border-border bg-card/80 p-4 backdrop-blur-sm">
           <p className="font-medium text-foreground">Awaiting payment</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            This order is locked while payment is in progress. Continue to
-            payment, or choose Edit order to change it.
+            This cart is locked while payment is in progress. Continue to
+            payment, or choose Edit cart to change it.
           </p>
         </div>
       ) : null}
@@ -180,7 +180,7 @@ export default async function CartPage({
               type="submit"
               className="w-full rounded-lg border border-border px-4 py-3 text-foreground hover:bg-accent"
             >
-              Edit order
+              Edit cart
             </button>
           </form>
 

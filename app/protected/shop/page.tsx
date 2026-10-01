@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Search, LayoutGrid, Info, ArrowUp, ArrowDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCartCount } from "./actions/cart";
@@ -7,6 +8,7 @@ import { BulkOrderProgress } from "./components/BulkOrderProgress";
 import { QuickAddButton } from "./components/QuickAddButton";
 import { SortSelect } from "./components/SortSelect";
 import { FavouriteButton } from "./components/FavouriteButton";
+import { Pagination } from "./components/Pagination";
 import { productImageUrl } from "@/lib/productImage";
 
 const SORTS: Record<string, { column: string; ascending: boolean; label: string }> = {
@@ -16,6 +18,9 @@ const SORTS: Record<string, { column: string; ascending: boolean; label: string 
   "price-high": { column: "price", ascending: false, label: "Price (high first)" },
 };
 
+// Products per page: eight rows of three on desktop.
+const PAGE_SIZE = 24;
+
 export default async function ShopPage({
   searchParams,
 }: {
@@ -24,6 +29,7 @@ export default async function ShopPage({
     category?: string;
     sort?: string;
     favourites?: string;
+    page?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -49,6 +55,9 @@ export default async function ShopPage({
   const sortKey = sp.sort ?? "code";
   const favouritesOnly = sp.favourites === "1";
   const sort = SORTS[sortKey] ?? SORTS.code;
+  // Anything that is not a whole page number counts as page 1.
+  const requestedPage = Number(sp.page);
+  const page = Number.isInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
 
   // Count how many products are in each category, for the sidebar.
   const { data: allCats } = await supabase.from("products").select("category");
@@ -63,7 +72,9 @@ export default async function ShopPage({
   // Build the product query in pieces — each filter is optional.
   let query = supabase
     .from("products")
-    .select("id, item_code, name, price, category, sizes, needs_handedness, image_path");
+    .select("id, item_code, name, price, category, sizes, needs_handedness, image_path", {
+      count: "exact",
+    });
 
   if (category) {
     query = query.eq("category", category);
@@ -81,18 +92,35 @@ export default async function ShopPage({
     query = query.or(`item_code.ilike.%${term}%,name.ilike.%${term}%`);
   }
 
-  query = query.order(sort.column, { ascending: sort.ascending });
+  // Only fetch the products for this page; count still covers every match.
+  const from = (page - 1) * PAGE_SIZE;
+  query = query
+    .order(sort.column, { ascending: sort.ascending })
+    .range(from, from + PAGE_SIZE - 1);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
+
+  // Asking for rows past the end is an error from the database, so an
+  // out-of-date page link starts again from page 1.
+  if (error?.code === "PGRST103" && page > 1) {
+    redirect(linkTo({ page: "" }));
+  }
 
   if (error) {
     return <p className="p-8 text-destructive">Failed to load: {error.message}</p>;
   }
 
   const products = data ?? [];
+  const matchCount = count ?? products.length;
+  const pageCount = Math.max(1, Math.ceil(matchCount / PAGE_SIZE));
+
+  // A page past the end (an old link, or a typed address) goes to the last page.
+  if (page > pageCount) {
+    redirect(linkTo({ page: pageCount > 1 ? String(pageCount) : "" }));
+  }
 
   // Builds a link that keeps everything currently selected and changes
-  // only the one thing passed in.
+  // only the one thing passed in. Any other change starts again at page 1.
   function linkTo(changes: Record<string, string>) {
     const params = new URLSearchParams();
     if (term) params.set("q", term);
@@ -100,7 +128,10 @@ export default async function ShopPage({
     if (sortKey !== "code") params.set("sort", sortKey);
     if (favouritesOnly) params.set("favourites", "1");
 
+    if (changes.page && changes.page !== "1") params.set("page", changes.page);
+
     for (const key in changes) {
+      if (key === "page") continue;
       if (changes[key]) {
         params.set(key, changes[key]);
       } else {
@@ -257,7 +288,7 @@ export default async function ShopPage({
             href="/protected/shop/cart"
             className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90"
           >
-            Order ({cartCount})
+            Cart ({cartCount})
           </Link>
         </div>
       </div>
@@ -348,10 +379,12 @@ export default async function ShopPage({
             <div>
               <h2 className="text-xl font-semibold text-foreground">
                 {favouritesOnly ? "My favourites" : category || "All products"}{" "}
-                <span className="text-muted-foreground">({products.length})</span>
+                <span className="text-muted-foreground">({matchCount})</span>
               </h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                High-quality fencing equipment for every stage of your journey.
+                {pageCount > 1
+                  ? "Showing " + (from + 1) + "-" + (from + products.length) + " of " + matchCount
+                  : "High-quality fencing equipment for every stage of your journey."}
               </p>
             </div>
 
@@ -384,6 +417,12 @@ export default async function ShopPage({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {cards}
           </div>
+
+          <Pagination
+            current={page}
+            total={pageCount}
+            href={(p) => linkTo({ page: String(p) })}
+          />
         </section>
       </div>
     </div>

@@ -32,7 +32,7 @@ export function QuickAddButton({ productId }: { productId: number }) {
       <button
         onClick={handleClick}
         disabled={state === "busy"}
-        aria-label="Add to order"
+        aria-label="Add to cart"
         className={
           "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition " +
           (state === "done"
