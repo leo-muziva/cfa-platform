@@ -16,6 +16,7 @@ import type {
   LessonParticipant,
   LessonTimeOption,
   LessonQuote,
+  PayableLessonHold,
   Weapon,
 } from '@/types/domain'
 import type {
@@ -50,11 +51,16 @@ const errorMessages: Record<LessonBookingErrorCode, string> = {
   affected_bookings_require_confirmation: 'Confirm cancellation of the affected bookings before blocking this time.',
   invalid_closure: 'Check the closure dates and reason.',
   waiver_reason_required: 'A waiver reason is required.',
+  pay_now_required: 'This lesson must be paid now. Guest lessons can only be booked by the account payer with online payment.',
+  entitlement_unavailable: 'No lesson package uses are left for this fencer.',
+  invalid_product: 'This lesson type is not available right now.',
+  checkout_unavailable: 'This lesson can no longer be paid online. The payment hold may have expired.',
+  payments_unavailable: 'Online payments are not available right now, so this lesson cannot be paid now.',
   not_found: 'The requested lesson record was not found.',
   request_failed: 'The lesson request could not be completed. Please try again.',
 }
 
-const databaseErrorCodes = Object.keys(errorMessages).filter((code) => !['invalid_input', 'not_found', 'request_failed'].includes(code)) as LessonBookingErrorCode[]
+const databaseErrorCodes = Object.keys(errorMessages).filter((code) => !['invalid_input', 'not_found', 'request_failed', 'payments_unavailable'].includes(code)) as LessonBookingErrorCode[]
 
 export function lessonBookingError(code: LessonBookingErrorCode): LessonBookingResult<never> {
   return { success: false, errorCode: code, error: errorMessages[code] }
@@ -67,7 +73,14 @@ export function lessonBookingErrorCode(error: unknown): LessonBookingErrorCode {
 }
 
 function failed(error: unknown): LessonBookingResult<never> {
-  return lessonBookingError(lessonBookingErrorCode(error))
+  const code = lessonBookingErrorCode(error)
+  // Unmapped database errors (for example a function missing on a hosted
+  // database) would otherwise vanish behind the generic message.
+  if (code === 'request_failed') {
+    const detail = error && typeof error === 'object' ? error as { code?: unknown; message?: unknown } : { message: error }
+    console.error('[lesson-booking] request failed', { code: detail.code ?? null, message: String(detail.message ?? '') })
+  }
+  return lessonBookingError(code)
 }
 
 type CoachRow = { coach_id: string; full_name: string; weapons: string[] | null }
@@ -174,6 +187,8 @@ type SafeBookingRow = {
   cancellation_reason?: string | null
   rescheduled_from_booking_id?: string | null
   rescheduled_to_booking_id?: string | null
+  awaiting_payment?: boolean | null
+  hold_expires_at?: string | null
 }
 
 export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
@@ -194,6 +209,8 @@ export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
     cancellationReason: row.cancellation_reason ?? null,
     rescheduledFromBookingId: row.rescheduled_from_booking_id ?? null,
     rescheduledToBookingId: row.rescheduled_to_booking_id ?? null,
+    awaitingPayment: row.awaiting_payment ?? false,
+    holdExpiresAt: row.hold_expires_at ?? null,
   }
 }
 
@@ -203,6 +220,32 @@ export async function listMemberLessonBookings(): Promise<LessonBookingResult<Le
   const { data, error } = await db.rpc('list_my_lesson_bookings')
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as SafeBookingRow[]).map(mapSafeLessonBooking) }
+}
+
+type PayableHoldRow = {
+  booking_id: string
+  coach_name: string
+  starts_at: string
+  weapon: string
+  participant_names: string[] | null
+  amount_cents: string | number
+  hold_expires_at: string
+}
+
+/** Payer-only: pay-now lessons whose hold is still live, with the amount due. */
+export async function listPayableLessonHolds(): Promise<LessonBookingResult<PayableLessonHold[]>> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('list_my_payable_lesson_holds')
+  if (error) return failed(error)
+  return { success: true, data: ((data ?? []) as PayableHoldRow[]).map((row) => ({
+    bookingId: row.booking_id,
+    coachName: row.coach_name,
+    startsAt: row.starts_at,
+    weapon: row.weapon as Weapon,
+    participantNames: row.participant_names ?? [],
+    amountCents: String(row.amount_cents),
+    holdExpiresAt: row.hold_expires_at,
+  })) }
 }
 
 export async function listCoachLessonAgenda(coachId?: string): Promise<LessonBookingResult<LessonBooking[]>> {

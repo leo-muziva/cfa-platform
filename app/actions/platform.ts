@@ -83,13 +83,17 @@ export async function endFamilyLinkAction(formData: FormData) {
   revalidatePath('/protected/family')
 }
 
-export async function runInvoicesAction(formData: FormData) {
-  await runInvoicesForAdmin(String(formData.get('period')))
+export async function runInvoicesAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const result = await runInvoicesForAdmin(String(formData.get('period')))
+  if ('error' in result) return { error: `Invoices could not be generated: ${result.error}` }
   revalidatePath('/protected/admin/invoicing')
+  return { success: result.count === 1 ? '1 invoice generated or updated.' : `${result.count} invoices generated or updated.` }
 }
 
-export async function recordManualPaymentAction(formData: FormData) {
-  await recordManualPaymentForAdmin(String(formData.get('invoice_id')))
+export async function recordManualPaymentAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const result = await recordManualPaymentForAdmin(String(formData.get('invoice_id')))
+  if ('error' in result) return { error: `Payment could not be recorded: ${result.error}` }
   revalidatePath('/protected/admin/invoicing')
   revalidatePath('/protected/admin/payments')
+  return { success: 'Manual payment recorded.' }
 }

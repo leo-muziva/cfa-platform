@@ -1,4 +1,6 @@
 import 'server-only'
+import { releaseExpiredLessonHolds } from '@/lib/services/scheduled-jobs-service'
+import { onlinePaymentsAvailable } from '@/lib/services/payment-service'
 import { getCurrentAccountContext, getCurrentProfile, requireAdmin } from '@/lib/services/MemberService'
 import {
   cancelClubClosureRecord,
@@ -25,6 +27,7 @@ import {
   listLessonCoaches,
   listLessonTimeOptions,
   listMemberLessonBookings,
+  listPayableLessonHolds,
   previewClubClosure,
   previewCoachAvailabilityException,
   recordLessonOutcomeRecord,
@@ -53,7 +56,7 @@ import {
   rescheduleLessonBookingSchema,
   waiveLessonChargesSchema,
 } from '@/lib/validations/lesson.schema'
-import type { LessonBookingErrorCode, LessonBookingResult, LessonParticipant, Profile } from '@/types/domain'
+import type { LessonBookingErrorCode, LessonBookingResult, LessonParticipant, PayableLessonHold, Profile } from '@/types/domain'
 
 type PageError = { error: string; errorCode: LessonBookingErrorCode }
 
@@ -87,11 +90,14 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
   if (!participantsResult.success) return pageError(participantsResult)
   const filtersResult = lessonAvailabilitySchema.safeParse({ coachId, weapon: coach.weapons[0], ...rawFilters as object })
   if (!filtersResult.success) return { error: 'Check the lesson filters and try again.', errorCode: 'invalid_input' as const }
+  // Lapsed pay-now holds still occupy their slot until released.
+  await releaseExpiredLessonHolds()
   const optionsResult = await listLessonTimeOptions(filtersResult.data)
   if (!optionsResult.success) return pageError(optionsResult)
   return {
     profile: context.profile,
     capabilities: context.capabilities,
+    paymentsAvailable: onlinePaymentsAvailable(),
     coach,
     participants: eligibleParticipantsForActor(participantsResult.data, context.profile.id, context.capabilities.isDependent),
     timeOptions: optionsResult.data,
@@ -124,14 +130,30 @@ export async function createLessonBooking(raw: unknown) {
   const parsed = createLessonBookingSchema.safeParse(raw)
   if (!parsed.success) return invalid()
   if (!await getCurrentProfile()) return lessonBookingError('not_authenticated')
+  // A hold that can never be paid would only block the slot until it expires.
+  if (parsed.data.paymentOption === 'pay_now' && !onlinePaymentsAvailable()) return lessonBookingError('payments_unavailable')
   return insertLessonBooking(parsed.data)
 }
 
 export async function getMemberLessonsPageData() {
   const context = await getCurrentAccountContext()
   if ('error' in context) return context
+  await releaseExpiredLessonHolds()
   const lessons = await listMemberLessonBookings()
-  return lessons.success ? { profile: context.profile, capabilities: context.capabilities, lessons: lessons.data } : pageError(lessons)
+  return lessons.success ? {
+    profile: context.profile,
+    capabilities: context.capabilities,
+    paymentsAvailable: onlinePaymentsAvailable(),
+    lessons: lessons.data,
+  } : pageError(lessons)
+}
+
+/** Live pay-now holds the current payer can still pay. Empty for anyone who cannot see household money. */
+export async function getPayableLessonHolds(): Promise<LessonBookingResult<PayableLessonHold[]>> {
+  const context = await getCurrentAccountContext()
+  if ('error' in context) return lessonBookingError('not_authenticated')
+  if (!context.capabilities.canSeeHouseholdMoney) return { success: true, data: [] }
+  return listPayableLessonHolds()
 }
 
 export async function cancelLessonBooking(raw: unknown) {

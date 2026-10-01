@@ -157,7 +157,7 @@ export async function getBillingForPayer(payerId: string) {
     db.from('charges').select(`
       id,amount,description,
       participant:profiles!charges_fencer_id_fkey(full_name),
-      booking:bookings!charges_booking_id_fkey(starts_at)
+      booking:bookings!charges_booking_id_fkey(starts_at,payment_option)
     `).eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'provisional').order('created_at'),
   ])
   return {
@@ -171,7 +171,8 @@ export async function getBillingForPayer(payerId: string) {
     })),
     creditTotal: calculateCreditTotal(credits ?? []),
     invoices: (invoices ?? []) as Invoice[], receipts: (receipts ?? []) as Receipt[],
-    pendingLessonCharges: (pending ?? []).map((row) => ({
+    // Pay-now lessons are never invoiced; live holds are listed separately with a pay button.
+    pendingLessonCharges: (pending ?? []).filter((row) => relationValue(row.booking)?.payment_option !== 'pay_now').map((row) => ({
       id: row.id,
       participantName: relationValue(row.participant)?.full_name ?? 'Participant',
       amount: Number(row.amount), description: row.description,

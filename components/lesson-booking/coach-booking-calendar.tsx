@@ -23,7 +23,7 @@ import {
   timesForLessonDate,
   toggleLessonParticipant,
 } from "@/lib/lesson-booking-ui";
-import { CheckoutButton } from "@/components/payments/checkout-button";
+import Link from "next/link";
 import type {
   LessonTimeOption,
   LessonBookingErrorCode,
@@ -60,6 +60,7 @@ export function CoachBookingCalendar({
   participants,
   quotes,
   canSeeQuote,
+  paymentsAvailable,
   createAction,
 }: {
   coach: LessonCoachSummary;
@@ -67,6 +68,7 @@ export function CoachBookingCalendar({
   participants: LessonParticipant[];
   quotes: LessonQuote[];
   canSeeQuote: boolean;
+  paymentsAvailable: boolean;
   createAction: LessonMemberFormAction;
 }) {
   const router = useRouter();
@@ -89,6 +91,14 @@ export function CoachBookingCalendar({
     (item) => item.participantCount === selectedParticipants.length,
   ) ?? null;
   const requiresPayNow = selectedParticipants.some((participantId) => participants.find((participant) => participant.id === participantId)?.membershipStatus === "guest");
+  // Guest lessons can only be booked by the payer through online payment.
+  const payNowBlockedReason = !requiresPayNow
+    ? null
+    : !canSeeQuote
+      ? "Guest lessons must be paid when booking. Ask your account payer to book this lesson."
+      : !paymentsAvailable
+        ? "Guest lessons must be paid when booking, and online payments are not available right now."
+        : null;
 
   useEffect(() => {
     if (selectedTime && !times.some((time) => time.startsAt === selectedTime)) {
@@ -250,8 +260,8 @@ export function CoachBookingCalendar({
         )}
         <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4">
           <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null })}</p>
-          {lessonBillingDetailCopy(canSeeQuote) && (
-            <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote)}</p>
+          {lessonBillingDetailCopy(canSeeQuote, paymentsAvailable) && (
+            <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable)}</p>
           )}
         </div>
         <form action={formAction} className="mt-6 space-y-4">
@@ -259,29 +269,33 @@ export function CoachBookingCalendar({
           <input type="hidden" name="startsAt" value={selectedTime} />
           <input type="hidden" name="weapon" value={selectedWeapon} />
           {selectedParticipants.map((participantId) => <input key={participantId} type="hidden" name="participantIds" value={participantId} />)}
-          {canSeeQuote && (requiresPayNow ? (
+          {payNowBlockedReason ? (
+            <p role="note" className="rounded-xl bg-amber-950/40 p-3 text-sm text-amber-50">{payNowBlockedReason}</p>
+          ) : canSeeQuote && (requiresPayNow ? (
             <>
               <input type="hidden" name="paymentOption" value="pay_now" />
-              <p className="text-sm text-white/85">Guest lessons are held while you complete payment now.</p>
+              <p className="text-sm text-white/85">Guest lessons are paid now. Your slot is held while you complete secure checkout.</p>
             </>
-          ) : (
+          ) : paymentsAvailable ? (
             <label className="block space-y-2 text-sm">
               <span>Payment option</span>
               <select name="paymentOption" defaultValue="pay_later" className="min-h-12 w-full rounded-xl border border-white/30 bg-[#25145c] px-3 text-white">
                 <option value="pay_later">Pay later on my invoice</option>
-                <option value="pay_now">Hold my lesson and pay now</option>
+                <option value="pay_now">Pay now (secure checkout)</option>
               </select>
             </label>
+          ) : (
+            <input type="hidden" name="paymentOption" value="pay_later" />
           ))}
           {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}</p>}
           {state.success && <p role="status" className="rounded-xl bg-emerald-950/40 p-3 text-sm text-emerald-50">{state.success}</p>}
-          <Button type="submit" disabled={pending || !selected || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
-            {pending ? "Booking…" : "Confirm booking"}
+          {state.checkoutRequired && (
+            <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
+          )}
+          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
+            {pending ? "Booking…" : requiresPayNow ? "Book and pay now" : "Confirm booking"}
           </Button>
         </form>
-        {state.checkoutRequired && state.bookingId && quote && (
-          <CheckoutButton bookingId={state.bookingId} />
-        )}
       </aside>
     </div>
   );

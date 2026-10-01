@@ -15,11 +15,19 @@ import type { AvailableLessonTime } from "@/types/domain";
 
 export default async function LessonsPage() {
   const data = await getMemberLessonsPageData();
-  if ("error" in data) redirect("/auth/login?next=%2Fprotected%2Flessons");
+  if ("error" in data) {
+    if (data.error === "Not authenticated") redirect("/auth/login?next=%2Fprotected%2Flessons");
+    return (
+      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-900 dark:border-red-400/30 dark:bg-red-950/40 dark:text-red-100">
+        <h1 className="text-lg font-semibold">Your lessons could not be loaded</h1>
+        <p className="mt-2">{data.error}</p>
+      </div>
+    );
+  }
 
   const nowIso = new Date().toISOString();
   const scheduled = data.lessons.filter(
-    (lesson) => lesson.status === "scheduled" && lesson.startsAt >= nowIso,
+    (lesson) => lesson.status === "scheduled" && !lesson.awaitingPayment && lesson.startsAt >= nowIso,
   );
   const availability = await Promise.all(
     scheduled.map(async (lesson) => ({
@@ -59,6 +67,7 @@ export default async function LessonsPage() {
         nowIso={nowIso}
         cancelAction={cancelLessonBookingAction}
         rescheduleAction={rescheduleLessonBookingAction}
+        canPayOnline={data.capabilities.canSeeHouseholdMoney && data.paymentsAvailable}
       />
     </div>
   );
