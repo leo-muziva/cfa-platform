@@ -32,7 +32,7 @@ export default async function ProductPage({
           Back to catalogue
         </Link>
         <Link href="/protected/shop/cart" className="text-sm underline">
-          View order
+          View cart
         </Link>
       </div>
 

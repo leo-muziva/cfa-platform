@@ -86,11 +86,11 @@ describe("startPayment", () => {
 
   it("uses order-specific messages for empty and unavailable orders", async () => {
     preparePayment.mockResolvedValueOnce({ ok: false, code: "empty_order" });
-    expect(await startPayment({ orderId })).toMatchObject({ ok: false, error: "Your order is empty." });
+    expect(await startPayment({ orderId })).toMatchObject({ ok: false, error: "Your cart is empty." });
     preparePayment.mockResolvedValueOnce({ ok: false, code: "product_unavailable" });
     expect(await startPayment({ orderId })).toMatchObject({
       ok: false,
-      error: "An item in your order is no longer available. Remove it and try again.",
+      error: "An item in your cart is no longer available. Remove it and try again.",
     });
     preparePayment.mockResolvedValueOnce({ ok: false, code: "unknown" });
     expect(await startPayment({ orderId })).toMatchObject({

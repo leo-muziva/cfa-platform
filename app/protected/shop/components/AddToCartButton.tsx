@@ -46,7 +46,7 @@ export function AddToCartButton({
     );
 
     setBusy(false);
-    setStatus("error" in result ? result.error : "Added to your order.");
+    setStatus("error" in result ? result.error : "Added to your cart.");
   }
 
   return (
@@ -130,7 +130,7 @@ export function AddToCartButton({
         disabled={busy}
         className="w-full rounded-xl bg-primary px-4 py-3 text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {busy ? "Adding..." : "Add to order"}
+        {busy ? "Adding..." : "Add to cart"}
       </button>
 
       {status ? (

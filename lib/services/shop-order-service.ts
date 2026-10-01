@@ -46,13 +46,13 @@ export const SHOP_MESSAGES = {
   noSize: "This item does not come in sizes.",
   chooseHand: "Please choose right or left handed.",
   noHand: "This item is not made for a specific hand.",
-  pendingPayment: "Your order is waiting for payment. Choose Edit order to change it.",
-  noCart: "You do not have an order in progress.",
-  emptyCart: "Your order is empty.",
-  itemMissing: "That item is no longer in your order.",
+  pendingPayment: "Your cart is waiting for payment. Choose Edit cart to change it.",
+  noCart: "You do not have a cart in progress.",
+  emptyCart: "Your cart is empty.",
+  itemMissing: "That item is no longer in your cart.",
   guardianPays: "Your guardian needs to pay for this order.",
-  requestFailed: "Could not update your order. Please try again.",
-  reopenFailed: "Could not reopen your order. Please try again.",
+  requestFailed: "Could not update your cart. Please try again.",
+  reopenFailed: "Could not reopen your cart. Please try again.",
 } as const;
 
 function fail(error: string, code?: string): ShopFailure {

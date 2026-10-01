@@ -68,7 +68,7 @@ export async function continueCheckout(): Promise<void> {
   redirect(checkoutUrl(result.attemptId));
 }
 
-// Form action for "Edit order": unlocks a pending order.
+// Form action for "Edit cart": unlocks a pending order.
 export async function reopenOrder(): Promise<void> {
   const result = await shop.reopenOrder();
   revalidatePath("/protected/shop");

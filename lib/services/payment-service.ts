@@ -14,8 +14,8 @@ export type StartPaymentResult =
 
 const ORDER_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
   forbidden: "Only the account payer can pay for this order. Ask your guardian to pay.",
-  empty_order: "Your order is empty.",
-  product_unavailable: "An item in your order is no longer available. Remove it and try again.",
+  empty_order: "Your cart is empty.",
+  product_unavailable: "An item in your cart is no longer available. Remove it and try again.",
 };
 
 async function isSignedIn() {
