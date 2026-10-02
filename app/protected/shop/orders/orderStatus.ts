@@ -76,7 +76,7 @@ export function statusView(
     return {
       label: "Paid",
       tone: "bg-muted text-muted-foreground",
-      note: "Your payment has been received.",
+      note: "Your payment has been received. Waiting for threshold, ships once the next bulk order is placed.",
       group: "progress",
     };
   }
@@ -90,7 +90,7 @@ function bulkStageView(bulkStatus: string): StatusView {
     return {
       label: "Waiting for next bulk order",
       tone: "bg-muted text-muted-foreground",
-      note: "CFA places the order with the supplier once enough orders have come in.",
+      note: "Waiting for threshold, ships once the next bulk order is placed.",
       group: "progress",
     };
   }

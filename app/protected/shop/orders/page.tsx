@@ -75,9 +75,14 @@ export default async function OrdersPage({
     const refundAttempt =
       order.status === "paid" ? refundAttemptByOrder.get(order.id) : undefined;
 
-    // Only worth showing the expected date while it's still coming.
+    // Only show a date once the bulk order has actually been placed.
+    // Before that there's no real date to promise.
+    const bulkPlaced =
+      order.bulkStatus === "placed" ||
+      order.bulkStatus === "shipping" ||
+      order.bulkStatus === "arrived";
     const arrival =
-      order.estimatedArrival && order.status !== "pending_payment" && view.group === "progress"
+      order.estimatedArrival && bulkPlaced && order.status !== "pending_payment" && view.group === "progress"
         ? new Date(order.estimatedArrival).toLocaleDateString("en-ZA", {
             day: "numeric",
             month: "long",
