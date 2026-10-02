@@ -5,10 +5,10 @@ import { EnvVarWarning } from "@/components/env-var-warning";
 import { hasEnvVars } from "@/lib/utils";
 import { AboutSection } from "@/components/landing/about-section";
 import { CoachesSection } from "@/components/landing/coaches-section";
-import { ScheduleSection } from "@/components/landing/schedule-section";
+import { ClubInfo } from "@/components/landing/club-info";
 import { MembershipSection } from "@/components/landing/membership-section";
 import { FaqSection } from "@/components/landing/faq-section";
-import { ContactFooter } from "@/components/landing/contact-footer";
+import { SiteFooter } from "@/components/landing/site-footer";
 
 // Full public landing page: cinematic full-viewport hero followed by the
 // scrollable landing sections. The primary menu links only to separate pages.
@@ -38,12 +38,15 @@ export default function Home() {
       />
       <AboutSection />
       <CoachesSection />
-      <ScheduleSection />
+      {/* Old #schedule and #contact links land on the info block now. */}
+      <div id="schedule" />
+      <div id="contact" />
+      <ClubInfo id="info" />
       <Suspense fallback={<section id="membership" className="bg-background px-4 py-20 text-primary sm:px-6 md:px-12 md:py-28"><div className="mx-auto max-w-6xl"><h2 className="text-3xl md:text-5xl">Choose how you fence.</h2><p className="mt-8 text-muted-foreground">Loading membership options...</p></div></section>}>
         <MembershipSection />
       </Suspense>
       <FaqSection />
-      <ContactFooter />
+      <SiteFooter />
     </main>
   );
 }
