@@ -38,7 +38,7 @@ export function MembershipPanel({
     <section className="space-y-6" aria-labelledby="membership-heading">
       <div>
         <h2 id="membership-heading" className="text-2xl font-semibold">
-          Membership
+          Your membership
         </h2>
         <p className="text-sm text-muted-foreground">
           Applications and memberships belong to this account only.

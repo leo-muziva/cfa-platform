@@ -18,7 +18,7 @@ export default function ClubInfoPage() {
         </h1>
       </header>
 
-      <ClubInfo className="bg-transparent px-0 py-0 sm:px-0 md:px-0 md:py-0" />
+      <ClubInfo compact className="bg-transparent px-0 py-0 sm:px-0 md:px-0 md:py-0" />
     </div>
   );
 }

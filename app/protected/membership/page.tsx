@@ -40,6 +40,7 @@ export default async function MembershipPage({
       <Suspense fallback={<p className="text-muted-foreground">Loading membership options...</p>}>
         <MembershipSection
           className="bg-transparent px-0 py-0 sm:px-0 md:px-0 md:py-0"
+          compact
           applyPath="/protected/membership"
           hideCta={!showForm}
         />

@@ -64,7 +64,16 @@ const LOCATION_PHOTOS = [
   },
 ] as const;
 
-export function ClubInfo({ id, className }: { id?: string; className?: string }) {
+// compact: smaller headings for use inside the portal, under a page heading.
+export function ClubInfo({
+  id,
+  className,
+  compact = false,
+}: {
+  id?: string;
+  className?: string;
+  compact?: boolean;
+}) {
   const shouldReduceMotion = useReducedMotion();
   const [activePhoto, setActivePhoto] = useState<number | null>(null);
 
@@ -109,14 +118,27 @@ export function ClubInfo({ id, className }: { id?: string; className?: string })
       )}
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
-          Train With Us
-        </p>
-        <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
+        {!compact && (
+          <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
+            Train With Us
+          </p>
+        )}
+        <h2
+          className={
+            compact
+              ? "text-2xl font-semibold text-foreground"
+              : "text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4"
+          }
+        >
           Weekly schedule.
         </h2>
 
-        <div className="mt-12 grid grid-cols-1 gap-10 md:mt-16 md:grid-cols-2">
+        <div
+          className={cn(
+            "grid grid-cols-1 gap-10 md:grid-cols-2",
+            compact ? "mt-6" : "mt-12 md:mt-16",
+          )}
+        >
           {/* Times and drop-in fee */}
           <div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-1">
@@ -147,7 +169,13 @@ export function ClubInfo({ id, className }: { id?: string; className?: string })
 
           {/* Venue, contact and photos */}
           <div>
-            <h3 className="text-2xl font-normal tracking-[-0.03em] mb-6">
+            <h3
+              className={
+                compact
+                  ? "text-xl font-semibold text-foreground mb-4"
+                  : "text-2xl font-normal tracking-[-0.03em] mb-6"
+              }
+            >
               Find us in Rondebosch.
             </h3>
             <motion.ul {...fadeIn(0.1)} className="flex flex-col gap-4">
