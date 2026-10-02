@@ -10,6 +10,8 @@ import type { PublicPricingPlan } from "@/lib/services/public-membership-service
 export interface PricingProps {
   plans: PublicPricingPlan[];
   className?: string;
+  // Where the card buttons go. Logged-in pages point this at the apply form.
+  ctaHref?: string;
 }
 
 const MEMBERSHIP_PERKS = [
@@ -26,10 +28,11 @@ function formatRand(amount: number): string {
   }).format(amount);
 }
 
-function PricingCard({ plan, position, reducedMotion }: {
+function PricingCard({ plan, position, reducedMotion, ctaHref }: {
   plan: PublicPricingPlan;
   position: "outer-left" | "inner-left" | "inner-right" | "outer-right";
   reducedMotion: boolean | null;
+  ctaHref: string;
 }) {
   const featured = position === "inner-left" || position === "inner-right";
   const beginner = plan.code === "beginner_package";
@@ -88,7 +91,7 @@ function PricingCard({ plan, position, reducedMotion }: {
             ))}
           </ul>
           <Link
-            href="/auth/sign-up"
+            href={ctaHref}
             className={cn(
               "mt-8 inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold",
               featured ? "border-cfa-purple bg-cfa-purple text-white hover:bg-cfa-purple/90" : "border-cfa-purple/25 bg-background text-cfa-purple hover:border-cfa-purple hover:bg-cfa-purple/10",
@@ -102,7 +105,7 @@ function PricingCard({ plan, position, reducedMotion }: {
   );
 }
 
-export function Pricing({ plans, className }: PricingProps) {
+export function Pricing({ plans, className, ctaHref = "/auth/sign-up" }: PricingProps) {
   const shouldReduceMotion = useReducedMotion();
   const displayPlans = ["month_to_month", "six_month", "twelve_month", "beginner_package"]
     .map((code) => plans.find((plan) => plan.code === code))
@@ -116,6 +119,7 @@ export function Pricing({ plans, className }: PricingProps) {
           plan={plan}
           position={(["outer-left", "inner-left", "inner-right", "outer-right"] as const)[index]}
           reducedMotion={shouldReduceMotion}
+          ctaHref={ctaHref}
         />
       ))}
     </div>

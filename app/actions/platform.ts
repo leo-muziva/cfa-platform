@@ -40,7 +40,7 @@ export async function createSlotAction(_: ActionState, formData: FormData): Prom
 export async function requestMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await requestMembership({ membership_type_id: formData.get('membership_type_id') })
   if ('error' in result) return failureState(result)
-  revalidatePath('/protected')
+  revalidatePath('/protected'); revalidatePath('/protected/membership')
   return { success: 'Membership request submitted for staff approval' }
 }
 
@@ -49,19 +49,19 @@ export async function decideMembershipRequestAction(_: ActionState, formData: Fo
     visible_response: formData.get('visible_response'), private_notes: formData.get('private_notes') })
   if ('error' in result) return failureState(result)
   revalidatePath('/protected/admin/membership-requests')
-  revalidatePath('/protected')
+  revalidatePath('/protected'); revalidatePath('/protected/membership')
   return { success: 'Membership request updated successfully' }
 }
 
 export async function resubmitMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await resubmitMembershipRequest({ application_id: formData.get('application_id'), membership_type_id: formData.get('membership_type_id') })
   if ('error' in result) return failureState(result)
-  revalidatePath('/protected'); return { success: 'Membership application resubmitted' }
+  revalidatePath('/protected'); revalidatePath('/protected/membership'); return { success: 'Membership application resubmitted' }
 }
 
 export async function cancelMembershipAction(formData: FormData) {
   await cancelCurrentMembership(formData.get('confirm') === 'yes')
-  revalidatePath('/protected')
+  revalidatePath('/protected'); revalidatePath('/protected/membership')
 }
 
 export async function changeMembershipStatusAction(formData: FormData) {
