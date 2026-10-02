@@ -27,7 +27,7 @@ export async function BulkOrderProgress() {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="mt-3 h-2 overflow-hidden rounded-full bg-muted"
+        className="mt-3 h-6 overflow-hidden rounded-full bg-muted"
       >
         <div
           className={
