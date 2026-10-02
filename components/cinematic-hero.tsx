@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 import { PublicNavigation } from "@/components/public-navigation";
 
 export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
@@ -46,6 +47,18 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
         >
           Cape Fencing Academy
         </h1>
+      </div>
+
+      {/* Wrapper does the centring, since liquid-glass sets its own
+          transform on hover. */}
+      <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center md:bottom-10">
+        <a
+          href="#about"
+          aria-label="Scroll down to about the club"
+          className="flex h-12 w-12 items-center justify-center rounded-full liquid-glass focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
+        >
+          <ChevronDown className="hero-scroll-bounce h-6 w-6" aria-hidden="true" />
+        </a>
       </div>
     </div>
   );

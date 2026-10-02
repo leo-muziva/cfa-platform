@@ -1006,3 +1006,19 @@ input:-webkit-autofill:active {
     animation: bulk-progress-fill 1s ease-out both;
   }
 }
+
+/* Hero scroll arrow: small slow bounce, off for reduced motion. */
+@keyframes hero-scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-scroll-bounce {
+    animation: hero-scroll-bounce 2.4s ease-in-out infinite;
+  }
+}
