@@ -26,9 +26,9 @@ describe("consolidated member portal routing", () => {
 
   it("keeps legacy member destinations as compatibility redirects", () => {
     expect(read("app/protected/profile/page.tsx")).toContain("redirect('/protected')");
-    expect(read("app/protected/membership-request/page.tsx")).toContain("redirect('/protected')");
+    expect(read("app/protected/membership-request/page.tsx")).toContain("redirect('/protected/membership')");
     expect(read("app/protected/dependents/page.tsx")).toContain("redirect('/protected/family#dependents')");
-    expect(read("app/membership-portal/page.tsx")).toContain("redirect('/protected')");
+    expect(read("app/membership-portal/page.tsx")).toContain("redirect('/protected/membership')");
   });
 
   it("keeps dependent management on Family without a booking call to action", () => {
