@@ -647,77 +647,22 @@ input:-webkit-autofill:active {
   }
 }
 
-/* Portal page loader (components/ui/ai-loader.tsx). The ring's purples are
-   built around the SmokeyBackground shader glow (#7C3AED) so the loader reads
-   as part of the same smoke in both themes. The static shadow on the base
-   class keeps the ring visible when reduced motion switches the animation off. */
-@keyframes cfa-loader-ring {
-  0% {
-    transform: rotate(90deg);
-    box-shadow:
-      0 6px 12px 0 #c4b5fd inset,
-      0 12px 18px 0 #7c3aed inset,
-      0 36px 36px 0 #4c1d95 inset,
-      0 0 3px 1.2px rgba(124, 58, 237, 0.3),
-      0 0 6px 1.8px rgba(124, 58, 237, 0.2);
-  }
-  50% {
-    transform: rotate(270deg);
-    box-shadow:
-      0 6px 12px 0 #a78bfa inset,
-      0 12px 6px 0 #6d28d9 inset,
-      0 24px 36px 0 #7c3aed inset,
-      0 0 3px 1.2px rgba(124, 58, 237, 0.3),
-      0 0 6px 1.8px rgba(124, 58, 237, 0.2);
-  }
-  100% {
-    transform: rotate(450deg);
-    box-shadow:
-      0 6px 12px 0 #c4b5fd inset,
-      0 12px 18px 0 #7c3aed inset,
-      0 36px 36px 0 #4c1d95 inset,
-      0 0 3px 1.2px rgba(124, 58, 237, 0.3),
-      0 0 6px 1.8px rgba(124, 58, 237, 0.2);
-  }
-}
-
-@keyframes cfa-loader-letter {
+/* Portal page loader (components/ui/crest-loader.tsx): the crest pulses
+   slowly. No pulse for reduced motion. */
+@keyframes cfa-crest-pulse {
   0%,
   100% {
-    opacity: 0.4;
-    transform: translateY(0);
-  }
-  20% {
+    transform: scale(1);
     opacity: 1;
-    transform: scale(1.15);
   }
-  40% {
+  50% {
+    transform: scale(0.94);
     opacity: 0.7;
-    transform: translateY(0);
   }
 }
-
-.cfa-loader-ring {
-  box-shadow:
-    0 6px 12px 0 #c4b5fd inset,
-    0 12px 18px 0 #7c3aed inset,
-    0 36px 36px 0 #4c1d95 inset,
-    0 0 3px 1.2px rgba(124, 58, 237, 0.3),
-    0 0 6px 1.8px rgba(124, 58, 237, 0.2);
-  animation: cfa-loader-ring 5s linear infinite;
-}
-
-.cfa-loader-letter {
-  animation: cfa-loader-letter 3s infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cfa-loader-ring,
-  .cfa-loader-letter {
-    animation: none;
-  }
-  .cfa-loader-letter {
-    opacity: 1;
+@media (prefers-reduced-motion: no-preference) {
+  .cfa-crest-pulse {
+    animation: cfa-crest-pulse 2.4s ease-in-out infinite;
   }
 }
 
