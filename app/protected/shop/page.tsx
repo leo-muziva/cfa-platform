@@ -275,9 +275,6 @@ export default async function ShopPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <p className="hidden text-xs uppercase tracking-[0.25em] text-muted-foreground sm:block">
-            Equip &middot; Train &middot; Progress
-          </p>
           <Link
             href="/protected/shop/orders"
             className="rounded-xl px-3 py-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
