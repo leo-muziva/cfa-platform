@@ -10,8 +10,11 @@ import type { PublicPricingPlan } from "@/lib/services/public-membership-service
 export interface PricingProps {
   plans: PublicPricingPlan[];
   className?: string;
-  // Where the card buttons go. Logged-in pages point this at the apply form.
-  ctaHref?: string;
+  // Logged-in pages: the card buttons go to the apply form on this path
+  // with that plan picked. Without it they go to sign up.
+  applyPath?: string;
+  // Hide the card buttons, e.g. for someone who already has a membership.
+  hideCta?: boolean;
 }
 
 const MEMBERSHIP_PERKS = [
@@ -32,7 +35,7 @@ function PricingCard({ plan, position, reducedMotion, ctaHref }: {
   plan: PublicPricingPlan;
   position: "outer-left" | "inner-left" | "inner-right" | "outer-right";
   reducedMotion: boolean | null;
-  ctaHref: string;
+  ctaHref: string | null;
 }) {
   const featured = position === "inner-left" || position === "inner-right";
   const beginner = plan.code === "beginner_package";
@@ -90,22 +93,24 @@ function PricingCard({ plan, position, reducedMotion, ctaHref }: {
               </li>
             ))}
           </ul>
-          <Link
-            href={ctaHref}
-            className={cn(
-              "mt-8 inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold",
-              featured ? "border-cfa-purple bg-cfa-purple text-white hover:bg-cfa-purple/90" : "border-cfa-purple/25 bg-background text-cfa-purple hover:border-cfa-purple hover:bg-cfa-purple/10",
-            )}
-          >
-            {beginner ? "Get started" : "Join the Academy"}
-          </Link>
+          {ctaHref && (
+            <Link
+              href={ctaHref}
+              className={cn(
+                "mt-8 inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold",
+                featured ? "border-cfa-purple bg-cfa-purple text-white hover:bg-cfa-purple/90" : "border-cfa-purple/25 bg-background text-cfa-purple hover:border-cfa-purple hover:bg-cfa-purple/10",
+              )}
+            >
+              {beginner ? "Get started" : "Join the Academy"}
+            </Link>
+          )}
         </article>
       </TiltCard>
     </motion.div>
   );
 }
 
-export function Pricing({ plans, className, ctaHref = "/auth/sign-up" }: PricingProps) {
+export function Pricing({ plans, className, applyPath, hideCta = false }: PricingProps) {
   const shouldReduceMotion = useReducedMotion();
   const displayPlans = ["month_to_month", "six_month", "twelve_month", "beginner_package"]
     .map((code) => plans.find((plan) => plan.code === code))
@@ -119,7 +124,13 @@ export function Pricing({ plans, className, ctaHref = "/auth/sign-up" }: Pricing
           plan={plan}
           position={(["outer-left", "inner-left", "inner-right", "outer-right"] as const)[index]}
           reducedMotion={shouldReduceMotion}
-          ctaHref={ctaHref}
+          ctaHref={
+            hideCta
+              ? null
+              : applyPath
+                ? `${applyPath}?plan=${plan.code}#apply-membership`
+                : "/auth/sign-up"
+          }
         />
       ))}
     </div>

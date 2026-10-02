@@ -6,17 +6,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import type { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 
-type MembershipData = Exclude<Awaited<ReturnType<typeof getMembershipRequestPageData>>, { error: string }>
+export type MembershipData = Exclude<Awaited<ReturnType<typeof getMembershipRequestPageData>>, { error: string }>
 
-// Current membership, past applications and the apply form.
-// Moved here from the profile page so the membership page can use it.
-export function MembershipPanel({ membershipData }: { membershipData: MembershipData }) {
+// Whether the apply (or amend and resubmit) form shows for this person.
+export function membershipApplyState(membershipData: MembershipData) {
   const changes = membershipData.requests.find((item) => item.status === 'changes_requested')
   const canApply =
     !membershipData.membership &&
     !membershipData.requests.some(
       (item) => item.status === 'pending' || item.status === 'changes_requested',
     )
+  return { changes, canApply, showForm: canApply || Boolean(changes) }
+}
+
+// Current membership, past applications and the apply form.
+// Moved here from the profile page so the membership page can use it.
+// selectedPlanCode comes from a pricing card and picks that plan in the form.
+export function MembershipPanel({
+  membershipData,
+  selectedPlanCode,
+}: {
+  membershipData: MembershipData
+  selectedPlanCode?: string
+}) {
+  const { changes, showForm } = membershipApplyState(membershipData)
+  const selectedTypeId =
+    membershipData.membershipTypes.find((type) => type.code === selectedPlanCode)?.id ??
+    changes?.membership_type_id
 
   return (
     <section className="space-y-6" aria-labelledby="membership-heading">
@@ -86,7 +102,7 @@ export function MembershipPanel({ membershipData }: { membershipData: Membership
         </Card>
       ))}
 
-      {(canApply || changes) && (
+      {showForm && (
         <Card className="cfa-light-card">
           <CardHeader>
             <CardTitle>{changes ? 'Amend and resubmit' : 'Apply for membership'}</CardTitle>
@@ -101,10 +117,12 @@ export function MembershipPanel({ membershipData }: { membershipData: Membership
               )}
               <div>
                 <Label htmlFor="membership_type_id">Membership type</Label>
+                {/* key makes it pick up a new plan when a different card is clicked */}
                 <select
+                  key={selectedTypeId ?? 'none'}
                   id="membership_type_id"
                   name="membership_type_id"
-                  defaultValue={changes?.membership_type_id}
+                  defaultValue={selectedTypeId}
                   className="w-full rounded-md border bg-background px-3 py-2"
                 >
                   {membershipData.membershipTypes.map((type) => (
