@@ -116,7 +116,7 @@ export function ClubInfo({ id, className }: { id?: string; className?: string })
           Weekly schedule.
         </h2>
 
-        <div className="mt-12 grid gap-10 md:mt-16 md:grid-cols-2">
+        <div className="mt-12 grid grid-cols-1 gap-10 md:mt-16 md:grid-cols-2">
           {/* Times and drop-in fee */}
           <div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-1">
