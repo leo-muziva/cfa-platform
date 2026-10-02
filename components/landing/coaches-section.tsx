@@ -58,9 +58,11 @@ export function CoachesSection() {
           technical development and competitive fencing.
         </p>
 
-        {/* 4 across on desktop, 2x2 on tablet, stacked on phones. Tapping a
-            card (or Enter when focused) opens that coach's bio in the card. */}
-        <ul className="mt-12 grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-4 md:mt-16">
+        {/* 4 across on desktop, 2x2 on tablet. On phones it's a short list
+            with a small photo beside the name, so the four coaches don't
+            take a whole screen each. Tapping a card (or Enter when focused)
+            opens that coach's bio in the card. */}
+        <ul className="mt-12 grid grid-cols-1 items-start gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 md:mt-16">
           {COACHES.map((coach, index) => {
             const open = openIndex === index;
             const bioId = `coach-bio-${index}`;
@@ -71,20 +73,20 @@ export function CoachesSection() {
                   onClick={() => setOpenIndex(open ? null : index)}
                   aria-expanded={open}
                   aria-controls={bioId}
-                  className="group block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:[outline-offset:-4px] focus-visible:outline-cfa-purple dark:focus-visible:outline-cfa-gold"
+                  className="group flex w-full items-center text-left focus-visible:outline focus-visible:outline-2 focus-visible:[outline-offset:-4px] focus-visible:outline-cfa-purple dark:focus-visible:outline-cfa-gold sm:block"
                 >
-                  <div className="relative aspect-[3/4] w-full overflow-hidden">
+                  <div className="relative aspect-square w-24 shrink-0 overflow-hidden sm:aspect-[3/4] sm:w-full">
                     <Image
                       src={coach.src}
                       alt=""
                       fill
-                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 96px"
+                      className="object-cover object-top motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="flex items-start justify-between gap-3 p-5">
+                  <div className="flex flex-1 items-start justify-between gap-3 p-4 sm:p-5">
                     <div>
-                      <h3 className="text-lg font-medium">{coach.name}</h3>
+                      <h3 className="text-base font-medium sm:text-lg">{coach.name}</h3>
                       <p className="text-sm text-[#8a6810] dark:text-cfa-gold">{coach.designation}</p>
                     </div>
                     <ChevronDown
@@ -96,7 +98,7 @@ export function CoachesSection() {
                 <div
                   id={bioId}
                   hidden={!open}
-                  className="px-5 pb-5 text-sm leading-6 text-muted-foreground"
+                  className="px-4 py-4 text-sm leading-6 text-muted-foreground sm:px-5 sm:pt-0 sm:pb-5"
                 >
                   {coach.description}
                 </div>
