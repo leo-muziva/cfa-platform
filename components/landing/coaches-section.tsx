@@ -76,7 +76,7 @@ export function CoachesSection() {
                   <div className="relative aspect-[3/4] w-full overflow-hidden">
                     <Image
                       src={coach.src}
-                      alt={coach.name}
+                      alt=""
                       fill
                       sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                       className="object-cover motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
