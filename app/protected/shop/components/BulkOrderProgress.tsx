@@ -49,11 +49,12 @@ export async function BulkOrderProgress() {
         />
       </div>
 
-      <p className="mt-2 text-sm text-muted-foreground">
-        {reached
-          ? "The threshold has been reached. CFA will place this order with the supplier shortly."
-          : "CFA places a bulk order with the supplier once enough paid orders have come in. Your items join the next one once payment is confirmed."}
-      </p>
+      {/* At 100% the line above already says it, so no extra text. */}
+      {!reached && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          CFA places a bulk order with the supplier once enough paid orders have come in. Your items join the next one once payment is confirmed.
+        </p>
+      )}
     </div>
   );
 }
