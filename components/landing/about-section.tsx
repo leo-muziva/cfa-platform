@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { VerticalVideoReel } from "@/components/landing/vertical-video-reel";
 
 // Weapon cards — kept as data so the entrance stagger and markup stay in sync.
 const WEAPONS = [
@@ -36,22 +37,38 @@ export function AboutSection() {
       className="relative bg-background text-primary px-4 sm:px-6 md:px-12 py-20 md:py-28"
     >
       <div className="max-w-6xl mx-auto">
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
-          The Club
-        </p>
-        <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
-          Cape Town&rsquo;s home of fencing since 1997.
-        </h2>
-        <p className="text-muted-foreground max-w-2xl mb-8">
-          South Africa&rsquo;s premier fencing club, training at the Belvedere
-          Community Centre in Rondebosch — from first-time beginners to
-          national champions.
-        </p>
+        {/* Intro text with the vertical video reel beside it on desktop,
+            stacked under the text on phones. */}
+        <div className="mb-12 grid gap-10 md:mb-16 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
+              The Club
+            </p>
+            <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
+              Cape Town&rsquo;s home of fencing since 1997.
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mb-8">
+              South Africa&rsquo;s premier fencing club, training at the Belvedere
+              Community Centre in Rondebosch — from first-time beginners to
+              national champions.
+            </p>
 
-        {/* Logged-out visitors get sent to login by the proxy. */}
-        <Button asChild size="lg" className="mb-12 h-12 rounded-full px-10 text-base md:mb-16">
-          <Link href="/protected/book">Start Fencing Now</Link>
-        </Button>
+            {/* Logged-out visitors get sent to login by the proxy. */}
+            <Button asChild size="lg" className="h-12 rounded-full px-10 text-base">
+              <Link href="/protected/book">Start Fencing Now</Link>
+            </Button>
+          </div>
+
+          <motion.div
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, filter: "blur(12px)" }}
+            whileInView={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="mx-auto w-[220px] sm:w-[240px] md:mx-0 lg:w-[260px]"
+          >
+            <VerticalVideoReel />
+          </motion.div>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           {WEAPONS.map((weapon, index) => (
