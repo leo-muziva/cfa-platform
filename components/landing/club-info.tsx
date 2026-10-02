@@ -177,16 +177,17 @@ export function ClubInfo({ id, className }: { id?: string; className?: string })
               })}
             </motion.ul>
 
-            <motion.div {...fadeIn(0.2)} className="mt-6 flex gap-3 overflow-x-auto">
+            {/* Wraps instead of scrolling sideways so every photo is visible. */}
+            <motion.div {...fadeIn(0.2)} className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-3 lg:grid-cols-6">
               {LOCATION_PHOTOS.map((photo, index) => (
                 <button
                   key={photo.src}
                   type="button"
                   onClick={() => setActivePhoto(index)}
                   aria-label={`View larger photo: ${photo.alt}`}
-                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold sm:h-20 sm:w-20"
+                  className="relative aspect-square w-full overflow-hidden rounded-xl transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold"
                 >
-                  <Image src={photo.src} alt="" fill sizes="80px" className="object-cover" />
+                  <Image src={photo.src} alt="" fill sizes="(min-width: 1024px) 90px, 130px" className="object-cover" />
                 </button>
               ))}
             </motion.div>
