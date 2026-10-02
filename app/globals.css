@@ -993,3 +993,16 @@ input:-webkit-autofill:active {
 .dark .cfa-calendar .rdp-chevron {
   fill: #fff;
 }
+
+/* Shop bulk order bar: fills from 0 to its width on page load.
+   Skipped for reduced motion, they just see the final width. */
+@keyframes bulk-progress-fill {
+  from {
+    width: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bulk-progress-fill {
+    animation: bulk-progress-fill 1s ease-out both;
+  }
+}

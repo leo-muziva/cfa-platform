@@ -31,7 +31,7 @@ export async function BulkOrderProgress() {
       >
         <div
           className={
-            "h-full rounded-full transition-all " +
+            "bulk-progress-fill h-full rounded-full " +
             (reached ? "bg-green-600" : "bg-primary")
           }
           style={{ width: percent + "%" }}
