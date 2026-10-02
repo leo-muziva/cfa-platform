@@ -1,19 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { MembershipPanel } from '@/components/portal/membership-panel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
-import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 import { ProfileForm } from './profile/profile-form'
 
 export default async function ProfileDashboardPage() {
-  const [context, membershipData] = await Promise.all([
-    getCurrentAccountContext(),
-    getMembershipRequestPageData(),
-  ])
+  const context = await getCurrentAccountContext()
 
-  if ('error' in context || 'error' in membershipData) {
+  if ('error' in context) {
     redirect('/auth/login?next=/protected')
   }
 
@@ -51,7 +46,17 @@ export default async function ProfileDashboardPage() {
 
       <ProfileForm profile={context.profile} />
 
-      <MembershipPanel membershipData={membershipData} />
+      {/* Membership status and applying moved to /protected/membership. */}
+      <Card className="cfa-light-card">
+        <CardHeader>
+          <CardTitle>Membership</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href="/protected/membership">View membership</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
