@@ -1,6 +1,8 @@
 "use client";
 
-import { CircularCoachProfiles } from "@/components/ui/circular-testimonials";
+import { useState } from "react";
+import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 
 const COACHES = [
   {
@@ -34,6 +36,9 @@ const COACHES = [
 ] as const;
 
 export function CoachesSection() {
+  // Which coach's bio is open. Only one at a time.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
   return (
     <section
       id="coaches"
@@ -52,9 +57,53 @@ export function CoachesSection() {
           Meet the coaching team behind CFA&rsquo;s individual attention,
           technical development and competitive fencing.
         </p>
-        <div className="mt-12 flex justify-center md:mt-16">
-          <CircularCoachProfiles profiles={[...COACHES]} autoplay />
-        </div>
+
+        {/* 4 across on desktop, 2x2 on tablet, stacked on phones. Tapping a
+            card (or Enter when focused) opens that coach's bio in the card. */}
+        <ul className="mt-12 grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-4 md:mt-16">
+          {COACHES.map((coach, index) => {
+            const open = openIndex === index;
+            const bioId = `coach-bio-${index}`;
+            return (
+              <li key={coach.name} className="cfa-light-card overflow-hidden rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(open ? null : index)}
+                  aria-expanded={open}
+                  aria-controls={bioId}
+                  className="group block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:[outline-offset:-4px] focus-visible:outline-cfa-purple dark:focus-visible:outline-cfa-gold"
+                >
+                  <div className="relative aspect-[3/4] w-full overflow-hidden">
+                    <Image
+                      src={coach.src}
+                      alt={coach.name}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex items-start justify-between gap-3 p-5">
+                    <div>
+                      <h3 className="text-lg font-medium">{coach.name}</h3>
+                      <p className="text-sm text-[#8a6810] dark:text-cfa-gold">{coach.designation}</p>
+                    </div>
+                    <ChevronDown
+                      className={`mt-1 h-5 w-5 shrink-0 text-muted-foreground motion-safe:transition-transform ${open ? "rotate-180" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
+                <div
+                  id={bioId}
+                  hidden={!open}
+                  className="px-5 pb-5 text-sm leading-6 text-muted-foreground"
+                >
+                  {coach.description}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );
