@@ -38,11 +38,11 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
           width={499}
           height={500}
           priority
-          className="h-auto w-40 animate-blur-fade-up drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)] sm:w-52 md:w-64"
+          className="h-auto w-40 animate-blur-fade-up drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)] sm:w-52 md:w-64 [@media(max-height:500px)]:!w-24"
           style={{ animationDelay: "300ms" }}
         />
         <h1
-          className="mt-6 text-4xl font-normal tracking-[-0.03em] animate-blur-fade-up drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)] sm:text-6xl md:mt-8 md:text-7xl"
+          className="mt-6 text-4xl font-normal tracking-[-0.03em] animate-blur-fade-up drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)] sm:text-6xl md:mt-8 md:text-7xl [@media(max-height:500px)]:!mt-3 [@media(max-height:500px)]:!text-3xl"
           style={{ animationDelay: "450ms" }}
         >
           Cape Fencing Academy
@@ -50,8 +50,9 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
       </div>
 
       {/* Wrapper does the centring, since liquid-glass sets its own
-          transform on hover. */}
-      <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center md:bottom-10">
+          transform on hover. Sits lower on short screens (phone sideways)
+          so it doesn't cover the name. */}
+      <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center md:bottom-10 [@media(max-height:500px)]:!bottom-2">
         <a
           href="#about"
           aria-label="Scroll down to about the club"
