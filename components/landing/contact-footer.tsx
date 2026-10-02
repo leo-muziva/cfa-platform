@@ -4,13 +4,10 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Mail, MapPin, Users } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { GlassDialog } from "@/components/ui/glass-dialog";
 import { TiltCard } from "@/components/ui/tilt-card";
-import {
-  PUBLIC_CONTACT_LINKS,
-  PUBLIC_LEGAL_LINKS,
-} from "@/lib/public-site";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { PUBLIC_CONTACT_LINKS } from "@/lib/public-site";
 
 const CONTACT_ICONS = {
   location: MapPin,
@@ -77,6 +74,7 @@ export function ContactFooter() {
   }, [activePhoto]);
 
   return (
+    <>
     <section
       id="contact"
       className="relative bg-background text-primary px-4 sm:px-6 md:px-12 py-20 md:py-28"
@@ -239,22 +237,9 @@ export function ContactFooter() {
           </div>
         </GlassDialog>
 
-        <div className="border-t border-cfa-purple/10 pt-8 mt-16 flex flex-col sm:flex-row justify-between gap-3 text-sm text-muted-foreground">
-          <p>© 2026 Cape Fencing Academy</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <span>Est. 1997 · Rondebosch, Cape Town</span>
-            {PUBLIC_LEGAL_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="hover:text-[#8a6810] dark:hover:text-cfa-gold underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-cfa-gold"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
+    <SiteFooter />
+    </>
   );
 }
