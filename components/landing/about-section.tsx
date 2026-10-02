@@ -2,6 +2,8 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 // Weapon cards — kept as data so the entrance stagger and markup stay in sync.
 const WEAPONS = [
@@ -40,11 +42,16 @@ export function AboutSection() {
         <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
           Cape Town&rsquo;s home of fencing since 1997.
         </h2>
-        <p className="text-muted-foreground max-w-2xl mb-12 md:mb-16">
+        <p className="text-muted-foreground max-w-2xl mb-8">
           South Africa&rsquo;s premier fencing club, training at the Belvedere
           Community Centre in Rondebosch — from first-time beginners to
           national champions.
         </p>
+
+        {/* Logged-out visitors get sent to login by the proxy. */}
+        <Button asChild size="lg" className="mb-12 h-12 rounded-full px-10 text-base md:mb-16">
+          <Link href="/protected/book">Start Fencing Now</Link>
+        </Button>
 
         <div className="grid md:grid-cols-3 gap-6">
           {WEAPONS.map((weapon, index) => (
