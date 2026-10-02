@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { VerticalVideoReel } from "@/components/landing/vertical-video-reel";
@@ -30,6 +32,8 @@ const WEAPONS = [
 
 export function AboutSection() {
   const shouldReduceMotion = useReducedMotion();
+  // Which weapon card is open. Only one at a time.
+  const [openWeapon, setOpenWeapon] = useState<string | null>(null);
 
   return (
     <section
@@ -70,8 +74,13 @@ export function AboutSection() {
           </motion.div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {WEAPONS.map((weapon, index) => (
+        {/* Click, tap or Enter on a card opens the bit about that weapon.
+            Click it again or open another one to close it. */}
+        <div className="grid items-start md:grid-cols-3 gap-6">
+          {WEAPONS.map((weapon, index) => {
+            const open = openWeapon === weapon.name;
+            const panelId = `weapon-${index}`;
+            return (
             <motion.div
               key={weapon.name}
               initial={
@@ -86,25 +95,41 @@ export function AboutSection() {
               }
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
-              className="group relative aspect-[4/3] overflow-hidden rounded-2xl"
+              className="cfa-light-card overflow-hidden rounded-2xl"
             >
-              <Image
-                src={weapon.image}
-                alt={weapon.alt}
-                fill
-                sizes="(min-width: 768px) 33vw, 100vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"
-              />
-              <div className="absolute inset-x-0 bottom-0 p-6">
-                <h3 className="text-xl font-medium text-white mb-1">{weapon.name}</h3>
-                <p className="text-white/80">{weapon.description}</p>
+              <button
+                type="button"
+                onClick={() => setOpenWeapon(open ? null : weapon.name)}
+                aria-expanded={open}
+                aria-controls={panelId}
+                className="group relative block aspect-[4/3] w-full overflow-hidden text-left focus-visible:outline focus-visible:outline-2 focus-visible:[outline-offset:-4px] focus-visible:outline-cfa-gold"
+              >
+                <Image
+                  src={weapon.image}
+                  alt={weapon.alt}
+                  fill
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                  className="object-cover motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"
+                />
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-6">
+                  <h3 className="text-xl font-medium text-white">{weapon.name}</h3>
+                  <ChevronDown
+                    className={`h-6 w-6 shrink-0 text-white motion-safe:transition-transform ${open ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </div>
+              </button>
+              {/* Placeholder text until the new weapon excerpts (H-08) are written. */}
+              <div id={panelId} hidden={!open} className="p-6 text-muted-foreground">
+                {weapon.description}
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
