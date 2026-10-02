@@ -25,7 +25,7 @@ export function PublicNavigation({ authSlot }: { authSlot: React.ReactNode }) {
       <div className="liquid-glass flex items-center justify-between gap-4 rounded-full bg-black/50 px-4 py-2 md:px-6">
         <Link
           href="/"
-          className={`flex h-8 items-center gap-3 text-sm font-semibold uppercase tracking-widest text-white md:text-base ${FOCUS_RING}`}
+          className={`flex h-8 items-center gap-2 whitespace-nowrap text-xs font-semibold tracking-normal text-white sm:gap-3 sm:text-sm sm:tracking-wide md:text-base ${FOCUS_RING}`}
         >
           <Image
             src="/media/brand/cfa-crest.png"
@@ -35,7 +35,7 @@ export function PublicNavigation({ authSlot }: { authSlot: React.ReactNode }) {
             priority
             className="h-8 w-8 rounded-full object-cover"
           />
-          Cape Fencing
+          Cape Fencing Academy
         </Link>
 
         <div className="flex items-center gap-3">
