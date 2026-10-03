@@ -29,9 +29,6 @@ export default async function MembershipPage({
   return (
     <div className="space-y-12">
       <header className="max-w-3xl">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
-          Member Portal
-        </p>
         <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
           Membership
         </h1>
