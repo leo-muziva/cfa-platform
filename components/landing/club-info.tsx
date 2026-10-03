@@ -118,30 +118,47 @@ export function ClubInfo({
       )}
     >
       <div className="max-w-6xl mx-auto">
-        {!compact && (
-          <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
-            Train With Us
-          </p>
-        )}
-        <h2
-          className={
-            compact
-              ? "text-2xl font-semibold text-foreground"
-              : "text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4"
-          }
-        >
-          Weekly schedule.
-        </h2>
+        {/* One grid so the two columns line up. Desktop: headings on the
+            first row, then times and location side by side at the same
+            height (photos end level with the Saturday card). Phones: the
+            order classes keep it stacked as times, then location. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-10">
+          <div className="order-1">
+            {!compact && (
+              <p className="text-sm font-semibold uppercase tracking-widest text-[#8a6810] dark:text-cfa-gold mb-3">
+                Train With Us
+              </p>
+            )}
+            <h2
+              className={
+                compact
+                  ? "text-2xl font-semibold text-foreground"
+                  : "text-3xl md:text-5xl font-normal tracking-[-0.04em]"
+              }
+            >
+              Weekly schedule.
+            </h2>
+          </div>
 
-        <div
-          className={cn(
-            "grid grid-cols-1 gap-10 md:grid-cols-2",
-            compact ? "mt-6" : "mt-12 md:mt-16",
-          )}
-        >
-          {/* Times and drop-in fee */}
-          <div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-1">
+          <h3
+            className={cn(
+              "order-3 mt-10 md:order-2 md:mt-0 md:self-end",
+              compact
+                ? "text-xl font-semibold text-foreground"
+                : "text-2xl font-normal tracking-[-0.03em]",
+            )}
+          >
+            Find us in Rondebosch.
+          </h3>
+
+          {/* Times */}
+          <div
+            className={cn(
+              "order-2 flex flex-col md:order-3",
+              compact ? "mt-6" : "mt-12 md:mt-16",
+            )}
+          >
+            <div className="grid flex-1 grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-1 md:grid-rows-2">
               {SESSIONS.map((session, index) => (
                 <motion.div key={session.days} {...fadeIn(index * 0.1)}>
                   <TiltCard
@@ -160,24 +177,15 @@ export function ClubInfo({
                 </motion.div>
               ))}
             </div>
-
-            {/* TODO: schedule + drop-in fee conflict across old-site pages — confirm with sponsor (SPONSOR-QUESTIONS #11) */}
-            <p className="text-muted-foreground text-sm mt-6">
-              Visiting fencers welcome — R120 drop-in.
-            </p>
           </div>
 
-          {/* Venue, contact and photos */}
-          <div>
-            <h3
-              className={
-                compact
-                  ? "text-xl font-semibold text-foreground mb-4"
-                  : "text-2xl font-normal tracking-[-0.03em] mb-6"
-              }
-            >
-              Find us in Rondebosch.
-            </h3>
+          {/* Venue, contact and photos. Photos sit at the bottom. */}
+          <div
+            className={cn(
+              "order-4 mt-4 flex flex-col justify-between gap-6",
+              compact ? "md:mt-6" : "md:mt-16",
+            )}
+          >
             <motion.ul {...fadeIn(0.1)} className="flex flex-col gap-4">
               {PUBLIC_CONTACT_LINKS.map((row) => {
                 const Icon = CONTACT_ICONS[row.id];
@@ -206,7 +214,7 @@ export function ClubInfo({
             </motion.ul>
 
             {/* Wraps instead of scrolling sideways so every photo is visible. */}
-            <motion.div {...fadeIn(0.2)} className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-3 lg:grid-cols-6">
+            <motion.div {...fadeIn(0.2)} className="grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-3 lg:grid-cols-6">
               {LOCATION_PHOTOS.map((photo, index) => (
                 <button
                   key={photo.src}
@@ -220,6 +228,11 @@ export function ClubInfo({
               ))}
             </motion.div>
           </div>
+
+          {/* TODO: schedule + drop-in fee conflict across old-site pages — confirm with sponsor (SPONSOR-QUESTIONS #11) */}
+          <p className="order-5 mt-6 text-sm text-muted-foreground md:col-span-2">
+            Visiting fencers welcome — R120 drop-in.
+          </p>
         </div>
 
         <GlassDialog
