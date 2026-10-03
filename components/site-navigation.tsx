@@ -15,8 +15,11 @@ export const MAIN_LINKS = [
   { href: "/protected/book", label: "Book" },
   { href: "/protected/membership", label: "Membership" },
   { href: "/protected/shop", label: "Shop" },
-  { href: "/protected", label: "Member Portal" },
 ] as const;
+
+// The Member Portal button sits on its own on the right, with the login
+// status (components/site-auth.tsx).
+export const MEMBER_PORTAL_HREF = "/protected";
 
 // Pages under /protected that have their own main bar button. Every other
 // /protected page is part of the member portal.
@@ -24,7 +27,7 @@ const OWN_BUTTON = ["/protected/book", "/protected/membership", "/protected/shop
 
 export function isMainLinkCurrent(href: string, pathname: string) {
   if (href === "/") return pathname === "/";
-  if (href === "/protected") {
+  if (href === MEMBER_PORTAL_HREF) {
     return (
       pathname.startsWith("/protected") &&
       pathname !== "/protected/info" &&
@@ -37,7 +40,25 @@ export function isMainLinkCurrent(href: string, pathname: string) {
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#140a2e] dark:focus-visible:outline-white";
 
-export function SiteNavigation() {
+// Solid button, so it reads as the way into the portal. A ring shows when
+// you're already inside it.
+export function MemberPortalLink() {
+  const pathname = usePathname();
+  const current = isMainLinkCurrent(MEMBER_PORTAL_HREF, pathname);
+  return (
+    <Link
+      href={MEMBER_PORTAL_HREF}
+      aria-current={current ? "page" : undefined}
+      className={`whitespace-nowrap rounded-full bg-[#140a2e] px-4 py-2 text-sm font-medium text-white hover:bg-[#140a2e]/90 dark:bg-white dark:text-[#140a2e] dark:hover:bg-white/90 ${FOCUS} ${
+        current ? "ring-2 ring-[#140a2e]/30 ring-offset-2 ring-offset-white dark:ring-white/40 dark:ring-offset-black" : ""
+      }`}
+    >
+      Member Portal
+    </Link>
+  );
+}
+
+export function SiteNavigation({ authSlot }: { authSlot: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -45,7 +66,7 @@ export function SiteNavigation() {
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
-  // Close the phone menu on Escape or a click outside it.
+  // Close the menu on Escape or a click outside it.
   useEffect(() => {
     if (!menuOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -87,10 +108,10 @@ export function SiteNavigation() {
             priority
             className="h-10 w-10 rounded-full object-cover"
           />
-          <span className="whitespace-nowrap md:hidden lg:inline">Cape Fencing Academy</span>
+          <span className="whitespace-nowrap">Cape Fencing Academy</span>
         </Link>
 
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-1 lg:flex">
           {MAIN_LINKS.map((link) => {
             const current = isMainLinkCurrent(link.href, pathname);
             return (
@@ -98,10 +119,10 @@ export function SiteNavigation() {
                 <Link
                   href={link.href}
                   aria-current={current ? "page" : undefined}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${FOCUS} ${
+                  className={`rounded-full px-4 py-2 text-sm transition-colors ${FOCUS} ${
                     current
-                      ? "bg-[#140a2e] text-white dark:bg-white dark:text-[#140a2e]"
-                      : "text-[#140a2e]/80 hover:bg-[#140a2e]/10 hover:text-[#140a2e] dark:text-white/80 dark:hover:bg-white/15 dark:hover:text-white"
+                      ? "bg-[#140a2e]/10 font-semibold text-[#140a2e] dark:bg-white/15 dark:text-white"
+                      : "font-medium text-[#140a2e]/80 hover:bg-[#140a2e]/5 hover:text-[#140a2e] dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
                   }`}
                 >
                   {link.label}
@@ -111,8 +132,9 @@ export function SiteNavigation() {
           })}
         </ul>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-4">
           <ThemeToggle />
+          <div className="hidden lg:block">{authSlot}</div>
           <button
             ref={buttonRef}
             type="button"
@@ -120,18 +142,19 @@ export function SiteNavigation() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             aria-controls="site-menu"
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-[#140a2e]/15 hover:bg-[#140a2e]/10 dark:ring-white/20 dark:hover:bg-white/15 md:hidden ${FOCUS}`}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-[#140a2e]/15 hover:bg-[#140a2e]/10 dark:ring-white/20 dark:hover:bg-white/15 lg:hidden ${FOCUS}`}
           >
             {menuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
           </button>
         </div>
 
-        {/* Phone menu: same five links, stacked. */}
+        {/* Smaller screens: the page links stacked, then the login status
+            and Member Portal button. */}
         <div
           ref={menuRef}
           id="site-menu"
           inert={!menuOpen}
-          className={`absolute inset-x-4 top-full mt-2 rounded-2xl border border-[#140a2e]/10 bg-white p-2 shadow-2xl transition-all dark:border-white/15 dark:bg-zinc-950 md:hidden ${
+          className={`absolute inset-x-4 top-full mt-2 rounded-2xl border border-[#140a2e]/10 bg-white p-2 shadow-2xl transition-all dark:border-white/15 dark:bg-zinc-950 sm:left-auto sm:right-8 sm:w-80 lg:hidden ${
             menuOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
           }`}
         >
@@ -145,7 +168,7 @@ export function SiteNavigation() {
                     aria-current={current ? "page" : undefined}
                     className={`block rounded-xl px-4 py-3 text-sm font-medium ${FOCUS} ${
                       current
-                        ? "bg-[#140a2e] text-white dark:bg-white dark:text-[#140a2e]"
+                        ? "bg-[#140a2e]/10 dark:bg-white/15"
                         : "hover:bg-[#140a2e]/5 dark:hover:bg-white/10"
                     }`}
                   >
@@ -155,6 +178,7 @@ export function SiteNavigation() {
               );
             })}
           </ul>
+          <div className="mt-2 border-t border-[#140a2e]/10 px-2 pb-1 pt-3 dark:border-white/10">{authSlot}</div>
         </div>
       </div>
     </nav>
