@@ -36,9 +36,10 @@ export function PortalNavigation({
       aria-label="Member Portal navigation"
       className="border-b border-[#140a2e]/10 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-black/40"
     >
-      <div className="flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2 sm:px-8">
-        {/* Scrolls sideways on narrow screens rather than wrapping. */}
-        <ul className="-mx-1 flex min-w-0 max-w-full items-center gap-1 overflow-x-auto px-1 py-1">
+      {/* Links centred, Logout on the right. On narrow screens the links
+          scroll sideways rather than wrapping. */}
+      <div className="flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2 sm:px-8 md:grid md:grid-cols-[1fr_auto_1fr]">
+        <ul className="-mx-1 flex min-w-0 max-w-full items-center gap-1 overflow-x-auto px-1 py-1 md:col-start-2 md:mx-0 md:overflow-visible md:px-0">
           {links.map((link) => {
             const current = isCurrent(link.href);
             return (
@@ -58,7 +59,7 @@ export function PortalNavigation({
             );
           })}
         </ul>
-        <div className="shrink-0">{authSlot}</div>
+        <div className="shrink-0 md:col-start-3 md:justify-self-end">{authSlot}</div>
       </div>
     </nav>
   );
