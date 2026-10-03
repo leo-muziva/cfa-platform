@@ -1,8 +1,4 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
 
 const COACHES = [
   {
@@ -36,9 +32,6 @@ const COACHES = [
 ] as const;
 
 export function CoachesSection() {
-  // Which coach's bio is open. Only one at a time.
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
   return (
     <section
       id="coaches"
@@ -59,52 +52,30 @@ export function CoachesSection() {
         </p>
 
         {/* 4 across on desktop, 2x2 on tablet. On phones it's a short list
-            with a small photo beside the name, so the four coaches don't
-            take a whole screen each. Tapping a card (or Enter when focused)
-            opens that coach's bio in the card. */}
-        <ul className="mt-12 grid grid-cols-1 items-start gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 md:mt-16">
-          {COACHES.map((coach, index) => {
-            const open = openIndex === index;
-            const bioId = `coach-bio-${index}`;
-            return (
-              <li key={coach.name} className="cfa-light-card overflow-hidden rounded-2xl">
-                <button
-                  type="button"
-                  onClick={() => setOpenIndex(open ? null : index)}
-                  aria-expanded={open}
-                  aria-controls={bioId}
-                  className="group flex w-full items-center text-left focus-visible:outline focus-visible:outline-2 focus-visible:[outline-offset:-4px] focus-visible:outline-cfa-purple dark:focus-visible:outline-cfa-gold sm:block"
-                >
-                  <div className="relative aspect-square w-24 shrink-0 overflow-hidden sm:aspect-[3/4] sm:w-full">
-                    <Image
-                      src={coach.src}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 96px"
-                      className="object-cover object-top motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="flex flex-1 items-start justify-between gap-3 p-4 sm:p-5">
-                    <div>
-                      <h3 className="text-base font-medium sm:text-lg">{coach.name}</h3>
-                      <p className="text-sm text-[#8a6810] dark:text-cfa-gold">{coach.designation}</p>
-                    </div>
-                    <ChevronDown
-                      className={`mt-1 h-5 w-5 shrink-0 text-muted-foreground motion-safe:transition-transform ${open ? "rotate-180" : ""}`}
-                      aria-hidden="true"
-                    />
-                  </div>
-                </button>
-                <div
-                  id={bioId}
-                  hidden={!open}
-                  className="px-4 py-4 text-sm leading-6 text-muted-foreground sm:px-5 sm:pt-0 sm:pb-5"
-                >
-                  {coach.description}
+            with a small photo beside the name. Bios always show. */}
+        <ul className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 md:mt-16">
+          {COACHES.map((coach) => (
+            <li key={coach.name} className="cfa-light-card overflow-hidden rounded-2xl">
+              <div className="flex items-center sm:block">
+                <div className="relative aspect-square w-24 shrink-0 overflow-hidden sm:aspect-[3/4] sm:w-full">
+                  <Image
+                    src={coach.src}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 96px"
+                    className="object-cover object-top"
+                  />
                 </div>
-              </li>
-            );
-          })}
+                <div className="p-4 sm:px-5 sm:pt-5 sm:pb-2">
+                  <h3 className="text-base font-medium sm:text-lg">{coach.name}</h3>
+                  <p className="text-sm text-[#8a6810] dark:text-cfa-gold">{coach.designation}</p>
+                </div>
+              </div>
+              <p className="px-4 pb-4 text-sm leading-6 text-muted-foreground sm:px-5 sm:pb-5">
+                {coach.description}
+              </p>
+            </li>
+          ))}
         </ul>
       </div>
     </section>
