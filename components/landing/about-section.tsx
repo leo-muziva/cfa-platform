@@ -15,18 +15,21 @@ const WEAPONS = [
     description: "The duel of precision — point control, tempo and right-of-way.",
     image: "/media/weapon-examples/foil_ex_card.png",
     alt: "Two fencers in a close foil exchange.",
+    video: "https://www.youtube.com/watch?v=g-P_q5gdvRM",
   },
   {
     name: "Épée",
     description: "The whole body is a target. Patience, timing, nerve.",
     image: "/media/weapon-examples/epee_ex_card.png",
     alt: "An épée bout mid-lunge, referee looking on.",
+    video: "https://www.youtube.com/watch?v=88mBQ2u2Wb0",
   },
   {
     name: "Sabre",
     description: "Slashing speed — the cavalry weapon of explosive attacks.",
     image: "/media/weapon-examples/sabre_ex_card.png",
     alt: "Two sabre fencers in a fast exchange.",
+    video: "https://www.youtube.com/watch?v=4ipiJFlU_Dg",
   },
 ] as const;
 
@@ -124,8 +127,25 @@ export function AboutSection() {
                 </div>
               </button>
               {/* Placeholder text until the new weapon excerpts (H-08) are written. */}
-              <div id={panelId} hidden={!open} className="p-6 text-muted-foreground">
-                {weapon.description}
+              <div id={panelId} hidden={!open} className="p-6">
+                <p className="text-muted-foreground">{weapon.description}</p>
+                {/* Video opens on YouTube in a new tab. Booking goes to the
+                    normal booking page (logged out visitors get sent to login). */}
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Button asChild variant="outline" className="rounded-full">
+                    <a
+                      href={weapon.video}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Watch a video about ${weapon.name} (opens YouTube in a new tab)`}
+                    >
+                      Watch a video
+                    </a>
+                  </Button>
+                  <Button asChild className="rounded-full">
+                    <Link href="/protected/book">Start {weapon.name} Now</Link>
+                  </Button>
+                </div>
               </div>
             </motion.div>
             );
