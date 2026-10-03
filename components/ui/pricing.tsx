@@ -98,7 +98,7 @@ function PricingCard({ plan, position, reducedMotion, ctaHref }: {
               href={ctaHref}
               className={cn(
                 "mt-8 inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold",
-                featured ? "border-cfa-purple bg-cfa-purple text-white hover:bg-cfa-purple/90" : "border-cfa-purple/25 bg-background text-cfa-purple hover:border-cfa-purple hover:bg-cfa-purple/10",
+                featured ? "border-cfa-purple bg-cfa-purple text-white hover:bg-cfa-purple/90" : "border-cfa-purple/25 bg-background text-cfa-purple hover:border-cfa-purple hover:bg-cfa-purple/10 dark:border-white/30 dark:bg-white/10 dark:text-white dark:hover:border-white/60 dark:hover:bg-white/20",
               )}
             >
               {beginner ? "Get started" : "Join the Academy"}
