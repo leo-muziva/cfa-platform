@@ -68,11 +68,10 @@
   body {
     @apply bg-background text-foreground;
   }
-  /* The homepage navbar is a fixed floating bar: give in-page #anchor jumps
-     clearance so section headings don't land underneath it. Smooth scrolling
-     only for users who haven't opted out of motion. */
+  /* The main bar is sticky, so in-page #anchor jumps stop just under it.
+     Smooth scrolling only for users who haven't opted out of motion. */
   html {
-    scroll-padding-top: 5.5rem;
+    scroll-padding-top: var(--site-nav-height);
   }
   @media (prefers-reduced-motion: no-preference) {
     html {
