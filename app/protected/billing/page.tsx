@@ -14,6 +14,18 @@ export default async function BillingPage() {
   const billing = await getPayerBilling()
   if ('error' in billing) {
     if (billing.error === 'Not authenticated') redirect('/auth/login')
+    // Billing is in the portal bar for everyone, so dependents get a plain
+    // message here instead of a 404.
+    if (billing.error === 'Forbidden') {
+      return (
+        <div className="space-y-4">
+          <h1 className="text-3xl font-bold">Billing and invoices</h1>
+          <p role="status" className="text-muted-foreground">
+            Your guardian manages payments and billing.
+          </p>
+        </div>
+      )
+    }
     notFound()
   }
 

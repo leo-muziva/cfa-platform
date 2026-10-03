@@ -12,7 +12,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     { href: '/protected', label: 'Profile' },
     { href: '/protected/lessons', label: 'Lessons' },
     { href: '/protected/family', label: 'Family' },
-    ...(capabilities?.canSeeHouseholdMoney ? [{ href: '/protected/billing', label: 'Billing' }] : []),
+    { href: '/protected/billing', label: 'Billing' },
     ...(capabilities?.isCoach ? [{ href: '/protected/coach', label: 'Coach' }] : []),
     ...(capabilities?.canManageStaffArea ? [{ href: '/protected/admin', label: 'Admin' }] : []),
   ]
