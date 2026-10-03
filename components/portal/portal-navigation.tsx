@@ -23,10 +23,13 @@ export function PortalNavigation({
   const pathname = usePathname();
   if (!isMainLinkCurrent("/protected", pathname)) return null;
 
+  // Refunds are reached from Billing, so Billing stays lit there.
   const isCurrent = (href: string) =>
     href === "/protected"
       ? pathname === href || pathname.startsWith("/protected/complete-profile")
-      : pathname === href || pathname.startsWith(href + "/");
+      : href === "/protected/billing"
+        ? pathname === href || pathname.startsWith("/protected/refunds")
+        : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <nav
