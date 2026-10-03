@@ -4,6 +4,9 @@
 
 @layer base {
   :root {
+    /* Height of the main bar (components/site-navigation.tsx). Full-height
+       pages subtract it so they fit under the bar. */
+    --site-nav-height: 4rem;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;

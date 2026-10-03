@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { NavigationHistoryTracker } from "@/components/navigation-history";
+import { SiteNavigation } from "@/components/site-navigation";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -37,6 +38,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <NavigationHistoryTracker />
+          <SiteNavigation />
           {children}
         </ThemeProvider>
       </body>

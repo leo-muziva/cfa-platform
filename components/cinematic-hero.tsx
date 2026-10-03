@@ -1,10 +1,10 @@
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import { PublicNavigation } from "@/components/public-navigation";
 
-export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
+// Fills the screen under the main bar.
+export function CinematicHero() {
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-black text-white">
+    <div className="relative flex h-[calc(100dvh-var(--site-nav-height))] flex-col overflow-hidden bg-black text-white">
       <video
         className="absolute inset-0 z-0 h-full w-full object-cover"
         autoPlay
@@ -29,9 +29,7 @@ export function CinematicHero({ authSlot }: { authSlot: React.ReactNode }) {
         aria-hidden="true"
       />
 
-      <PublicNavigation authSlot={authSlot} />
-
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pt-16 text-center sm:px-6">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-12 text-center sm:px-6">
         <Image
           src="/media/brand/cfa-crest.png"
           alt="Cape Fencing Academy crest"
