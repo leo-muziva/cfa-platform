@@ -1,24 +1,25 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { MembershipSection } from '@/components/landing/membership-section'
+import { MembershipPlans } from '@/components/portal/membership-plans'
 import { MembershipPanel, membershipApplyState } from '@/components/portal/membership-panel'
 import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
+import { getPublicPricingPlans } from '@/lib/services/public-membership-service'
 
 export const metadata: Metadata = {
   title: 'Membership — Cape Fencing Academy',
 }
 
-// Prices, the member's current membership and the apply form in one place.
-// The pricing card buttons come back here with ?plan= so the form has that
+// Prices at the top, then the member's current membership and the apply
+// form. The price buttons come back here with ?plan= so the form has that
 // plan picked. They're hidden when there's no form to go to.
 export default async function MembershipPage({
   searchParams,
 }: {
   searchParams: Promise<{ plan?: string }>
 }) {
-  const [membershipData, { plan }] = await Promise.all([
+  const [membershipData, plans, { plan }] = await Promise.all([
     getMembershipRequestPageData(),
+    getPublicPricingPlans(),
     searchParams,
   ])
   if ('error' in membershipData) {
@@ -27,23 +28,13 @@ export default async function MembershipPage({
   const { showForm } = membershipApplyState(membershipData)
 
   return (
-    <div className="space-y-12">
-      <header className="max-w-3xl">
-        <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
-          Membership
-        </h1>
-      </header>
+    <div className="space-y-14 py-4">
+      <MembershipPlans plans={plans} showButtons={showForm} />
 
-      <Suspense fallback={<p className="text-muted-foreground">Loading membership options...</p>}>
-        <MembershipSection
-          className="bg-transparent px-0 py-0 sm:px-0 md:px-0 md:py-0"
-          compact
-          applyPath="/protected/membership"
-          hideCta={!showForm}
-        />
-      </Suspense>
-
-      <div id="apply-membership" className="mx-auto w-full max-w-2xl">
+      <div
+        id="apply-membership"
+        className="mx-auto w-full max-w-2xl border-t border-[#140a2e]/10 pt-12 dark:border-white/10"
+      >
         <MembershipPanel membershipData={membershipData} selectedPlanCode={plan} />
       </div>
     </div>
