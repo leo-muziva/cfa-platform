@@ -10,6 +10,7 @@ export interface ExportItem {
   handedness: Handedness | null;
   quantity: number;
   unitPrice: number;
+  category?: string | null;
 }
 
 export interface ExportCustomer {
@@ -32,6 +33,7 @@ export interface SupplierLine {
   quantity: number;
   unitPriceCents: number;
   lineTotalCents: number;
+  category: string;
 }
 
 // Only verified payments go to the supplier. Legacy 'submitted' orders were
@@ -88,6 +90,7 @@ export function groupSupplierLines(orders: ExportOrder[]): SupplierLine[] {
           quantity: item.quantity,
           unitPriceCents,
           lineTotalCents: unitPriceCents * item.quantity,
+          category: item.category ?? "",
         });
       }
     }
