@@ -12,6 +12,8 @@ import {
   formatCapeTownTime,
 } from "@/lib/booking-calendar";
 import { splitMemberLessons } from "@/lib/lesson-booking-ui";
+import { cancellationBand, cancellationWarning } from "@/lib/lesson-cancellation";
+import { useState } from "react";
 import type {
   AvailableLessonTime,
   LessonBooking,
@@ -79,7 +81,7 @@ export function MemberLessons({
                   <p className="mt-2 leading-6">Your account payer needs to complete payment for this lesson.</p>
                 )}
               </div>
-              <CancelForm lesson={lesson} action={cancelAction} />
+              <CancelForm lesson={lesson} action={cancelAction} nowIso={nowIso} />
             </div>
           </LessonCard>
         ) : (
@@ -90,14 +92,15 @@ export function MemberLessons({
                 times={availableTimesByBooking[lesson.id] ?? []}
                 action={rescheduleAction}
               />
-              <CancelForm lesson={lesson} action={cancelAction} />
+              <CancelForm lesson={lesson} action={cancelAction} nowIso={nowIso} />
             </div>
             {lesson.cancellationDeadline && (
               <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                Free cancellation deadline: {formatCapeTownLessonDate(
-                  lesson.cancellationDeadline,
-                )}. Later cancellations are charged under the current lesson policy.
+                Free cancellation until {formatCapeTownLessonDate(lesson.cancellationDeadline)}.
+                {lesson.partialFeeDeadline
+                  ? ` After that, ${lesson.partialFeePercent ?? 50}% of the lesson price until ${formatCapeTownLessonDate(lesson.partialFeeDeadline)}, then ${lesson.lateFeePercent ?? 100}%.`
+                  : ` After that, ${lesson.lateFeePercent ?? 100}% of the lesson price.`}
               </p>
             )}
           </LessonCard>
@@ -250,11 +253,17 @@ function RescheduleForm({
 function CancelForm({
   lesson,
   action,
+  nowIso,
 }: {
   lesson: LessonBooking;
   action: LessonMemberFormAction;
+  nowIso: string;
 }) {
   const [state, formAction, pending] = useFormAction(action, initialActionState);
+  const [confirming, setConfirming] = useState(false);
+  // Use the click time, not page load, so a page left open still warns correctly.
+  const [warning, setWarning] = useState("");
+  const band = cancellationBand(lesson, new Date(nowIso));
   return (
     <ValidatedForm action={formAction} state={state} className="rounded-2xl border border-slate-200 p-4 dark:border-white/10">
       <input type="hidden" name="bookingId" value={lesson.id} />
@@ -270,9 +279,28 @@ function CancelForm({
         />
       </label>
       <ActionMessage state={state} />
-      <Button type="submit" variant="outline" disabled={pending} className="mt-3 min-h-11 w-full border-red-200 text-red-800 hover:bg-red-50 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-950/40">
-        {pending ? "Cancelling…" : "Cancel lesson"}
-      </Button>
+      {confirming ? (
+        <div role="alertdialog" aria-labelledby={"cancel-warning-" + lesson.id} className="mt-3 space-y-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-950 dark:border-red-400/30 dark:bg-red-950/40 dark:text-red-50">
+          <p id={"cancel-warning-" + lesson.id}>{warning || cancellationWarning(band)}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button type="submit" disabled={pending} className="min-h-11 bg-red-700 text-white hover:bg-red-800">
+              {pending ? "Cancelling…" : "Yes, cancel lesson"}
+            </Button>
+            <Button type="button" variant="outline" disabled={pending} onClick={() => setConfirming(false)} className="min-h-11">
+              Keep lesson
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => { setWarning(cancellationWarning(cancellationBand(lesson, new Date()))); setConfirming(true); }}
+          className="mt-3 min-h-11 w-full border-red-200 text-red-800 hover:bg-red-50 dark:border-red-400/30 dark:text-red-300 dark:hover:bg-red-950/40"
+        >
+          Cancel lesson
+        </Button>
+      )}
     </ValidatedForm>
   );
 }

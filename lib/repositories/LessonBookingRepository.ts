@@ -189,6 +189,9 @@ type SafeBookingRow = {
   rescheduled_to_booking_id?: string | null
   awaiting_payment?: boolean | null
   hold_expires_at?: string | null
+  partial_fee_deadline?: string | null
+  partial_fee_percent?: number | null
+  late_fee_percent?: number | null
 }
 
 export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
@@ -211,6 +214,9 @@ export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
     rescheduledToBookingId: row.rescheduled_to_booking_id ?? null,
     awaitingPayment: row.awaiting_payment ?? false,
     holdExpiresAt: row.hold_expires_at ?? null,
+    partialFeeDeadline: row.partial_fee_deadline ?? null,
+    partialFeePercent: row.partial_fee_percent ?? null,
+    lateFeePercent: row.late_fee_percent ?? null,
   }
 }
 
@@ -380,8 +386,11 @@ function mapSettings(row: SettingsRow): LessonBookingSettings {
     cancellationWindowHours: Number(row.cancellation_window_hours),
     lateCancellationAction: 'allow',
     lateCancellationFeeMultiplier: Number(row.late_cancellation_fee_multiplier),
+    cancellationPartialWindowHours: Number(row.cancellation_partial_window_hours),
+    cancellationPartialFeeMultiplier: Number(row.cancellation_partial_fee_multiplier),
     noShowFeeMultiplier: Number(row.no_show_fee_multiplier),
     bookingHorizonDays: Number(row.booking_horizon_days),
+    bookingHorizonCalendarMonths: Number(row.booking_horizon_calendar_months),
     bookingCutoffMinutes: Number(row.booking_cutoff_minutes),
     paymentMode: 'invoice_only', arrearsBlockingEnabled: false, futureBookingCapPerFencer: null,
     coachAssignmentMode: 'any_matching_weapon', coachWeaponsMode: 'per_coach',
@@ -402,6 +411,9 @@ export async function updateLessonSettingsRecord(input: LessonSettingsPatchInput
   const patch: Record<string, number> = {}
   if (input.cancellationWindowHours !== undefined) patch.cancellation_window_hours = input.cancellationWindowHours
   if (input.lateCancellationFeeMultiplier !== undefined) patch.late_cancellation_fee_multiplier = input.lateCancellationFeeMultiplier
+  if (input.cancellationPartialWindowHours !== undefined) patch.cancellation_partial_window_hours = input.cancellationPartialWindowHours
+  if (input.cancellationPartialFeeMultiplier !== undefined) patch.cancellation_partial_fee_multiplier = input.cancellationPartialFeeMultiplier
+  if (input.bookingHorizonCalendarMonths !== undefined) patch.booking_horizon_calendar_months = input.bookingHorizonCalendarMonths
   if (input.noShowFeeMultiplier !== undefined) patch.no_show_fee_multiplier = input.noShowFeeMultiplier
   if (input.bookingHorizonDays !== undefined) patch.booking_horizon_days = input.bookingHorizonDays
   if (input.bookingCutoffMinutes !== undefined) patch.booking_cutoff_minutes = input.bookingCutoffMinutes

@@ -50,11 +50,18 @@ export const lessonOutcomeSchema = z.object({
 export const lessonSettingsPatchSchema = z.object({
   cancellationWindowHours: z.coerce.number().int().min(0).optional(),
   lateCancellationFeeMultiplier: z.coerce.number().min(0).optional(),
+  cancellationPartialWindowHours: z.coerce.number().int().min(0).optional(),
+  cancellationPartialFeeMultiplier: z.coerce.number().min(0).max(1).optional(),
+  bookingHorizonCalendarMonths: z.coerce.number().int().min(1).max(12).optional(),
   noShowFeeMultiplier: z.coerce.number().min(0).optional(),
   bookingHorizonDays: z.coerce.number().int().min(1).max(365).optional(),
   bookingCutoffMinutes: z.coerce.number().int().min(0).optional(),
   singleLessonPriceCents: z.coerce.number().int().min(0).optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, 'At least one setting is required')
+  .refine((value) => value.cancellationPartialWindowHours === undefined || value.cancellationWindowHours === undefined
+    || value.cancellationPartialWindowHours <= value.cancellationWindowHours, {
+    message: 'The reduced-fee window must end at or before the free cancellation window.', path: ['cancellationPartialWindowHours'],
+  })
 
 export const coachLessonProfileSchema = z.object({
   coachId: z.uuid(),

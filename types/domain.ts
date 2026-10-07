@@ -450,6 +450,11 @@ export interface LessonBooking {
   /** True while a pay-now hold is live. Money-free, so dependents may see it. */
   awaitingPayment?: boolean
   holdExpiresAt?: string | null
+  /** After this time a cancellation costs partialFeePercent of the lesson. */
+  partialFeeDeadline?: string | null
+  partialFeePercent?: number | null
+  /** Fee share inside the partial window. Percentages only, never amounts. */
+  lateFeePercent?: number | null
 }
 
 /** Payer-only row for a pay-now lesson whose hold can still be paid. */
@@ -502,8 +507,11 @@ export interface LessonBookingSettings {
   cancellationWindowHours: number
   lateCancellationAction: 'allow'
   lateCancellationFeeMultiplier: number
+  cancellationPartialWindowHours: number
+  cancellationPartialFeeMultiplier: number
   noShowFeeMultiplier: number
   bookingHorizonDays: number
+  bookingHorizonCalendarMonths: number
   bookingCutoffMinutes: number
   paymentMode: 'invoice_only'
   arrearsBlockingEnabled: false
