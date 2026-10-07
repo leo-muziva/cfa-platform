@@ -196,8 +196,33 @@ function membershipOperationResult(error: unknown, errorCode: MembershipOperatio
 
 export async function listFamilyLinks(): Promise<FamilyLink[]> {
   const db = await createClient()
-  const { data, error } = await db.from('family_links').select(`*,guardian:profiles!family_links_guardian_id_fkey(id,full_name,email),dependent:profiles!family_links_dependent_id_fkey(id,full_name,email)`).order('requested_at', { ascending: false })
-  return error ? [] : data as unknown as FamilyLink[]
+  const [{ data, error }, counterparts] = await Promise.all([
+    db.from('family_links').select(`*,guardian:profiles!family_links_guardian_id_fkey(id,full_name,email),dependent:profiles!family_links_dependent_id_fkey(id,full_name,email)`).order('requested_at', { ascending: false }),
+    db.rpc('list_my_family_link_counterparts'),
+  ])
+  if (error) return []
+  return withCounterparts(data as unknown as FamilyLink[], (counterparts.data ?? []) as FamilyLinkCounterpartRow[])
+}
+
+interface FamilyLinkCounterpartRow {
+  link_id: string
+  counterpart_id: string
+  counterpart_name: string | null
+  counterpart_email: string | null
+}
+
+// Profiles RLS hides a requesting guardian from the dependent being asked, so
+// the embedded join comes back empty. Fill the other party from the RPC.
+export function withCounterparts(links: FamilyLink[], counterparts: FamilyLinkCounterpartRow[]): FamilyLink[] {
+  const byLink = new Map(counterparts.map((row) => [row.link_id, row]))
+  return links.map((link) => {
+    const row = byLink.get(link.id)
+    if (!row) return link
+    const person = { id: row.counterpart_id, full_name: row.counterpart_name, email: row.counterpart_email ?? '' }
+    if (row.counterpart_id === link.guardian_id && !link.guardian?.email) return { ...link, guardian: person }
+    if (row.counterpart_id === link.dependent_id && !link.dependent?.email) return { ...link, dependent: person }
+    return link
+  })
 }
 
 export async function requestFamilyLink(email: string) {
