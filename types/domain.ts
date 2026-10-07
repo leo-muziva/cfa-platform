@@ -259,6 +259,7 @@ export interface Invoice {
   issued_at: string
   paid_at: string | null
   lines?: InvoiceLine[]
+  payer?: Pick<Profile, 'full_name' | 'email'> | null
 }
 
 export interface Receipt {

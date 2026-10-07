@@ -315,8 +315,8 @@ export async function runInvoices(period: string) {
 
 export async function listAllInvoices(): Promise<Invoice[]> {
   const db = await createClient()
-  const { data, error } = await db.from('invoices').select('*,lines:invoice_lines(*)').order('issued_at', { ascending: false })
-  return error ? [] : data as Invoice[]
+  const { data, error } = await db.from('invoices').select('*,lines:invoice_lines(*),payer:profiles!invoices_payer_id_fkey(full_name,email)').order('issued_at', { ascending: false })
+  return error ? [] : data as unknown as Invoice[]
 }
 
 export async function recordManualPayment(invoiceId: string, adminId: string) {
