@@ -75,13 +75,20 @@ order). Run database tests on a clean reset.
 | - | P2 | Guardians could not see link requests they had sent | d8a30a9 |
 | - | P2 | Time-options horizon (28 days) disagreed with booking horizon (3 months) | f9d5231 |
 
-## Still open (P2, not blocking)
+## Follow-up fixes (same day)
 
-- BUG-016: A dependent opening `/protected/billing` directly gets a bare 404 instead of a "your payer handles billing" message.
-- Currency formatting differs between pages ("R913.00" on product pages, "R 913,00" in the cart).
-- Issued invoices can still gain lines on a re-run in the same month, because there is one invoice per payer per month. Making them strictly immutable needs supplementary invoices.
-- Membership type options show no joining fee or "10% off" hint in the apply dropdown.
-- Lint: `<img>` in `app/protected/shop/page.tsx`.
+| Item | Fix |
+|---|---|
+| BUG-016 | A dependent opening `/protected/billing` sees "Your guardian handles billing", with no amounts, instead of a 404. |
+| Currency | Every page uses `formatZar`/`formatRands` from `lib/money.ts` ("R1 234.50"). |
+| Invoice immutability | Migration 0043: a run never changes an existing invoice; new charges for a month go on a supplementary invoice (`sequence` 2, 3, ...). Replaces 0041's reopen. pgTAP `invoice-catch-up` 9/9. |
+| Apply dropdown | Shows the joining fee and the saving, for example "R2 970.00 (10% off) + R350.00 joining fee". |
+| Lint | The shop's decorative `<img>` is now `next/image`; lint has no warnings. |
+| Email | `lib/providers/email-transport.ts` sends through SMTP (Gmail app password) when configured, else Resend. See `docs/email-gmail-smtp-setup.md`. |
+
+Gates after these: Vitest 60 files / 495 tests, tsc clean, lint clean, build passed, pgTAP 21 files passed on a clean reset.
+
+Hosted Supabase: migrations 0035-0042 were applied on 2026-10-07 (it had stopped at 0034, so main's membership approval flow could not have worked).
 
 ## Staging pass still required
 
