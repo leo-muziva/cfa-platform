@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AddToCartButton } from "../components/AddToCartButton";
 import Image from "next/image";
 import { productImageUrl } from "@/lib/productImage";
+import { formatRands } from "@/lib/money";
 
 export default async function ProductPage({
   params,
@@ -57,7 +58,7 @@ export default async function ProductPage({
           <p className="mt-4 text-xl font-semibold">
             {Number(product.price) === 0
               ? "Price on request"
-              : "R" + Number(product.price).toFixed(2)}
+              : formatRands(product.price)}
           </p>
           <p className="mt-4 whitespace-pre-line text-gray-700 dark:text-white/75">
             {product.description}

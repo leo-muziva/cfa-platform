@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { TiltCard } from "@/components/ui/tilt-card";
 import type { PublicPricingPlan } from "@/lib/services/public-membership-service";
+import { formatRands } from "@/lib/money";
 
 export interface PricingProps {
   plans: PublicPricingPlan[];
@@ -17,14 +18,6 @@ const MEMBERSHIP_PERKS = [
   "Group training and sparring",
   "Competition representation and coaching",
 ];
-
-function formatRand(amount: number): string {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR",
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 function PricingCard({ plan, position, reducedMotion }: {
   plan: PublicPricingPlan;
@@ -71,7 +64,7 @@ function PricingCard({ plan, position, reducedMotion }: {
           <h3 className="mt-3 text-xl font-semibold">{plan.name}</h3>
           <div className="mt-7 flex items-baseline gap-2 border-b border-border/70 pb-5">
             <span className="text-3xl font-semibold tracking-tight tabular-nums xl:text-4xl">
-              {plan.price === null ? "Ask CFA" : formatRand(plan.price)}
+              {plan.price === null ? "Ask CFA" : formatRands(plan.price)}
             </span>
             <span className="text-xs text-muted-foreground">{plan.code === "month_to_month" ? "/ month" : beginner ? "/ package" : "/ term"}</span>
           </div>
