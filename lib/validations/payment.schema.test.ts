@@ -5,7 +5,7 @@ const id = "11111111-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
 
 describe("paymentTargetSchema", () => {
-  it.each([{ bookingId: id }, { invoiceId: id }, { orderId: id }, { orderId: id, notes: "Size M please" }])(
+  it.each([{ bookingId: id }, { invoiceId: id }, { orderId: id }, { orderId: id, notes: "Size M please" }, { membershipApplicationId: id }])(
     "accepts a single target %o",
     (input) => {
       expect(paymentTargetSchema.safeParse(input).success).toBe(true);
@@ -23,6 +23,10 @@ describe("paymentTargetSchema", () => {
     { bookingId: id, orderId: other },
     { invoiceId: id, orderId: other },
     { bookingId: id, invoiceId: other, orderId: id },
+    { membershipApplicationId: id, invoiceId: other },
+    { membershipApplicationId: id, orderId: other },
+    { membershipApplicationId: id, notes: "hi" },
+    { membershipApplicationId: "not-a-uuid" },
   ])("rejects none or several targets %o", (input) => {
     expect(paymentTargetSchema.safeParse(input).success).toBe(false);
   });

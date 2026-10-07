@@ -1,31 +1,21 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { cancelMembershipAction, requestMembershipAction, resubmitMembershipAction } from '@/app/actions/platform'
-import { ActionForm } from '@/components/portal/action-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
-import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
+import { getCurrentMembership } from '@/lib/services/PlatformService'
 import { ProfileForm } from './profile/profile-form'
 
 export default async function ProfileDashboardPage() {
-  const [context, membershipData] = await Promise.all([
+  const [context, membership] = await Promise.all([
     getCurrentAccountContext(),
-    getMembershipRequestPageData(),
+    getCurrentMembership(),
   ])
 
-  if ('error' in context || 'error' in membershipData) {
+  if ('error' in context) {
     redirect('/auth/login?next=/protected')
   }
-
-  const changes = membershipData.requests.find((item) => item.status === 'changes_requested')
-  const canApply =
-    !membershipData.membership &&
-    !membershipData.requests.some(
-      (item) => item.status === 'pending' || item.status === 'changes_requested',
-    )
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
@@ -37,8 +27,7 @@ export default async function ProfileDashboardPage() {
           My Profile
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Welcome, {context.profile.full_name || context.profile.email}. Manage your account and
-          membership from one place.
+          Welcome, {context.profile.full_name || context.profile.email}. Manage your account details here.
         </p>
       </div>
 
@@ -61,106 +50,22 @@ export default async function ProfileDashboardPage() {
 
       <ProfileForm profile={context.profile} />
 
-      <section className="space-y-6" aria-labelledby="membership-heading">
-        <div>
-          <h2 id="membership-heading" className="text-2xl font-semibold">
-            Membership
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Applications and memberships belong to this account only.
+      <Card className="cfa-light-card">
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center justify-between gap-3">
+            <span>Membership</span>
+            <Badge>{membership?.status === 'active' ? 'Active' : 'Not active'}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Apply, follow your application and pay for an approved membership in the Membership section.
           </p>
-        </div>
-
-        <Card className="cfa-light-card">
-          <CardHeader>
-            <CardTitle className="flex flex-wrap items-center justify-between gap-3">
-              <span>Current membership</span>
-              <Badge>{membershipData.membership?.status ?? 'not a member yet'}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {membershipData.membership ? (
-              membershipData.membership.membership_type?.name
-            ) : (
-              <div>
-                <p>You are not a member yet.</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  You can apply below. Your application and review status will appear here.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {membershipData.membership?.status === 'active' && (
-          <Card className="cfa-light-card">
-            <CardHeader>
-              <CardTitle>Cancel membership</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Cancellation is immediate. Existing invoices remain due and no refund is created
-                automatically.
-              </p>
-              <form action={cancelMembershipAction}>
-                <input type="hidden" name="confirm" value="yes" />
-                <Button variant="outline">Confirm cancellation</Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        {membershipData.requests.map((item) => (
-          <Card key={item.id} className="cfa-light-card">
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center justify-between gap-3">
-                <span>
-                  {item.membership_type?.name} - version {item.version}
-                </span>
-                <Badge>{item.status}</Badge>
-              </CardTitle>
-            </CardHeader>
-            {item.visible_response && (
-              <CardContent>
-                <strong>Reviewer response:</strong> {item.visible_response}
-              </CardContent>
-            )}
-          </Card>
-        ))}
-
-        {(canApply || changes) && (
-          <Card className="cfa-light-card">
-            <CardHeader>
-              <CardTitle>{changes ? 'Amend and resubmit' : 'Apply for membership'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActionForm
-                action={changes ? resubmitMembershipAction : requestMembershipAction}
-                submitLabel={changes ? 'Resubmit' : 'Submit application'}
-              >
-                {changes && (
-                  <input type="hidden" name="application_id" value={changes.id} />
-                )}
-                <div>
-                  <Label htmlFor="membership_type_id">Membership type</Label>
-                  <select
-                    id="membership_type_id"
-                    name="membership_type_id"
-                    defaultValue={changes?.membership_type_id}
-                    className="w-full rounded-md border bg-background px-3 py-2"
-                  >
-                    {membershipData.membershipTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name} - R{Number(type.price).toFixed(2)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </ActionForm>
-            </CardContent>
-          </Card>
-        )}
-      </section>
+          <Button asChild variant="outline">
+            <Link href="/protected/membership">Go to Membership</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }

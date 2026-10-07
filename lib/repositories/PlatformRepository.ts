@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { AdminMembershipApplication, BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, MembershipOperationErrorCode, Receipt } from '@/types/domain'
+import type { AdminMembershipApplication, BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, MembershipOperationErrorCode, MembershipPaymentDue, MembershipPaymentEmailStatus, Receipt } from '@/types/domain'
 import { bookingDatabaseErrorCode } from '@/lib/booking-errors'
 import { getPaymentProvider } from '@/lib/providers/contracts'
 
@@ -60,7 +60,7 @@ export async function listMembershipRequestsForMember(applicantId: string): Prom
   const db = await createClient()
   const { data, error } = await db.from('membership_applications').select(`
     id,applicant_id,membership_type_id,version,status,submitted_details,visible_response,
-    reviewer_id,reviewed_at,created_at,
+    reviewer_id,reviewed_at,created_at,payment_email_status,payment_email_at,
     applicant:profiles!membership_applications_applicant_id_fkey(id,full_name,email),
     membership_type:membership_types(id,name)
   `).eq('applicant_id', applicantId).order('created_at', { ascending: false })
@@ -71,7 +71,7 @@ export async function listMembershipRequestsForAdmin(): Promise<AdminMembershipA
   const db = await createClient()
   const { data, error } = await db.from('membership_applications').select(`
     id,applicant_id,membership_type_id,version,status,submitted_details,visible_response,
-    reviewer_id,reviewed_at,created_at,
+    reviewer_id,reviewed_at,created_at,payment_email_status,payment_email_at,
     applicant:profiles!membership_applications_applicant_id_fkey(id,full_name,email),
     membership_type:membership_types(id,name),
     admin_notes:membership_application_admin_notes(private_notes)
@@ -112,6 +112,82 @@ export async function changeMembershipStatus(profileId: string, status: string) 
   const db = await createClient()
   const { error } = await db.rpc('change_membership_status', { target_profile: profileId, target_status: status })
   return membershipOperationResult(error, 'status_change_failed')
+}
+
+export async function recordManualMembershipPayment(applicationId: string) {
+  const db = await createClient()
+  const { error } = await db.rpc('record_manual_membership_payment', { target_application: applicationId })
+  return membershipOperationResult(error, 'payment_record_failed')
+}
+
+export async function withdrawMembershipApproval(applicationId: string, visibleResponse?: string | null) {
+  const db = await createClient()
+  const { error } = await db.rpc('withdraw_membership_approval', {
+    target_application: applicationId, target_response: visibleResponse ?? null,
+  })
+  return membershipOperationResult(error, 'withdraw_failed')
+}
+
+interface MembershipPaymentDueRow {
+  application_id: string
+  applicant_id: string
+  applicant_name: string
+  membership_name: string
+  membership_cents: string
+  joining_fee_cents: string
+  total_cents: string
+  approved_at: string | null
+}
+
+// Only payers may call the RPC; anyone else simply has nothing to pay.
+export async function listMembershipPaymentsDue(): Promise<MembershipPaymentDue[]> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('list_my_membership_payments_due')
+  if (error) return []
+  return ((data ?? []) as MembershipPaymentDueRow[]).map((row) => ({
+    applicationId: row.application_id,
+    applicantId: row.applicant_id,
+    applicantName: row.applicant_name,
+    membershipName: row.membership_name,
+    membershipCents: row.membership_cents,
+    joiningFeeCents: row.joining_fee_cents,
+    totalCents: row.total_cents,
+    approvedAt: row.approved_at,
+  }))
+}
+
+export interface MembershipPaymentNotice {
+  applicationId: string
+  applicantId: string
+  applicantName: string
+  payerId: string
+  payerName: string
+  payerEmail: string
+  membershipName: string
+  totalCents: string
+}
+
+export async function getMembershipPaymentNotice(applicationId: string): Promise<MembershipPaymentNotice | null> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('get_membership_payment_notice', { target_application: applicationId })
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, string> | null | undefined
+  if (error || !row) return null
+  return {
+    applicationId: row.application_id,
+    applicantId: row.applicant_id,
+    applicantName: row.applicant_name,
+    payerId: row.payer_id,
+    payerName: row.payer_name,
+    payerEmail: row.payer_email,
+    membershipName: row.membership_name,
+    totalCents: row.total_cents,
+  }
+}
+
+export async function recordMembershipPaymentEmail(applicationId: string, outcome: MembershipPaymentEmailStatus) {
+  const db = await createClient()
+  const { error } = await db.rpc('record_membership_payment_email', { target_application: applicationId, target_outcome: outcome })
+  return !error
 }
 
 function membershipOperationResult(error: unknown, errorCode: MembershipOperationErrorCode) {
@@ -158,7 +234,9 @@ export async function getBillingForPayer(payerId: string) {
       id,amount,description,
       participant:profiles!charges_fencer_id_fkey(full_name),
       booking:bookings!charges_booking_id_fkey(starts_at,payment_option)
-    `).eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'provisional').order('created_at'),
+    `).eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'provisional')
+      // Approved memberships awaiting payment have their own section.
+      .is('membership_application_id', null).order('created_at'),
   ])
   return {
     balance: calculateOutstandingBalance(charges ?? [], credits ?? []),

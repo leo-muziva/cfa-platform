@@ -108,6 +108,10 @@ export const membershipReviewSchema = z.object({
   visible_response: z.string().trim().max(2000).optional().nullable(),
   private_notes: z.string().trim().max(2000).optional().nullable(),
 })
+export const membershipApplicationSchema = z.object({ application_id: z.uuid() })
+export const membershipWithdrawalSchema = membershipApplicationSchema.extend({
+  visible_response: z.string().trim().max(2000).optional().nullable(),
+})
 export const membershipStatusChangeSchema = z.object({
   profile_id: z.uuid(), status: z.enum(['active', 'suspended', 'expired', 'cancelled']),
 })

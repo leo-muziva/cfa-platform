@@ -296,7 +296,7 @@ From `docs/CFA_Project_Specification_Reconciled.md`, which is authoritative.
 - **Lessons are pay-now or pay-later per booking.** Pay-now holds the slot pending payment and releases it on expiry; a held slot cannot be sold twice. Pay-later confirms immediately.
 - **The 25th run** invoices finalised uninvoiced charges through the 24th in `Africa/Johannesburg`, including older missed charges, plus current-period membership dues. Reruns and concurrent runs must not duplicate anything.
 - **Issued invoices are immutable**, including paid ones. Corrections are adjustments and credits, never rewrites. Payment state may change without altering the document.
-- **Six-month membership carries a confirmed 10% discount.** Note that the seeded price is R3050 against R2970 for 10% off six times R550, and a public component hardcodes "7.5%". That discrepancy is unresolved - do not silently pick one.
+- **Six-month membership carries a confirmed 10% discount.** Migration `0036_six_month_discount.sql` resolved the old R3050 seed: the price is now derived as 10% off six month-to-month dues (R2970 at R550 a month).
 - **Account credit is the provisional refund default**; approved card refunds must also be supported.
 - **Dependents receive no financial information** - no prices, balances, invoices, receipts, payment details or credits, in UI, in server responses, or through direct database access. Hiding navigation is explicitly insufficient.
 - **All staff may perform financial operations**, but personal and guardian scope must stay distinct from staff scope.

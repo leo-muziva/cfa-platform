@@ -18,6 +18,11 @@ const ORDER_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
   product_unavailable: "An item in your cart is no longer available. Remove it and try again.",
 };
 
+const MEMBERSHIP_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
+  forbidden: "Only the account payer can pay for this membership. Ask your guardian to pay.",
+  checkout_unavailable: "This membership is no longer waiting for payment. Refresh to see its status.",
+};
+
 async function isSignedIn() {
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
@@ -36,7 +41,7 @@ export function getPaymentSetupIssues(): string[] {
 
 export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   const target = paymentTargetSchema.safeParse(raw);
-  if (!target.success) return { ok: false, error: "Choose one valid lesson, invoice or order to pay." };
+  if (!target.success) return { ok: false, error: "Choose one valid lesson, invoice, order or membership to pay." };
   if (!await isSignedIn()) return { ok: false, error: "Please sign in before starting a payment." };
   const provider = getPaymentGateway();
   if (!provider || !getPaymentOrigin()) return { ok: false, error: "Online payments are not configured for this environment." };
@@ -44,7 +49,9 @@ export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   if (!result.ok) {
     const error = target.data.orderId
       ? ORDER_MESSAGES[result.code] ?? "This order can't be paid right now. Refresh and try again."
-      : "This payment is unavailable. Refresh to check the balance or lesson hold.";
+      : target.data.membershipApplicationId
+        ? MEMBERSHIP_MESSAGES[result.code] ?? "This membership can't be paid right now. Refresh and try again."
+        : "This payment is unavailable. Refresh to check the balance or lesson hold.";
     return { ok: false, error, code: result.code };
   }
   return { ok: true, attemptId: result.attempt.attempt_id, pricesChanged: result.attempt.prices_changed };

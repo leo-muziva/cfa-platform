@@ -18,6 +18,8 @@ export default async function PaymentResultPage({
   const successMessage = payment.credited
     ? payment.kind === "order"
       ? "Payment received, but your order changed before it was confirmed, so the payment was kept as account credit. Check your billing page for details."
+      : payment.kind === "membership"
+        ? "Payment received, but this membership approval was withdrawn before it was confirmed, so the payment was kept as account credit. Contact CFA for help."
       : payment.kind === "booking"
         ? "Payment received after your lesson hold expired, so the lesson was released and the payment was kept as account credit. Check your billing page for details."
         : "Payment received. Some or all of this payment was recorded as account credit. Check your billing page for details."
@@ -25,7 +27,9 @@ export default async function PaymentResultPage({
       ? "Payment confirmed. Your lesson is booked."
       : payment.kind === "order"
         ? "Payment confirmed. Your order has joined the next bulk order."
-        : "Payment confirmed. Your invoice balance has been updated.";
+        : payment.kind === "membership"
+          ? "Payment confirmed. The membership is now active."
+          : "Payment confirmed. Your invoice balance has been updated.";
   const message = payment.status === "succeeded"
     ? successMessage
     : payment.status === "pending" && cancelled === "1"
@@ -45,6 +49,7 @@ export default async function PaymentResultPage({
         <Link className="underline" href="/protected/billing">View billing and receipts</Link>
         {payment.kind === "booking" && <Link className="underline" href="/protected/lessons">View lessons</Link>}
         {payment.kind === "order" && <Link className="underline" href="/protected/shop/orders">View your orders</Link>}
+        {payment.kind === "membership" && <Link className="underline" href="/protected/membership">View membership</Link>}
         {payment.status === "succeeded" && <Link className="underline" href={`/protected/refunds/new?attempt=${encodeURIComponent(attemptId)}`}>Request a refund</Link>}
       </div>
     </div>
