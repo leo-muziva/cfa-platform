@@ -15,6 +15,7 @@ import { bookingSchema, lessonSlotSchema, membershipRequestSchema, membershipRes
   membershipReviewSchema, membershipStatusChangeSchema, membershipApplicationSchema, membershipWithdrawalSchema, familyLinkRequestSchema,
   familyLinkResponseSchema, familyLinkEndSchema } from '@/lib/validations/member.schema'
 import type { BookingErrorCode, LessonHistoryItem, MembershipOperationErrorCode, MembershipPaymentEmailStatus, PayerBillingView } from '@/types/domain'
+import { membershipPriceLabel } from '@/lib/membership-price-label'
 
 export type BookingResult = { bookingId: string } | { errorCode: BookingErrorCode }
 
@@ -95,6 +96,7 @@ export async function getMembershipRequestPageData() {
     getMembershipTypes(),
     canSeeMoney ? listMembershipPaymentsDue() : Promise.resolve([]),
   ])
+  const monthlyPrice = membershipTypes.find((type) => type.code === 'month_to_month')?.price ?? null
   return {
     profile,
     canSeeMoney,
@@ -103,7 +105,7 @@ export async function getMembershipRequestPageData() {
     membershipTypes: membershipTypes.map((type): MembershipTypeOption => ({
       id: type.id,
       name: type.name,
-      priceLabel: canSeeMoney ? `R${Number(type.price).toFixed(2)}` : null,
+      priceLabel: canSeeMoney ? membershipPriceLabel(type, monthlyPrice) : null,
     })),
     // This account's own approved application, when it is the payer.
     ownPaymentDue: paymentsDue.find((item) => item.applicantId === profile.id) ?? null,
