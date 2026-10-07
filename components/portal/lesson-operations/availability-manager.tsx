@@ -11,6 +11,7 @@ export interface AvailabilityRuleView {
   startsAtLocal: string;
   endsAtLocal: string;
   isActive: boolean;
+  accessRule?: "guest_allowed" | "active_members_only";
 }
 
 export interface AvailabilityExceptionView {
@@ -72,7 +73,7 @@ export function AvailabilityManager({
                 <CardContent className="flex items-center justify-between gap-4 pt-6">
                   <div>
                     <p className="font-semibold">{WEEKDAYS[rule.isoWeekday - 1] ?? "Day"}</p>
-                    <p className="text-sm text-muted-foreground">{rule.startsAtLocal.slice(0, 5)} - {rule.endsAtLocal.slice(0, 5)}</p>
+                    <p className="text-sm text-muted-foreground">{rule.startsAtLocal.slice(0, 5)} - {rule.endsAtLocal.slice(0, 5)}{rule.accessRule === "active_members_only" ? " · Members only" : " · Open to guests"}</p>
                   </div>
                   <OperationForm action={deleteRuleAction} submitLabel="Remove" pendingLabel="Removing..." variant="ghost" className="space-y-1">
                     <input type="hidden" name="ruleId" value={rule.id} />
@@ -102,6 +103,7 @@ export function AvailabilityManager({
                 <div className="space-y-2"><Label htmlFor="startsAtLocal">Starts</Label><Input id="startsAtLocal" name="startsAtLocal" type="time" step="1800" required /></div>
                 <div className="space-y-2"><Label htmlFor="endsAtLocal">Ends</Label><Input id="endsAtLocal" name="endsAtLocal" type="time" step="1800" required /></div>
               </div>
+              <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="membersOnly" className="mt-1" /><span>Members only<span className="block text-muted-foreground">Guests cannot book these hours.</span></span></label>
             </OperationForm>
           </CardContent>
         </Card>

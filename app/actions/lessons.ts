@@ -164,6 +164,7 @@ export async function createCoachAvailabilityRuleAction(_: LessonActionState, fo
     isoWeekday: value(formData, 'isoWeekday', 'iso_weekday'),
     startsAtLocal: value(formData, 'startsAtLocal', 'starts_at_local'),
     endsAtLocal: value(formData, 'endsAtLocal', 'ends_at_local'),
+    accessRule: formData.get('membersOnly') === 'on' ? 'active_members_only' : 'guest_allowed',
   })
   if (!result.success) return actionResult(result, '')
   revalidateAvailabilityPaths()

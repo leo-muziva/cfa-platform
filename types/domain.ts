@@ -399,6 +399,8 @@ export interface AvailableLessonTime {
 /** A coach-offered 30-minute occurrence, with availability intentionally reason-free. */
 export interface LessonTimeOption extends AvailableLessonTime {
   isAvailable: boolean
+  /** Coach marked these standing hours for active members only. */
+  membersOnly?: boolean
 }
 
 /** Pricing is deliberately isolated from availability and booking DTOs. */
@@ -475,6 +477,7 @@ export interface CoachAvailabilityRule {
   startsAtLocal: string
   endsAtLocal: string
   isActive: boolean
+  accessRule: LessonAccessRule
 }
 
 export interface CoachAvailabilityException {
@@ -566,6 +569,7 @@ export type LessonBookingErrorCode =
   | 'invalid_closure'
   | 'waiver_reason_required'
   | 'pay_now_required'
+  | 'members_only'
   | 'entitlement_unavailable'
   | 'invalid_product'
   | 'checkout_unavailable'

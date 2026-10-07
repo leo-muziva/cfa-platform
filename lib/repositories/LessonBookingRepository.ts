@@ -51,6 +51,7 @@ const errorMessages: Record<LessonBookingErrorCode, string> = {
   affected_bookings_require_confirmation: 'Confirm cancellation of the affected bookings before blocking this time.',
   invalid_closure: 'Check the closure dates and reason.',
   waiver_reason_required: 'A waiver reason is required.',
+  members_only: 'This time is reserved for active members. Choose another time, or apply for membership first.',
   pay_now_required: 'This lesson must be paid now. Guest lessons can only be booked by the account payer with online payment.',
   entitlement_unavailable: 'No lesson package uses are left for this fencer.',
   invalid_product: 'This lesson type is not available right now.',
@@ -85,7 +86,7 @@ function failed(error: unknown): LessonBookingResult<never> {
 
 type CoachRow = { coach_id: string; full_name: string; weapons: string[] | null }
 type TimeRow = { starts_at: string; ends_at: string }
-type TimeOptionRow = TimeRow & { is_available: boolean }
+type TimeOptionRow = TimeRow & { is_available: boolean; members_only?: boolean | null }
 type QuoteRow = { participant_count: number | string; total_cents: number | string; currency: string }
 
 export async function listLessonCoaches(): Promise<LessonBookingResult<LessonCoachSummary[]>> {
@@ -119,7 +120,7 @@ export async function listLessonTimeOptions(input: LessonAvailabilityInput): Pro
   })
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as TimeOptionRow[]).map((row) => ({
-    startsAt: row.starts_at, endsAt: row.ends_at, isAvailable: row.is_available,
+    startsAt: row.starts_at, endsAt: row.ends_at, isAvailable: row.is_available, membersOnly: Boolean(row.members_only),
   })) }
 }
 
@@ -325,16 +326,17 @@ export async function listEligibleLessonParticipants(actorId: string, isAdmin: b
   return { success: true, data: participants }
 }
 
-type RuleRow = { id: string; coach_id: string; iso_weekday: number; starts_at_local: string; ends_at_local: string; is_active: boolean }
+type RuleRow = { id: string; coach_id: string; iso_weekday: number; starts_at_local: string; ends_at_local: string; is_active: boolean; access_rule: string }
 type ExceptionRow = { id: string; coach_id: string; exception_type: string; starts_at: string; ends_at: string; reason: string | null }
 
 export async function listCoachAvailabilityRules(coachId: string): Promise<LessonBookingResult<CoachAvailabilityRule[]>> {
   const db = await createClient()
-  const { data, error } = await db.from('coach_availability_rules').select('id,coach_id,iso_weekday,starts_at_local,ends_at_local,is_active').eq('coach_id', coachId).order('iso_weekday').order('starts_at_local')
+  const { data, error } = await db.from('coach_availability_rules').select('id,coach_id,iso_weekday,starts_at_local,ends_at_local,is_active,access_rule').eq('coach_id', coachId).order('iso_weekday').order('starts_at_local')
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as RuleRow[]).map((row) => ({
     id: row.id, coachId: row.coach_id, isoWeekday: row.iso_weekday as CoachAvailabilityRule['isoWeekday'],
     startsAtLocal: row.starts_at_local, endsAtLocal: row.ends_at_local, isActive: row.is_active,
+    accessRule: row.access_rule === 'active_members_only' ? 'active_members_only' : 'guest_allowed',
   })) }
 }
 
@@ -342,7 +344,7 @@ export async function createCoachAvailabilityRuleRecord(input: CoachAvailability
   const db = await createClient()
   const { data, error } = await db.from('coach_availability_rules').insert({
     coach_id: input.coachId, iso_weekday: input.isoWeekday,
-    starts_at_local: input.startsAtLocal, ends_at_local: input.endsAtLocal,
+    starts_at_local: input.startsAtLocal, ends_at_local: input.endsAtLocal, access_rule: input.accessRule,
   }).select('id').single()
   return error ? failed(error) : { success: true, data: { ruleId: data.id } }
 }

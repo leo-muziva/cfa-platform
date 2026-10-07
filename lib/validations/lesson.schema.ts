@@ -78,6 +78,7 @@ export const coachAvailabilityRuleSchema = z.object({
   isoWeekday: z.coerce.number().int().min(1).max(7),
   startsAtLocal: localTimeSchema,
   endsAtLocal: localTimeSchema,
+  accessRule: z.enum(['guest_allowed', 'active_members_only']).default('guest_allowed'),
 }).strict().refine((value) => value.endsAtLocal > value.startsAtLocal, {
   message: 'End time must be after start time',
   path: ['endsAtLocal'],
