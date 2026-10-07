@@ -288,7 +288,7 @@ export function CoachBookingCalendar({
           ) : (
             <input type="hidden" name="paymentOption" value="pay_later" />
           ))}
-          {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}</p>}
+          {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}{state.errorCode === "account_incomplete" && <> <Link className="underline" href="/protected/complete-profile">Complete your profile</Link></>}</p>}
           {state.success && <p role="status" className="rounded-xl bg-emerald-950/40 p-3 text-sm text-emerald-50">{state.success}</p>}
           {state.checkoutRequired && (
             <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
