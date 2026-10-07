@@ -2,7 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentGateway, getPaymentOrigin, paymentSetupIssues } from "@/lib/payments/registry";
 import type { CheckoutResponse } from "@/lib/payments/gateway";
-import { findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent } from "@/lib/repositories/payment-repository";
+import { claimShopOrderConfirmation, findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent, releaseShopOrderConfirmation } from "@/lib/repositories/payment-repository";
+import { getResendConfig, sendWithResend, shopOrderConfirmationEmail } from "@/lib/providers/resend-email";
 import type { PreparePaymentErrorCode } from "@/lib/repositories/payment-repository";
 import { paymentAttemptSchema, paymentEventSchema, paymentTargetSchema } from "@/lib/validations/payment.schema";
 
@@ -95,8 +96,32 @@ export async function receivePaymentNotification(providerName: string, input: { 
     const event = await provider.verifyWebhook(input);
     const parsed = paymentEventSchema.safeParse(event);
     if (!parsed.success || parsed.data.provider !== provider.name) return 400;
-    return await recordPaymentEvent(parsed.data) ? 200 : 503;
+    if (!await recordPaymentEvent(parsed.data)) return 503;
+    if (parsed.data.status === "succeeded") await confirmShopOrder(parsed.data.provider, parsed.data.reference);
+    return 200;
   } catch {
     return 503;
+  }
+}
+
+// The payment is already recorded, so an email problem must never fail the
+// webhook. The database claim makes provider retries send at most once.
+async function confirmShopOrder(provider: string, reference: string): Promise<void> {
+  const config = getResendConfig();
+  if (!config) return;
+  try {
+    const claim = await claimShopOrderConfirmation(provider, reference);
+    if (!claim) return;
+    const origin = getPaymentOrigin();
+    const result = await sendWithResend(config, shopOrderConfirmationEmail({
+      to: claim.recipient_email,
+      recipientName: claim.recipient_name,
+      items: claim.items.map((item) => ({ ...item, lineCents: String(item.lineCents) })),
+      totalCents: String(claim.total_cents),
+      ordersUrl: origin ? `${origin}/protected/shop/orders` : null,
+    }));
+    if (!result.ok) await releaseShopOrderConfirmation(claim.order_id);
+  } catch {
+    // Leave the claim in place: retrying an unknown failure could double-send.
   }
 }
