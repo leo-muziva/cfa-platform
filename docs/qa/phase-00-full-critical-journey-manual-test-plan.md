@@ -29,7 +29,7 @@ Viewports: mobile 375x812 (primary), tablet 768x1024, desktop 1280x800
 | P0-A1 | Homepage loads responsively | Open `/` at all three viewports | HTTP 200, no horizontal overflow, hero and below-hero content render |
 | P0-A2 | Public route smoke test | Open `/classes`, `/membership`, `/about`, `/contact`, `/privacy`, `/terms` | Every route returns HTTP 200 and remains usable at all viewports |
 | P0-A3 | Account choice is distinct | Open `/auth` | Login, guest signup, and membership request are separate choices |
-| P0-A4 | Pricing is accurate | Open `/membership` | R550, R3,050, R6,000, R1,000 and separate R350 joining fee appear |
+| P0-A4 | Pricing is accurate | Open `/membership` | R550, R2,970 (marked 10% off six monthly dues), R6,000, R1,000 and separate R350 joining fee appear |
 | P0-A5 | Public navigation and footer | Navigate public pages | Primary routes, privacy, terms, contact and social information are reachable |
 
 ## B - Authentication and session

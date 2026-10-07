@@ -38,7 +38,7 @@ beforeEach(() => {
 describe("startPayment", () => {
   it("rejects an invalid target before any lookup", async () => {
     const result = await startPayment({ orderId: "nope" });
-    expect(result).toEqual({ ok: false, error: "Choose one valid lesson, invoice or order to pay." });
+    expect(result).toEqual({ ok: false, error: "Choose one valid lesson, invoice, order or membership to pay." });
     expect(getUser).not.toHaveBeenCalled();
     expect(preparePayment).not.toHaveBeenCalled();
   });
@@ -96,6 +96,25 @@ describe("startPayment", () => {
     expect(await startPayment({ orderId })).toMatchObject({
       ok: false,
       error: "This order can't be paid right now. Refresh and try again.",
+    });
+  });
+
+  it("starts a membership payment and explains when only the guardian can pay", async () => {
+    preparePayment.mockResolvedValueOnce({
+      ok: true,
+      attempt: { attempt_id: "attempt-2", provider_reference: "cfadef", amount_cents: "90000", prices_changed: false },
+    });
+    expect(await startPayment({ membershipApplicationId: orderId })).toEqual({ ok: true, attemptId: "attempt-2", pricesChanged: false });
+    expect(preparePayment).toHaveBeenCalledWith({ membershipApplicationId: orderId }, "payfast_sandbox");
+    preparePayment.mockResolvedValueOnce({ ok: false, code: "forbidden" });
+    expect(await startPayment({ membershipApplicationId: orderId })).toMatchObject({
+      ok: false,
+      error: "Only the account payer can pay for this membership. Ask your guardian to pay.",
+    });
+    preparePayment.mockResolvedValueOnce({ ok: false, code: "checkout_unavailable" });
+    expect(await startPayment({ membershipApplicationId: orderId })).toMatchObject({
+      ok: false,
+      error: "This membership is no longer waiting for payment. Refresh to see its status.",
     });
   });
 

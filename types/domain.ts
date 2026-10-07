@@ -1,12 +1,15 @@
 export type MembershipStatus = 'guest' | 'member'
 export type MembershipLifecycleStatus = 'active' | 'suspended' | 'expired' | 'cancelled'
-export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'rejected' | 'approved'
+export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'awaiting_payment' | 'rejected' | 'approved'
+export type MembershipPaymentEmailStatus = 'sent' | 'failed' | 'not_configured'
 export type MembershipReviewDecision = 'approve' | 'request_changes' | 'reject'
 export type MembershipOperationErrorCode =
   | 'request_failed'
   | 'review_failed'
   | 'resubmit_failed'
   | 'status_change_failed'
+  | 'payment_record_failed'
+  | 'withdraw_failed'
 export type FamilyLinkStatus = 'pending' | 'active' | 'rejected' | 'ended'
 export type LessonAccessRule = 'guest_allowed' | 'active_members_only'
 export type HouseholdRole = 'payer' | 'dependent'
@@ -94,8 +97,22 @@ export interface MembershipApplication {
   reviewer_id: string | null
   reviewed_at: string | null
   created_at: string
+  payment_email_status: MembershipPaymentEmailStatus | null
+  payment_email_at: string | null
   applicant?: Pick<Profile, 'id' | 'full_name' | 'email'>
   membership_type?: Pick<MembershipType, 'id' | 'name'>
+}
+
+/** An approved application the signed-in payer still has to pay. Payers only. */
+export interface MembershipPaymentDue {
+  applicationId: string
+  applicantId: string
+  applicantName: string
+  membershipName: string
+  membershipCents: string
+  joiningFeeCents: string
+  totalCents: string
+  approvedAt: string | null
 }
 
 export interface FamilyLink {
@@ -574,7 +591,7 @@ export interface ShopCart {
 
 export type RefundStatus = 'requested' | 'approved' | 'rejected' | 'processing' | 'processed' | 'failed'
 export type RefundMethod = 'manual_bank' | 'provider'
-export type PaymentKind = 'booking' | 'order' | 'invoice'
+export type PaymentKind = 'booking' | 'order' | 'membership' | 'invoice'
 
 // A settled payment and how much of it can still be refunded.
 export interface RefundablePayment {

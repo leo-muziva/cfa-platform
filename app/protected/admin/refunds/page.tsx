@@ -35,6 +35,7 @@ function formatDateTime(value: string | null) {
 const KIND_LABELS: Record<PaymentKind, string> = {
   booking: "Lesson booking",
   order: "Shop order",
+  membership: "Membership",
   invoice: "Invoice",
 };
 

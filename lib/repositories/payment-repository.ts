@@ -16,7 +16,7 @@ export interface CheckoutRow {
 export interface PaymentStatusRow {
   attempt_id: string;
   status: "pending" | "succeeded" | "failed";
-  kind: "booking" | "invoice" | "order";
+  kind: "booking" | "invoice" | "order" | "membership";
   credited: boolean;
   amount_cents: string;
 }
@@ -51,7 +51,12 @@ export async function preparePayment(target: PaymentTarget, provider: string): P
       target_provider: provider,
       target_notes: target.notes ?? null,
     })
-    : await db.rpc("prepare_payment_checkout", {
+    : target.membershipApplicationId
+      ? await db.rpc("prepare_membership_checkout", {
+        target_application: target.membershipApplicationId,
+        target_provider: provider,
+      })
+      : await db.rpc("prepare_payment_checkout", {
       target_booking: target.bookingId ?? null,
       target_invoice: target.invoiceId ?? null,
       target_provider: provider,

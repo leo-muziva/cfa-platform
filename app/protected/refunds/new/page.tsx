@@ -15,6 +15,7 @@ const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" 
 const KIND_LABELS: Record<PaymentKind, string> = {
   booking: "Lesson booking",
   order: "Shop order",
+  membership: "Membership",
   invoice: "Invoice",
 };
 

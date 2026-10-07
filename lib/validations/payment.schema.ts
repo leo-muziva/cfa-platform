@@ -7,12 +7,14 @@ export const paymentTargetSchema = z.union([
     bookingId: z.uuid(),
     invoiceId: z.never().optional(),
     orderId: z.never().optional(),
+    membershipApplicationId: z.never().optional(),
     notes: z.never().optional(),
   }).strict(),
   z.object({
     invoiceId: z.uuid(),
     bookingId: z.never().optional(),
     orderId: z.never().optional(),
+    membershipApplicationId: z.never().optional(),
     notes: z.never().optional(),
   }).strict(),
   z.object({
@@ -20,6 +22,14 @@ export const paymentTargetSchema = z.union([
     notes: z.string().trim().max(500).optional(),
     bookingId: z.never().optional(),
     invoiceId: z.never().optional(),
+    membershipApplicationId: z.never().optional(),
+  }).strict(),
+  z.object({
+    membershipApplicationId: z.uuid(),
+    bookingId: z.never().optional(),
+    invoiceId: z.never().optional(),
+    orderId: z.never().optional(),
+    notes: z.never().optional(),
   }).strict(),
 ]);
 

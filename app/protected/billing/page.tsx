@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getPayerBilling } from '@/lib/services/PlatformService'
+import { getMembershipPaymentsDue, getPayerBilling } from '@/lib/services/PlatformService'
 import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
 import { CheckoutButton } from '@/components/payments/checkout-button'
 import { listMyRefundablePayments } from '@/lib/services/refund-service'
@@ -19,7 +19,7 @@ export default async function BillingPage() {
 
   // Receipts only carry a number, so match them to refundable payments by it.
   // A failed lookup just hides the per-receipt links; the Refunds page still works.
-  const [refundable, holdsResult] = await Promise.all([listMyRefundablePayments(), getPayableLessonHolds()])
+  const [refundable, holdsResult, membershipsDue] = await Promise.all([listMyRefundablePayments(), getPayableLessonHolds(), getMembershipPaymentsDue()])
   const heldLessons = holdsResult.success ? holdsResult.data : []
   const refundAttemptByReceipt = new Map<string, string>()
   if (refundable.ok) {
@@ -66,6 +66,24 @@ export default async function BillingPage() {
           </Card>
         )}
       </section>
+
+      {membershipsDue.length > 0 && (
+        <section id="membership" className="space-y-3" aria-labelledby="membership-payments-heading">
+          <div><h2 id="membership-payments-heading" className="text-xl font-semibold">Approved memberships waiting for payment</h2><p className="text-sm text-muted-foreground">Each membership becomes active as soon as its payment is confirmed.</p></div>
+          {membershipsDue.map((item) => (
+            <Card key={item.applicationId}>
+              <CardContent className="space-y-1 pt-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <span><span className="font-medium">{item.applicantName}</span> - {item.membershipName}</span>
+                  <span className="font-semibold">{formatZar(item.totalCents)}</span>
+                </div>
+                {item.joiningFeeCents !== '0' && <p className="text-sm text-muted-foreground">Includes a {formatZar(item.joiningFeeCents)} joining fee</p>}
+                {billing.providerAvailable ? <CheckoutButton membershipApplicationId={item.applicationId} /> : <p className="text-sm text-muted-foreground">Online payments are unavailable right now.</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      )}
 
       {heldLessons.length > 0 && (
         <section className="space-y-3" aria-labelledby="held-lessons-heading">

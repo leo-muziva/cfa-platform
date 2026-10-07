@@ -19,16 +19,23 @@ describe("consolidated member portal routing", () => {
     const layout = read("app/protected/layout.tsx");
     const navigation = read("components/portal/portal-navigation.tsx");
     expect(layout).toContain("{ href: '/protected', label: 'Profile' }");
-    expect(layout).not.toMatch(/label: ["'](?:Overview|Membership|Dependents)["']/);
+    expect(layout).not.toMatch(/label: ["'](?:Overview|Dependents)["']/);
     expect(navigation).toContain('href="/"');
     expect(navigation).toContain('aria-label="Cape Fencing Academy home"');
   });
 
+  it("gives membership its own section after Profile", () => {
+    const layout = read("app/protected/layout.tsx");
+    expect(layout).toContain("{ href: '/protected/membership', label: 'Membership' }");
+    expect(layout.indexOf("label: 'Membership'")).toBeGreaterThan(layout.indexOf("label: 'Profile'"));
+    expect(read("app/protected/page.tsx")).toContain('href="/protected/membership"');
+  });
+
   it("keeps legacy member destinations as compatibility redirects", () => {
     expect(read("app/protected/profile/page.tsx")).toContain("redirect('/protected')");
-    expect(read("app/protected/membership-request/page.tsx")).toContain("redirect('/protected')");
+    expect(read("app/protected/membership-request/page.tsx")).toContain("redirect('/protected/membership')");
     expect(read("app/protected/dependents/page.tsx")).toContain("redirect('/protected/family#dependents')");
-    expect(read("app/membership-portal/page.tsx")).toContain("redirect('/protected')");
+    expect(read("app/membership-portal/page.tsx")).toContain("redirect('/protected/membership')");
   });
 
   it("keeps dependent management on Family without a booking call to action", () => {

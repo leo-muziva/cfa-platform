@@ -41,7 +41,7 @@ function cents(value: string | number | null | undefined): number {
 }
 
 function toKind(value: string): PaymentKind {
-  return value === "booking" || value === "order" ? value : "invoice";
+  return value === "booking" || value === "order" || value === "membership" ? value : "invoice";
 }
 
 interface RefundablePaymentRow {

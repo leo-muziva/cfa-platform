@@ -40,10 +40,14 @@ select is(public.expire_lesson_holds(),1,'expired hold releases one booking');
 select is(public.expire_lesson_holds(),0,'hold expiration rerun is idempotent');
 select is((select status from public.bookings where id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1'),'cancelled','expired booking is cancelled');
 select is((select lifecycle_state from public.charges where id='ffffffff-ffff-4fff-8fff-fffffffffff1'),'voided','expired unpaid charge is voided');
-insert into public.payment_attempts(id,payer_id,provider,booking_id,amount_cents,idempotency_key)
-values('abcd0000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','mock',
+insert into public.payment_attempts(id,payer_id,provider,provider_reference,booking_id,amount_cents,idempotency_key)
+values('abcd0000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','payfast_sandbox','cfa-booking-late-test',
   'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1',30000,'booking-test-late-payment');
-select lives_ok($$select public.settle_payment_attempt('abcd0000-0000-4000-8000-000000000001','late-test')$$,'late payment settles safely');
+-- Late payments arrive through the verified provider webhook, which runs as service_role.
+set local role service_role;
+select lives_ok($$select public.record_payment_event('payfast_sandbox','late-test-event','late-test-payment',
+  'cfa-booking-late-test','succeeded',30000,'ZAR')$$,'late payment settles safely');
+reset role;
 select is((select count(*)::integer from public.payment_allocations where payment_attempt_id='abcd0000-0000-4000-8000-000000000001'),0,'late payment cannot allocate released booking');
 select is((select amount_cents from public.ledger_credits where payment_attempt_id='abcd0000-0000-4000-8000-000000000001'),30000::bigint,'late payment becomes account credit');
 select is((select status from public.bookings where id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1'),'cancelled','late payment never resurrects slot');

@@ -13,6 +13,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const capabilities = 'error' in context ? null : context.capabilities
   const links: PortalNavigationLink[] = [
     { href: '/protected', label: 'Profile' },
+    { href: '/protected/membership', label: 'Membership' },
     { href: '/protected/book', label: 'Book' },
     { href: '/protected/lessons', label: 'Lessons' },
     { href: '/protected/family', label: 'Family' },
