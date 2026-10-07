@@ -11,4 +11,13 @@ export interface FamilyChangeRequest {
   accepted_at: string | null;
   review_note: string | null;
   created_at: string;
+  // Names are only present where profile RLS lets the reader see that person.
+  dependent?: FamilyChangeParty | null;
+  old_guardian?: FamilyChangeParty | null;
+  new_guardian?: FamilyChangeParty | null;
+}
+
+export interface FamilyChangeParty {
+  full_name: string | null;
+  email: string;
 }

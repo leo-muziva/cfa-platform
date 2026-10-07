@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/server'
 import {
   getProfileById, updateProfile, getProfilesPage, adminUpdateProfile,
   getMemberStatsRows, getMembershipTypes, inviteMemberByEmail,
-  getHouseholdMembership, getHouseholdMembers, completeProfile, attachDependent,
+  getHouseholdMembership, getHouseholdMembers, completeProfile,
   getActiveBillingPayer,
 } from '@/lib/repositories/MemberRepository'
 import { getMembership } from '@/lib/repositories/PlatformRepository'
@@ -181,7 +181,3 @@ export async function getHouseholdAdminData() {
   return { profiles, memberships: await getHouseholdMembers() }
 }
 
-export async function attachDependentForAdmin(profileId: string, payerId: string) {
-  const guard = await requireAdmin()
-  return 'error' in guard ? guard : attachDependent(profileId, payerId)
-}

@@ -7,6 +7,7 @@ const links = [
   { href: '/protected/admin', label: 'Dashboard' },
   { href: '/protected/admin/members', label: 'Members' },
   { href: '/protected/admin/households', label: 'Households' },
+  { href: '/protected/admin/family-requests', label: 'Family requests' },
   { href: '/protected/admin/membership-requests', label: 'Requests' },
   { href: '/protected/admin/lessons', label: 'Lessons' },
   { href: '/protected/admin/coaches', label: 'Coaches' },
