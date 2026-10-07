@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { StatusControls } from "./StatusControls";
 import { ExportButtons } from "./ExportButtons";
+import { SupplierSheetPanel } from "./SupplierSheetPanel";
+import { getSheetsForBulkOrders } from "@/lib/repositories/supplier-sheet-repository";
+import { toSheetView } from "@/lib/services/supplier-sheet-view";
 
 const STATUS_LABELS: Record<string, string> = {
   collecting: "Collecting orders",
@@ -47,6 +50,7 @@ export default async function BulkOrdersPage() {
     .order("created_at", { ascending: false });
 
   const list = bulkOrders ?? [];
+  const sheets = await getSheetsForBulkOrders(list.map((bulk) => bulk.id));
 
   const cards = list.map(function (bulk) {
     const orders = bulk.orders ?? [];
@@ -168,6 +172,13 @@ export default async function BulkOrdersPage() {
         )}
 
         <ExportButtons bulkOrderId={bulk.id} />
+
+        <SupplierSheetPanel
+          bulkOrderId={bulk.id}
+          bulkStatus={bulk.status}
+          thresholdReached={total >= threshold}
+          sheet={sheets.has(bulk.id) ? toSheetView(sheets.get(bulk.id)!) : null}
+        />
 
         <StatusControls
           bulkOrderId={bulk.id}
