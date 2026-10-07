@@ -259,7 +259,10 @@ export async function getPayerBilling(): Promise<PayerBillingView | { error: str
   const context = await getCurrentAccountContext()
   if ('error' in context) return context
   if (!context.capabilities.canSeeHouseholdMoney) return { error: 'Forbidden' }
-  return getBillingForPayer(context.profile.id) as Promise<PayerBillingView>
+  const billing = await getBillingForPayer(context.profile.id) as PayerBillingView
+  // The repository only knows a gateway exists; checkout also needs the public
+  // return origin, so use the same check the payment service enforces.
+  return { ...billing, providerAvailable: onlinePaymentsAvailable() }
 }
 
 export async function runInvoicesForAdmin(period: string) {
