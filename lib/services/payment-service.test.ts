@@ -27,12 +27,11 @@ vi.mock("@/lib/repositories/payment-repository", () => ({
   findPaymentStatus: vi.fn(),
 }));
 
-const getResendConfig = vi.fn();
-const sendWithResend = vi.fn();
-vi.mock("@/lib/providers/resend-email", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/lib/providers/resend-email")>(),
-  getResendConfig: () => getResendConfig(),
-  sendWithResend: (...args: unknown[]) => sendWithResend(...args),
+const getEmailTransport = vi.fn();
+const sendEmail = vi.fn();
+vi.mock("@/lib/providers/email-transport", () => ({
+  getEmailTransport: () => getEmailTransport(),
+  sendEmail: (...args: unknown[]) => sendEmail(...args),
 }));
 
 import { onlinePaymentsAvailable, receivePaymentNotification, startPayment } from "./payment-service";
@@ -177,15 +176,15 @@ describe("shop order confirmation email", () => {
   beforeEach(() => {
     gateway.verifyWebhook.mockResolvedValue(settled);
     recordPaymentEvent.mockResolvedValue(true);
-    getResendConfig.mockReturnValue({ apiKey: "re_x", from: "no-reply@cfa.example" });
+    getEmailTransport.mockReturnValue({ kind: "smtp", config: { host: "smtp.example", port: 465, user: "u", password: "p", from: "no-reply@cfa.example" } });
     claimShopOrderConfirmation.mockResolvedValue(claim);
-    sendWithResend.mockResolvedValue({ ok: true });
+    sendEmail.mockResolvedValue({ ok: true });
   });
 
   it("emails the buyer once the payment is recorded", async () => {
     expect(await notify()).toBe(200);
     expect(claimShopOrderConfirmation).toHaveBeenCalledWith("payfast_sandbox", "cfaorder");
-    const email = sendWithResend.mock.calls[0][1];
+    const email = sendEmail.mock.calls[0][1];
     expect(email.to).toBe("buyer@example.test");
     expect(email.text).toContain("2 x Training jacket (size M)");
     expect(email.text).toContain("https://stage.example/protected/shop/orders");
@@ -194,11 +193,11 @@ describe("shop order confirmation email", () => {
   it("sends nothing when the claim is empty, such as a repeated notification", async () => {
     claimShopOrderConfirmation.mockResolvedValue(null);
     expect(await notify()).toBe(200);
-    expect(sendWithResend).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("releases the claim when Resend refuses, and still acknowledges the payment", async () => {
-    sendWithResend.mockResolvedValue({ ok: false, error: "Resend responded with 403" });
+  it("releases the claim when the mail server refuses, and still acknowledges the payment", async () => {
+    sendEmail.mockResolvedValue({ ok: false, error: "The mail server refused the email (550)." });
     expect(await notify()).toBe(200);
     expect(releaseShopOrderConfirmation).toHaveBeenCalledWith(orderId);
   });
@@ -207,7 +206,7 @@ describe("shop order confirmation email", () => {
     gateway.verifyWebhook.mockResolvedValue({ ...settled, status: "failed" });
     expect(await notify()).toBe(200);
     gateway.verifyWebhook.mockResolvedValue(settled);
-    getResendConfig.mockReturnValue(null);
+    getEmailTransport.mockReturnValue(null);
     expect(await notify()).toBe(200);
     expect(claimShopOrderConfirmation).not.toHaveBeenCalled();
   });
