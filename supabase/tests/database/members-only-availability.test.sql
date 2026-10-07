@@ -15,20 +15,20 @@ update public.coach_availability_rules set access_rule='active_members_only'
 where coach_id='22222222-2222-4222-8222-222222222222';
 
 select ok(public.lesson_time_is_members_only('22222222-2222-4222-8222-222222222222',
-  ((current_date + 2) + time '18:00') at time zone 'Africa/Johannesburg'), 'standing hours report members-only');
+  ((current_date + 12) + time '18:00') at time zone 'Africa/Johannesburg'), 'standing hours report members-only');
 select ok((select bool_and(members_only) from public.list_lesson_time_options('22222222-2222-4222-8222-222222222222','foil',
-  current_date + 2, current_date + 2)), 'time options label every slot members-only');
+  current_date + 12, current_date + 12)), 'time options label every slot members-only');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','95000000-0000-4000-8000-000000000002',true);
 select throws_ok($$select public.create_lesson_booking_v3('22222222-2222-4222-8222-222222222222',
-  ((current_date + 2) + time '18:00') at time zone 'Africa/Johannesburg',
+  ((current_date + 12) + time '18:00') at time zone 'Africa/Johannesburg',
   array['95000000-0000-4000-8000-000000000002']::uuid[],'foil','pay_now')$$,
   'P0001','members_only','a guest cannot book members-only hours');
 
 select set_config('request.jwt.claim.sub','95000000-0000-4000-8000-000000000001',true);
 select lives_ok($$select public.create_lesson_booking_v3('22222222-2222-4222-8222-222222222222',
-  ((current_date + 2) + time '18:00') at time zone 'Africa/Johannesburg',
+  ((current_date + 12) + time '18:00') at time zone 'Africa/Johannesburg',
   array['95000000-0000-4000-8000-000000000001']::uuid[],'foil','pay_later')$$,
   'an active member can book members-only hours');
 reset role;
@@ -39,15 +39,15 @@ select is((select ls.access_rule from public.bookings b join public.lesson_slots
 -- Extra one-off hours open the same time to everyone.
 insert into public.coach_availability_exceptions(coach_id,exception_type,starts_at,ends_at,reason,created_by)
 values('22222222-2222-4222-8222-222222222222','extra',
-  ((current_date + 3) + time '17:00') at time zone 'Africa/Johannesburg',
-  ((current_date + 3) + time '18:00') at time zone 'Africa/Johannesburg','Open session','22222222-2222-4222-8222-222222222222');
+  ((current_date + 13) + time '19:00') at time zone 'Africa/Johannesburg',
+  ((current_date + 13) + time '20:00') at time zone 'Africa/Johannesburg','Open session','22222222-2222-4222-8222-222222222222');
 select ok(not public.lesson_time_is_members_only('22222222-2222-4222-8222-222222222222',
-  ((current_date + 3) + time '17:00') at time zone 'Africa/Johannesburg'), 'extra hours are open to guests');
+  ((current_date + 13) + time '19:00') at time zone 'Africa/Johannesburg'), 'extra hours are open to guests');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','95000000-0000-4000-8000-000000000002',true);
 select lives_ok($$select public.create_lesson_booking_v3('22222222-2222-4222-8222-222222222222',
-  ((current_date + 3) + time '17:00') at time zone 'Africa/Johannesburg',
+  ((current_date + 13) + time '19:00') at time zone 'Africa/Johannesburg',
   array['95000000-0000-4000-8000-000000000002']::uuid[],'foil','pay_now')$$,
   'a guest can book open extra hours');
 reset role;
