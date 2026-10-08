@@ -7,3 +7,9 @@ export function safeInternalNext(value: string | null | undefined, fallback = '/
     return url.origin === 'https://internal.invalid' ? `${url.pathname}${url.search}${url.hash}` : fallback
   } catch { return fallback }
 }
+
+// Where a confirmation email link lands: /auth/confirm verifies the account,
+// then the login page says it is confirmed and continues to `next`.
+export function emailConfirmRedirect(origin: string, next: string): string {
+  return `${origin}/auth/confirm?next=${encodeURIComponent(`/auth/login?confirmed=1&next=${encodeURIComponent(next)}`)}`
+}
