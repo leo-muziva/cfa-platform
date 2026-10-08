@@ -1,5 +1,6 @@
 import "server-only";
 import { generateText, hasToolCall, isStepCount, tool, type LanguageModel } from "ai";
+import { formatZar } from "@/lib/money";
 import { z } from "zod";
 import type { SupplierLine } from "@/lib/services/bulk-order-export";
 import {
@@ -110,6 +111,7 @@ const INSTRUCTIONS = [
   "You may add your own findings for real problems you see, each tied to a lineKey.",
   "summary: 2 to 4 plain sentences for a non-technical staff member: item count, total, and what to check first.",
   "emailDraft: a short, polite plain-text note to the supplier asking them to process the attached order, quoting the bulk order reference, total items and total value in rands. No email addresses, links or placeholders.",
+  "Quote the item count and total value exactly as getSheetLines gives them (totalItems and totalValueText). Never add up prices yourself.",
   "When you have finished, call submitReview exactly once with your summary, findings and emailDraft. Do not answer in plain text.",
 ].join("\n");
 
@@ -157,6 +159,9 @@ function buildTools(context: ReviewContext, log: (step: Omit<ReviewStep, "stepNu
               reference: context.reference,
               paidOrderCount: context.paidOrderCount,
               totalLines: context.lines.length,
+              // Computed here so the model never has to add up prices.
+              totalItems: totals(context.lines).items,
+              totalValueText: rands(totals(context.lines).cents),
               untrusted_data: lines,
             },
           };
@@ -230,7 +235,31 @@ export function scrubAiText(text: string): { text: string; removed: boolean } {
 }
 
 function rands(cents: number): string {
-  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(cents / 100);
+  return formatZar(cents);
+}
+
+const AMOUNT_PATTERN = /\bR\s?(?:\d{1,3}(?:[ ,]\d{3})+|\d+)(?:\.\d{2})?(?!\d)|\b(?:\d{1,3}(?:[ ,]\d{3})+|\d+)(?:\.\d{2})?\s?rands?\b/gi;
+
+function amountCents(text: string): number | null {
+  const digits = text.replace(/rands?/i, "").replace(/^R/i, "").trim();
+  const decimal = digits.match(/[.,](\d{2})$/);
+  const whole = (decimal ? digits.slice(0, -3) : digits).replace(/\D/g, "");
+  if (!whole) return null;
+  return Number(whole) * 100 + (decimal ? Number(decimal[1]) : 0);
+}
+
+// Models are poor at arithmetic. Any rand amount the AI writes must be the
+// order total, a line total or a unit price from the sheet itself.
+export function findUnknownAmounts(text: string, lines: SupplierLine[]): string[] {
+  const allowed = new Set<number>([totals(lines).cents]);
+  for (const line of lines) {
+    allowed.add(line.lineTotalCents);
+    allowed.add(line.unitPriceCents);
+  }
+  return (text.match(AMOUNT_PATTERN) ?? []).filter((match) => {
+    const cents = amountCents(match);
+    return cents !== null && cents >= 100 && !allowed.has(cents);
+  });
 }
 
 function totals(lines: SupplierLine[]) {
@@ -362,7 +391,7 @@ export async function runSupplierReview(
   options: ReviewOptions = {}
 ): Promise<ReviewResult> {
   const timeoutMs = options.timeoutMs ?? 60_000;
-  const maxSteps = options.maxSteps ?? 6;
+  const maxSteps = options.maxSteps ?? 10;
   const steps: ReviewStep[] = [];
   const errors: string[] = [];
 
@@ -382,6 +411,10 @@ export async function runSupplierReview(
           " paid orders). Read the lines and rule findings with the tools, then return your review.",
         tools,
         stopWhen: [hasToolCall(SUBMIT_TOOL), isStepCount(maxSteps)],
+        // On the last allowed step only submitReview is offered, and it is
+        // required, so a model that keeps looking things up still answers.
+        prepareStep: ({ stepNumber }) =>
+          stepNumber >= maxSteps - 1 ? { activeTools: [SUBMIT_TOOL], toolChoice: { type: "tool", toolName: SUBMIT_TOOL } } : undefined,
         maxOutputTokens: 2000,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(timeoutMs),
@@ -394,6 +427,16 @@ export async function runSupplierReview(
       const summary = scrubAiText(output.summary);
       const email = scrubAiText(output.emailDraft);
       if (summary.removed || email.removed) flagReasons.push("summary or email contained an address or link");
+      const wrongAmounts = findUnknownAmounts(summary.text + "\n" + email.text, context.lines);
+      if (wrongAmounts.length > 0) {
+        // Keep the AI's findings, but never pass on a wrong figure.
+        flagReasons.push("quoted an amount that is not on the sheet (" + wrongAmounts.join(", ") + ")");
+        const t = totals(context.lines);
+        summary.text = "The AI quoted an amount that is not on the sheet, so its wording was replaced. " +
+          t.items + " items worth " + rands(t.cents) + ". " +
+          (findings.length === 0 ? "No problems found." : findings.length + (findings.length === 1 ? " point needs" : " points need") + " checking below.");
+        email.text = "";
+      }
 
       steps.push({
         stepNumber: steps.length,
