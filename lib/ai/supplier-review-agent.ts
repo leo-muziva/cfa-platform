@@ -110,7 +110,8 @@ const INSTRUCTIONS = [
   "Every rule finding must appear in your findings. You may add an explanation and a suggestion for each.",
   "You may add your own findings for real problems you see, each tied to a lineKey.",
   "summary: 2 to 4 plain sentences for a non-technical staff member: item count, total, and what to check first.",
-  "emailDraft: a short, polite plain-text note to the supplier asking them to process the attached order, quoting the bulk order reference, total items and total value in rands. No email addresses, links or placeholders.",
+  "emailDraft: a short, polite plain-text note to the supplier asking them to process the attached order, quoting the bulk order reference, total items and total value in rands. No email addresses, links or placeholders such as [Your Name]. Sign it off exactly as: Kind regards, Cape Fencing Academy.",
+  "A missing past average quantity only means CFA has not ordered that item before. Do not report it.",
   "Quote the item count and total value exactly as getSheetLines gives them (totalItems and totalValueText). Never add up prices yourself.",
   "When you have finished, call submitReview exactly once with your summary, findings and emailDraft. Do not answer in plain text.",
 ].join("\n");
@@ -246,6 +247,8 @@ export function scrubAiText(text: string): { text: string; removed: boolean } {
 function rands(cents: number): string {
   return formatZar(cents);
 }
+
+const PLACEHOLDER_PATTERN = /\[[^\]\n]{1,60}\]/;
 
 const AMOUNT_PATTERN = /\bR\s?(?:\d{1,3}(?:[ ,]\d{3})+|\d+)(?:\.\d{2})?(?!\d)|\b(?:\d{1,3}(?:[ ,]\d{3})+|\d+)(?:\.\d{2})?\s?rands?\b/gi;
 
@@ -436,6 +439,11 @@ export async function runSupplierReview(
       const summary = scrubAiText(output.summary);
       const email = scrubAiText(output.emailDraft);
       if (summary.removed || email.removed) flagReasons.push("summary or email contained an address or link");
+      // A bracketed placeholder means the model did not finish the email.
+      if (PLACEHOLDER_PATTERN.test(email.text)) {
+        flagReasons.push("email contained a placeholder");
+        email.text = "";
+      }
       const wrongAmounts = findUnknownAmounts(summary.text + "\n" + email.text, context.lines);
       if (wrongAmounts.length > 0) {
         // Keep the AI's findings, but never pass on a wrong figure.
