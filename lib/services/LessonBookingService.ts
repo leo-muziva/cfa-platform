@@ -86,16 +86,19 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
     ...context,
     errorCode: context.error === 'Not authenticated' ? 'not_authenticated' as const : 'forbidden' as const,
   }
-  const coachesResult = await listLessonCoaches()
+  // These three do not depend on each other. Lapsed pay-now holds still
+  // occupy their slot until released, so that finishes before times load.
+  const [coachesResult, participantsResult] = await Promise.all([
+    listLessonCoaches(),
+    listEligibleLessonParticipants(context.profile.id, context.capabilities.isAdmin),
+    releaseExpiredLessonHolds(),
+  ])
   if (!coachesResult.success) return pageError(coachesResult)
   const coach = coachesResult.data.find((item) => item.coachId === coachId)
   if (!coach) return { error: 'Coach not found', errorCode: 'not_found' as const }
-  const participantsResult = await listEligibleLessonParticipants(context.profile.id, context.capabilities.isAdmin)
   if (!participantsResult.success) return pageError(participantsResult)
   const filtersResult = lessonAvailabilitySchema.safeParse({ coachId, weapon: coach.weapons[0], ...rawFilters as object })
   if (!filtersResult.success) return { error: 'Check the lesson filters and try again.', errorCode: 'invalid_input' as const }
-  // Lapsed pay-now holds still occupy their slot until released.
-  await releaseExpiredLessonHolds()
   const optionsResult = await listLessonTimeOptions(filtersResult.data)
   if (!optionsResult.success) return pageError(optionsResult)
   return {
