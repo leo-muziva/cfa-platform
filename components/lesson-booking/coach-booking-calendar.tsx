@@ -83,6 +83,7 @@ export function CoachBookingCalendar({
     defaultParticipant ? [defaultParticipant.id] : [],
   );
   const [attemptedSlot, setAttemptedSlot] = useState<LessonTimeOption | null>(null);
+  const [paymentChoice, setPaymentChoice] = useState<"pay_now" | "pay_later">("pay_later");
   const [state, formAction, pending] = useFormAction(createAction, initialActionState);
 
   const timesForDate = timesForLessonDate(times, selectedDate);
@@ -278,13 +279,18 @@ export function CoachBookingCalendar({
               <p className="text-sm text-white/85">Guest lessons are paid now. Your slot is held while you complete secure checkout.</p>
             </>
           ) : paymentsAvailable ? (
-            <label className="block space-y-2 text-sm">
-              <span>Payment option</span>
-              <select name="paymentOption" defaultValue="pay_later" className="min-h-12 w-full rounded-xl border border-white/30 bg-[#25145c] px-3 text-white">
-                <option value="pay_later">Pay later on my invoice</option>
-                <option value="pay_now">Pay now (secure checkout)</option>
-              </select>
-            </label>
+            <fieldset className="space-y-2 text-sm">
+              <legend className="mb-2">How would you like to pay?</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {([["pay_now", "Pay now", "Secure checkout"], ["pay_later", "Pay later", "On my monthly invoice"]] as const).map(([option, label, hint]) => (
+                  <label key={option} className={"cursor-pointer rounded-xl border px-3 py-2.5 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-white " + (paymentChoice === option ? "border-white bg-white text-[#25145c]" : "border-white/30 text-white hover:border-white/60")}>
+                    <input type="radio" name="paymentOption" value={option} checked={paymentChoice === option} onChange={() => setPaymentChoice(option)} className="sr-only" />
+                    <span className="block font-semibold">{label}</span>
+                    <span className={"block text-xs " + (paymentChoice === option ? "text-[#25145c]/75" : "text-white/70")}>{hint}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           ) : (
             <input type="hidden" name="paymentOption" value="pay_later" />
           ))}
@@ -294,7 +300,7 @@ export function CoachBookingCalendar({
             <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
           )}
           <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
-            {pending ? "Booking…" : requiresPayNow ? "Book and pay now" : "Confirm booking"}
+            {pending ? "Booking…" : requiresPayNow || (paymentsAvailable && canSeeQuote && paymentChoice === "pay_now") ? "Book and pay now" : "Confirm booking"}
           </Button>
         </ValidatedForm>
       </aside>
