@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { GlassButton } from "@/components/ui/glass-auth";
 import { GlassDialog } from "@/components/ui/glass-dialog";
 import {
+  capeTownDateKey,
   formatCapeTownCompactDate,
   formatCapeTownDate,
   formatCapeTownLessonDate,
@@ -19,9 +20,7 @@ import {
   lessonBillingCopy,
   lessonBillingDetailCopy,
   firstAvailableLessonTime,
-  lessonDateHasAvailableTime,
   lessonDates,
-  timesForLessonDate,
   toggleLessonParticipant,
 } from "@/lib/lesson-booking-ui";
 import Link from "next/link";
@@ -74,7 +73,21 @@ export function CoachBookingCalendar({
 }) {
   const router = useRouter();
   const availableDates = useMemo(() => lessonDates(times), [times]);
-  const initialDate = availableDates.find((date) => lessonDateHasAvailableTime(times, date)) ?? availableDates[0] ?? "";
+  // Group once: the date strip and time list would otherwise rescan every
+  // time for every date on each render.
+  const timesByDate = useMemo(() => {
+    const grouped = new Map<string, LessonTimeOption[]>();
+    for (const time of times) {
+      const key = capeTownDateKey(time.startsAt);
+      grouped.set(key, [...(grouped.get(key) ?? []), time]);
+    }
+    return grouped;
+  }, [times]);
+  const datesWithOpenTimes = useMemo(
+    () => new Set([...timesByDate].filter(([, dayTimes]) => dayTimes.some((time) => time.isAvailable)).map(([date]) => date)),
+    [timesByDate],
+  );
+  const initialDate = availableDates.find((date) => datesWithOpenTimes.has(date)) ?? availableDates[0] ?? "";
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [selectedTime, setSelectedTime] = useState(() => firstAvailableLessonTime(times, initialDate)?.startsAt ?? "");
   const [selectedWeapon, setSelectedWeapon] = useState<Weapon>(coach.weapons[0]);
@@ -86,7 +99,7 @@ export function CoachBookingCalendar({
   const [paymentChoice, setPaymentChoice] = useState<"pay_now" | "pay_later">("pay_later");
   const [state, formAction, pending] = useFormAction(createAction, initialActionState);
 
-  const timesForDate = timesForLessonDate(times, selectedDate);
+  const timesForDate = timesByDate.get(selectedDate) ?? [];
   const hasAvailableTimes = times.some((time) => time.isAvailable);
   const selected = times.find((time) => time.startsAt === selectedTime && time.isAvailable) ?? null;
   const quote = quotes.find(
@@ -181,7 +194,7 @@ export function CoachBookingCalendar({
           </div>
           <div className="mt-5 flex flex-wrap gap-2" aria-label="Dates with scheduled lesson times">
             {availableDates.map((date) => {
-              const isAvailable = lessonDateHasAvailableTime(times, date);
+              const isAvailable = datesWithOpenTimes.has(date);
               const isSelected = selectedDate === date;
               return (
                 <button key={date} type="button" onClick={() => chooseDate(date)} disabled={!isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownCompactDate(date)}${isAvailable ? "" : ", unavailable"}`} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] dark:focus-visible:outline-violet-300 " + (isSelected ? "bg-[#2d176b] text-white dark:bg-violet-600" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40 dark:enabled:border-white/15 dark:enabled:text-white/75 dark:enabled:hover:border-white/40") + (!isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-white/40" : "")}>

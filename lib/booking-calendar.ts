@@ -2,58 +2,47 @@ import type { BookableLessonSlot } from "@/types/domain";
 
 const CAPE_TOWN_TIME_ZONE = "Africa/Johannesburg";
 
+// Building an Intl.DateTimeFormat is far slower than using one, and the
+// booking calendar formats hundreds of times per render, so each format is
+// created once.
+const DATE_KEY_FORMAT = new Intl.DateTimeFormat("en-ZA", {
+  timeZone: CAPE_TOWN_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+});
+const LONG_DATE_FORMAT = new Intl.DateTimeFormat("en-ZA", {
+  timeZone: CAPE_TOWN_TIME_ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric",
+});
+const COMPACT_DATE_FORMAT = new Intl.DateTimeFormat("en-ZA", {
+  timeZone: CAPE_TOWN_TIME_ZONE, weekday: "short", day: "numeric", month: "short",
+});
+const TIME_FORMAT = new Intl.DateTimeFormat("en-ZA", {
+  timeZone: CAPE_TOWN_TIME_ZONE, hour: "2-digit", minute: "2-digit", hour12: false,
+});
+
 export function capeTownDateKey(isoDate: string): string {
-  const parts = new Intl.DateTimeFormat("en-ZA", {
-    timeZone: CAPE_TOWN_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date(isoDate));
+  const parts = DATE_KEY_FORMAT.formatToParts(new Date(isoDate));
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${value.year}-${value.month}-${value.day}`;
 }
 export function formatCapeTownDate(dateKey: string): string {
-  const parts = new Intl.DateTimeFormat("en-ZA", {
-    timeZone: CAPE_TOWN_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).formatToParts(new Date(`${dateKey}T12:00:00+02:00`));
+  const parts = LONG_DATE_FORMAT.formatToParts(new Date(`${dateKey}T12:00:00+02:00`));
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${value.weekday}, ${Number(value.day)} ${value.month} ${value.year}`;
 }
 
 export function formatCapeTownCompactDate(dateKey: string): string {
-  const parts = new Intl.DateTimeFormat("en-ZA", {
-    timeZone: CAPE_TOWN_TIME_ZONE,
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).formatToParts(new Date(`${dateKey}T12:00:00+02:00`));
+  const parts = COMPACT_DATE_FORMAT.formatToParts(new Date(`${dateKey}T12:00:00+02:00`));
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${value.weekday}, ${Number(value.day)} ${value.month}`;
 }
 
 export function formatCapeTownLessonDate(isoDate: string): string {
-  const parts = new Intl.DateTimeFormat("en-ZA", {
-    timeZone: CAPE_TOWN_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).formatToParts(new Date(isoDate));
+  const parts = LONG_DATE_FORMAT.formatToParts(new Date(isoDate));
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${value.weekday}, ${Number(value.day)} ${value.month} ${value.year}, ${formatCapeTownTime(isoDate)}`;
 }
 
 export function formatCapeTownTime(isoDate: string): string {
-  return new Intl.DateTimeFormat("en-ZA", {
-    timeZone: CAPE_TOWN_TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(isoDate));
+  return TIME_FORMAT.format(new Date(isoDate));
 }
 
 export function getAvailableDateKeys(slots: BookableLessonSlot[]): string[] {
