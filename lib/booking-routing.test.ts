@@ -26,7 +26,7 @@ describe('protected booking routing', () => {
 
   it('removes public booking navigation and carries booking through signup confirmation', () => {
     expect(publicNavigation).not.toContain('href: "/book"')
-    expect(signup).toContain('/auth/confirm?next=')
-    expect(signup).toContain('encodeURIComponent(next)')
+    // The URL itself is covered by emailConfirmRedirect's tests in auth-next.test.ts.
+    expect(signup).toContain('emailConfirmRedirect(window.location.origin, next)')
   })
 })
