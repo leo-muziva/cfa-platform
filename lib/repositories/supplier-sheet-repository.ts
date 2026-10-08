@@ -393,3 +393,62 @@ export async function finishAiRun(runId: string, finish: RunFinish, steps: Revie
     })
     .eq("id", runId);
 }
+
+export interface AiRunStepRow {
+  step_number: number;
+  provider: string | null;
+  tool_name: string | null;
+  row_count: number | null;
+  duration_ms: number | null;
+}
+
+export interface AiRunRow {
+  id: string;
+  status: "running" | "succeeded" | "fell_back" | "rules_only" | "failed";
+  provider: string | null;
+  model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  latency_ms: number | null;
+  flagged: boolean;
+  flag_reason: string | null;
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
+  triggered_by_profile: { full_name: string | null } | null;
+  ai_run_steps: AiRunStepRow[];
+}
+
+// Admin-only by RLS. The newest runs first, each with its tool steps.
+export async function listAiRuns(sheetId: string, limit = 20): Promise<AiRunRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ai_runs")
+    .select("id,status,provider,model,input_tokens,output_tokens,latency_ms,flagged,flag_reason,error,created_at,finished_at," +
+      "triggered_by_profile:profiles!ai_runs_triggered_by_fkey(full_name)," +
+      "ai_run_steps(step_number,provider,tool_name,row_count,duration_ms)")
+    .eq("sheet_id", sheetId)
+    .order("created_at", { ascending: false })
+    .order("step_number", { referencedTable: "ai_run_steps", ascending: true })
+    .limit(limit);
+  return error ? [] : (data as unknown as AiRunRow[]);
+}
+
+export interface SheetEventRow {
+  event_type: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+// Generate, proof, draft and send events for one sheet, newest first.
+export async function listSheetEvents(sheetId: string, limit = 30): Promise<SheetEventRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("audit_events")
+    .select("event_type,metadata,created_at")
+    .eq("entity_type", "supplier_order_sheet")
+    .eq("entity_id", sheetId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return error ? [] : (data as SheetEventRow[]);
+}

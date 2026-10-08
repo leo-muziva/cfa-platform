@@ -1,4 +1,5 @@
 import "server-only";
+import { cleanErrorText } from "@/lib/clean-error";
 import { groupSupplierLines, type SupplierLine } from "@/lib/services/bulk-order-export";
 import {
   compareSupplierLines,
@@ -49,6 +50,7 @@ export type ProofOutcome =
 
 const AI_COOLDOWN_MS = 30_000;
 const SIGNED_URL_SECONDS = 300;
+const XLSX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 function fail<T>(code: SheetErrorCode, message?: string): SheetResult<T> {
   return { ok: false, code, message };
@@ -268,7 +270,7 @@ async function reviewSheet(
       latencyMs: Date.now() - started,
       flagged: review.flagged,
       flagReason: review.flagReasons.join("; ") || null,
-      error: review.errors.join("; ") || null,
+      error: review.errors.length ? cleanErrorText(review.errors.join("; "), 1000) : null,
     },
     review.steps
   );
@@ -373,16 +375,20 @@ export async function approveAndCreateDraft(
   if (!checked.ok) return checked;
   if (!checked.data.check.matches) return fail("needs_approval");
 
-  const url = await repo.createSheetSignedUrl(sheet.snapshotPath, SIGNED_URL_SECONDS, supplierSheetFileName(sheet.generatedAt));
-  if (!url) return fail("storage_failed");
+  const file = await repo.downloadSheetFile(sheet.snapshotPath);
+  if (!file) return fail("storage_failed");
 
   const draft = await gmail.createDraft({
     recipient,
     subject: "Cape Fencing Academy order " + bulk.reference,
     body: input.emailBody,
-    attachmentUrl: url,
+    attachment: { name: supplierSheetFileName(sheet.generatedAt), mimeType: XLSX_MIME_TYPE, content: file },
   });
-  if (!draft.ok) return fail("gmail_failed", draft.error);
+  if (!draft.ok) {
+    // Kept so staff (and the AI run log) can see why Gmail refused.
+    await repo.logSheetEvent(sheet.id, "supplier_sheet.draft_failed", { error: draft.error });
+    return fail("gmail_failed", draft.error);
+  }
 
   const updated = await repo.updateSheet(sheet.id, ["proofed"], {
     status: "approved",
@@ -446,4 +452,21 @@ export async function getSheetPreview(bulkOrderId: string): Promise<SheetResult<
   } catch {
     return fail("storage_failed");
   }
+}
+
+export interface AiRunLog {
+  reference: string;
+  runs: repo.AiRunRow[];
+  events: repo.SheetEventRow[];
+}
+
+// Evidence for staff that the AI proof ran: every run with its provider,
+// model, tokens, time, tool calls and errors, plus the sheet's history.
+export async function getAiRunLog(bulkOrderId: string): Promise<SheetResult<AiRunLog>> {
+  const bulk = await repo.getBulkOrderSummary(bulkOrderId);
+  if (!bulk) return fail("bulk_order_not_found");
+  const sheet = await repo.getSheet(bulkOrderId);
+  if (!sheet) return fail("no_sheet");
+  const [runs, events] = await Promise.all([repo.listAiRuns(sheet.id), repo.listSheetEvents(sheet.id)]);
+  return { ok: true, data: { reference: bulk.reference, runs, events } };
 }

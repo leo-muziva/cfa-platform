@@ -200,9 +200,23 @@ describe("approveAndCreateDraft", () => {
       recipient: "orders@supplier.example",
       subject: "Cape Fencing Academy order BO-TEST",
       body: "Please process.",
-      attachmentUrl: "https://storage.example/signed",
+      attachment: {
+        name: expect.stringMatching(/^CFA Equipment Order - \d{1,2} \w{3} \d{4}\.xlsx$/),
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        content: expect.any(Buffer),
+      },
     });
+    expect(mocked.createSheetSignedUrl).not.toHaveBeenCalled();
     expect(mocked.updateSheet.mock.calls.at(-1)?.[2]).toMatchObject({ status: "approved", gmail_draft_id: "r-123" });
+  });
+
+  it("records why Gmail refused and leaves the sheet proofed", async () => {
+    mocked.getSheet.mockResolvedValue(sheet({ status: "proofed" }));
+    createDraft.mockResolvedValue({ ok: false, error: "Invalid attachment" });
+    const result = await approveAndCreateDraft(BULK.id, ADMIN, { emailBody: "Please process." }, env);
+    expect(result).toMatchObject({ ok: false, code: "gmail_failed", message: "Invalid attachment" });
+    expect(mocked.logSheetEvent).toHaveBeenCalledWith(expect.any(String), "supplier_sheet.draft_failed", { error: "Invalid attachment" });
+    expect(mocked.updateSheet.mock.calls.some((call) => (call[2] as { status?: string }).status === "approved")).toBe(false);
   });
 });
 

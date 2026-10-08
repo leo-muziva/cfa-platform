@@ -1,5 +1,5 @@
 import "server-only";
-import { generateText, isStepCount, Output, tool, type LanguageModel } from "ai";
+import { generateText, hasToolCall, isStepCount, tool, type LanguageModel } from "ai";
 import { z } from "zod";
 import type { SupplierLine } from "@/lib/services/bulk-order-export";
 import {
@@ -110,7 +110,12 @@ const INSTRUCTIONS = [
   "You may add your own findings for real problems you see, each tied to a lineKey.",
   "summary: 2 to 4 plain sentences for a non-technical staff member: item count, total, and what to check first.",
   "emailDraft: a short, polite plain-text note to the supplier asking them to process the attached order, quoting the bulk order reference, total items and total value in rands. No email addresses, links or placeholders.",
+  "When you have finished, call submitReview exactly once with your summary, findings and emailDraft. Do not answer in plain text.",
 ].join("\n");
+
+// The review is returned by calling this tool rather than through a JSON
+// response mode: Groq and Gemini refuse JSON mode combined with tool calls.
+const SUBMIT_TOOL = "submitReview";
 
 function trimText(value: string): string {
   return value.length > MAX_TEXT ? value.slice(0, MAX_TEXT) + "..." : value;
@@ -189,6 +194,14 @@ function buildTools(context: ReviewContext, log: (step: Omit<ReviewStep, "stepNu
               : { found: false },
           };
         }),
+    }),
+    [SUBMIT_TOOL]: tool({
+      description: "Submit the finished review. Call this once, last.",
+      inputSchema: reviewOutputSchema,
+      execute: async () => {
+        log({ toolName: SUBMIT_TOOL, toolArgs: {}, rowCount: null, durationMs: 0 });
+        return { received: true };
+      },
     }),
     getPastBatchStats: tool({
       description: "Returns the average quantity CFA ordered for an item code in earlier bulk orders.",
@@ -368,14 +381,15 @@ export async function runSupplierReview(
           "Review bulk order " + context.reference + " (" + context.paidOrderCount +
           " paid orders). Read the lines and rule findings with the tools, then return your review.",
         tools,
-        output: Output.object({ schema: reviewOutputSchema }),
-        stopWhen: isStepCount(maxSteps),
+        stopWhen: [hasToolCall(SUBMIT_TOOL), isStepCount(maxSteps)],
         maxOutputTokens: 2000,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(timeoutMs),
       });
 
-      const output = reviewOutputSchema.parse(result.output);
+      const submitted = result.steps.flatMap((step) => step.toolCalls).filter((call) => call.toolName === SUBMIT_TOOL).at(-1);
+      if (!submitted) throw new Error("The model finished without submitting a review.");
+      const output = reviewOutputSchema.parse(submitted.input);
       const { findings, flagReasons } = mergeFindings(context, output);
       const summary = scrubAiText(output.summary);
       const email = scrubAiText(output.emailDraft);

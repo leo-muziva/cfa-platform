@@ -1,5 +1,6 @@
 import "server-only";
 import { Composio } from "@composio/core";
+import { cleanErrorText } from "@/lib/clean-error";
 
 // Creates a Gmail draft in CFA's ordering mailbox through Composio. Only
 // the draft action is ever called: nothing here can send mail. A person
@@ -10,13 +11,23 @@ import { Composio } from "@composio/core";
 // someone's personal account.
 
 const DRAFT_TOOL = "GMAIL_CREATE_EMAIL_DRAFT";
+const GMAIL_TOOLKIT = "gmail";
+// Kept as a named export for this provider's callers and tests.
+export const cleanProviderError = (message: string) => cleanErrorText(message);
+
+export interface GmailDraftAttachment {
+  name: string;
+  mimeType: string;
+  content: Buffer;
+}
 
 export interface GmailDraftInput {
   recipient: string;
   subject: string;
   body: string;
-  // A short-lived signed URL; Composio downloads and attaches the file.
-  attachmentUrl: string;
+  // The saved spreadsheet itself. It is uploaded to Composio here, so no
+  // link to our storage ever leaves the server.
+  attachment: GmailDraftAttachment;
 }
 
 export type GmailDraftResult = { ok: true; draftId: string | null } | { ok: false; error: string };
@@ -56,11 +67,15 @@ export function extractDraftId(data: Record<string, unknown>): string | null {
 }
 
 export function createComposioGmailProvider(config: ComposioGmailConfig): GmailDraftProvider {
+  // Automatic file staging stays off (the SDK default): it would let tool
+  // arguments name files on this server. The attachment is staged explicitly.
   const composio = new Composio({ apiKey: config.apiKey });
 
   return {
     async createDraft(input) {
       try {
+        const file = new File([new Uint8Array(input.attachment.content)], input.attachment.name, { type: input.attachment.mimeType });
+        const staged = await composio.files.upload({ file, toolSlug: DRAFT_TOOL, toolkitSlug: GMAIL_TOOLKIT });
         const response = await composio.tools.execute(
           DRAFT_TOOL,
           {
@@ -72,17 +87,17 @@ export function createComposioGmailProvider(config: ComposioGmailConfig): GmailD
               subject: input.subject,
               body: input.body,
               is_html: false,
-              attachment: input.attachmentUrl,
+              attachment: { name: staged.name, mimetype: staged.mimetype, s3key: staged.s3key },
             },
           },
           { signal: AbortSignal.timeout(30_000) }
         );
         if (!response.successful) {
-          return { ok: false, error: response.error ?? "Gmail did not accept the draft." };
+          return { ok: false, error: cleanProviderError(response.error ?? "Gmail did not accept the draft.") };
         }
         return { ok: true, draftId: extractDraftId(response.data) };
       } catch (error) {
-        return { ok: false, error: error instanceof Error ? error.message.slice(0, 200) : "Could not reach Composio." };
+        return { ok: false, error: error instanceof Error ? cleanProviderError(error.message) : "Could not reach Composio." };
       }
     },
   };

@@ -178,6 +178,14 @@ export function SupplierSheetPanel({
             </button>
           )}
           {!sheet ? <p className="mt-1 text-xs text-muted-foreground">Available once the spreadsheet is generated.</p> : null}
+          {sheet ? (
+            <Link href={`/protected/admin/bulk-orders/${bulkOrderId}/ai-runs`} className="mt-2 ml-2 inline-block text-sm underline underline-offset-4">
+              View AI run log
+            </Link>
+          ) : null}
+          {sheet?.modelUsed && proofed ? (
+            <p className="mt-1 text-xs text-muted-foreground">Reviewed by: {sheet.modelUsed}</p>
+          ) : null}
 
           {sheet && sheet.checkMatches && proofed ? (
             <p className="mt-2 text-sm text-green-700 dark:text-green-400">{sheet.checkDescription}</p>
