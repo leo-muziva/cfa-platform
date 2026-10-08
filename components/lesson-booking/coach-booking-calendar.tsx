@@ -324,9 +324,8 @@ export function CoachBookingCalendar({
           {state.checkoutRequired && (
             <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
           )}
-          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="group relative min-h-12 w-full overflow-hidden rounded-full bg-[#ffffff] text-base font-semibold text-[#25145c] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffffff] hover:shadow-lg active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-none">
+          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-[#ffffff] text-base font-semibold text-[#25145c] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffffff] hover:shadow-lg active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-none">
             {pending ? "Booking…" : "Book"}
-            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-2/3 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-[#7c5cff]/25 to-transparent transition-[left] duration-700 ease-out group-hover:left-[130%] motion-reduce:hidden" />
           </Button>
         </ValidatedForm>
       </aside>
