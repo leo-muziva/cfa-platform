@@ -2,6 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import type { SupplierLine } from "./bulk-order-export";
 import type { Severity } from "./supplier-sheet";
+import { formatRands } from "@/lib/money";
 
 // Builds and reads back the supplier order xlsx. The AI never writes to
 // this file: every cell comes from paid orders in the database.
@@ -177,4 +178,38 @@ export async function readSupplierWorkbook(buffer: Buffer | ArrayBuffer): Promis
     });
   }
   return lines;
+}
+
+export interface WorkbookGrid {
+  name: string;
+  rows: string[][];
+}
+
+const PREVIEW_ROW_LIMIT = 1000;
+
+function previewText(cell: ExcelJS.Cell): string {
+  const text = cellText(cell.value);
+  // Money cells hold plain numbers with a rand format; show them as rands.
+  if (typeof cell.value === "number" && (cell.numFmt ?? "").includes("R")) return formatRands(cell.value);
+  return text;
+}
+
+// Every sheet as display text, so staff can check the file in the browser
+// without Excel. The file itself is unchanged.
+export async function readWorkbookGrid(buffer: Buffer | ArrayBuffer): Promise<WorkbookGrid[]> {
+  const workbook = new ExcelJS.Workbook();
+  try {
+    await workbook.xlsx.load(buffer as ArrayBuffer);
+  } catch {
+    throw new SupplierWorkbookError("The saved spreadsheet could not be opened.");
+  }
+  return workbook.worksheets.map((sheet) => {
+    const rows: string[][] = [];
+    const width = sheet.columnCount;
+    for (let r = 1; r <= Math.min(sheet.rowCount, PREVIEW_ROW_LIMIT); r++) {
+      const row = sheet.getRow(r);
+      rows.push(Array.from({ length: width }, (_, c) => previewText(row.getCell(c + 1))));
+    }
+    return { name: sheet.name, rows };
+  });
 }

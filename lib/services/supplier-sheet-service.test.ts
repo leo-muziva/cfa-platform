@@ -35,8 +35,10 @@ import {
   approveAndCreateDraft,
   approveUpdatedSheet,
   generateSheet,
+  getSheetPreview,
   markSheetSent,
   runAiProof,
+  supplierSheetFileName,
 } from "./supplier-sheet-service";
 
 const mocked = vi.mocked(repo);
@@ -210,5 +212,31 @@ describe("markSheetSent", () => {
     expect(await markSheetSent(BULK.id)).toMatchObject({ ok: false, code: "not_approved" });
     mocked.getSheet.mockResolvedValue(sheet({ status: "approved" }));
     expect(await markSheetSent(BULK.id)).toMatchObject({ ok: true });
+  });
+});
+
+describe("supplierSheetFileName", () => {
+  it("names the file after the club and the Cape Town date it was generated", () => {
+    expect(supplierSheetFileName("2026-10-08T21:30:00Z")).toBe("CFA Equipment Order - 8 Oct 2026.xlsx");
+    expect(supplierSheetFileName("2026-10-08T10:00:00Z", true)).toBe("CFA Equipment Order - 8 Oct 2026 (with notes).xlsx");
+  });
+});
+
+describe("getSheetPreview", () => {
+  it("reads the saved file back for the browser preview", async () => {
+    mocked.getBulkOrderSummary.mockResolvedValue(BULK as never);
+    mocked.getSheet.mockResolvedValue({ id: "s1", snapshotPath: BULK.id + "/BO-TEST-supplier-order.xlsx", generatedAt: "2026-10-08T10:00:00Z", aiFindings: null } as never);
+    const lines = [{ itemCode: "EF01", name: "Sabre", category: "Weapons", size: "", hand: "RH", quantity: 1, unitPriceCents: 91300, lineTotalCents: 91300 }];
+    mocked.downloadSheetFile.mockResolvedValue(await buildSupplierWorkbook(lines, { reference: "BO-TEST", generatedAt: new Date(), status: "DRAFT" }));
+    const result = await getSheetPreview(BULK.id);
+    expect(result.ok && result.data.fileName).toBe("CFA Equipment Order - 8 Oct 2026.xlsx");
+    expect(result.ok && result.data.sheets[0].rows.some((row) => row.includes("EF01"))).toBe(true);
+    expect(mocked.downloadSheetFile).toHaveBeenCalledWith(BULK.id + "/BO-TEST-supplier-order.xlsx");
+  });
+
+  it("reports a missing sheet", async () => {
+    mocked.getBulkOrderSummary.mockResolvedValue(BULK as never);
+    mocked.getSheet.mockResolvedValue(null);
+    expect(await getSheetPreview(BULK.id)).toEqual({ ok: false, code: "no_sheet", message: undefined });
   });
 });

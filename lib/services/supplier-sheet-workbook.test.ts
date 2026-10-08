@@ -5,7 +5,7 @@ vi.mock("server-only", () => ({}));
 
 import type { SupplierLine } from "./bulk-order-export";
 import { compareSupplierLines } from "./supplier-sheet";
-import { buildSupplierWorkbook, readSupplierWorkbook, SupplierWorkbookError } from "./supplier-sheet-workbook";
+import { buildSupplierWorkbook, readSupplierWorkbook, readWorkbookGrid, SupplierWorkbookError } from "./supplier-sheet-workbook";
 
 const lines: SupplierLine[] = [
   { itemCode: "EF124", name: "Sabre Glove", category: "Gloves", size: "M", hand: "RH", quantity: 3, unitPriceCents: 45050, lineTotalCents: 135150 },
@@ -63,5 +63,21 @@ describe("supplier workbook", () => {
 
   it("rejects a file that is not a spreadsheet", async () => {
     await expect(readSupplierWorkbook(Buffer.from("not a spreadsheet"))).rejects.toBeInstanceOf(SupplierWorkbookError);
+  });
+});
+
+describe("readWorkbookGrid", () => {
+  it("returns every sheet as display text with rand amounts formatted", async () => {
+    const buffer = await buildSupplierWorkbook(lines, header);
+    const [sheet] = await readWorkbookGrid(buffer);
+    expect(sheet.name).toBe("Supplier order");
+    expect(sheet.rows[1]).toEqual(expect.arrayContaining(["BO-20261005"]));
+    const glove = sheet.rows.find((row) => row[0] === "EF124" && row[4] === "RH")!;
+    expect(glove).toEqual(expect.arrayContaining(["3", "R450.50", "R1 351.50"]));
+    expect(sheet.rows.at(-1)).toEqual(expect.arrayContaining(["Total", "R3 738.00"]));
+  });
+
+  it("refuses a file that is not a workbook", async () => {
+    await expect(readWorkbookGrid(Buffer.from("not a spreadsheet"))).rejects.toBeInstanceOf(SupplierWorkbookError);
   });
 });
