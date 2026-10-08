@@ -13,7 +13,8 @@ import {
 } from "./sheet-actions";
 import type { SheetFindingRowView, SheetView } from "@/lib/services/supplier-sheet-view";
 
-const dateTime = new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeStyle: "short" });
+// Fixed to Cape Town time so the server render and the browser agree.
+const dateTime = new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Johannesburg" });
 
 const SEVERITY_STYLES: Record<SheetFindingRowView["severity"], { label: string; className: string }> = {
   high: { label: "Check first", className: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300" },
