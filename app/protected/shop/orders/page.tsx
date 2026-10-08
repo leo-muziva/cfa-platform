@@ -3,12 +3,9 @@ import { redirect } from "next/navigation";
 import { listOrders } from "@/lib/services/shop-order-service";
 import { listMyRefundablePayments } from "@/lib/services/refund-service";
 import { statusView } from "./orderStatus";
+import { formatZar } from "@/lib/money";
 
-const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
-function formatCents(cents: number) {
-  return zar.format(cents / 100);
-}
 
 export default async function OrdersPage({
   searchParams,
@@ -99,7 +96,7 @@ export default async function OrdersPage({
             {line.quantity > 1 ? " × " + line.quantity : ""}
           </span>
           <span className="text-foreground">
-            {formatCents(line.unitPriceCents * line.quantity)}
+            {formatZar(line.unitPriceCents * line.quantity)}
           </span>
         </div>
       );
@@ -152,7 +149,7 @@ export default async function OrdersPage({
           </div>
 
           <p className="shrink-0 font-semibold text-foreground">
-            {formatCents(order.totalCents)}
+            {formatZar(order.totalCents)}
           </p>
         </div>
 

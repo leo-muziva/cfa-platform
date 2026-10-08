@@ -16,11 +16,22 @@ vi.mock("@/lib/payments/registry", () => ({
 
 const preparePayment = vi.fn();
 const recordPaymentEvent = vi.fn();
+const claimShopOrderConfirmation = vi.fn();
+const releaseShopOrderConfirmation = vi.fn();
 vi.mock("@/lib/repositories/payment-repository", () => ({
   preparePayment: (...args: unknown[]) => preparePayment(...args),
   recordPaymentEvent: (...args: unknown[]) => recordPaymentEvent(...args),
+  claimShopOrderConfirmation: (...args: unknown[]) => claimShopOrderConfirmation(...args),
+  releaseShopOrderConfirmation: (...args: unknown[]) => releaseShopOrderConfirmation(...args),
   findCheckout: vi.fn(),
   findPaymentStatus: vi.fn(),
+}));
+
+const getEmailTransport = vi.fn();
+const sendEmail = vi.fn();
+vi.mock("@/lib/providers/email-transport", () => ({
+  getEmailTransport: () => getEmailTransport(),
+  sendEmail: (...args: unknown[]) => sendEmail(...args),
 }));
 
 import { onlinePaymentsAvailable, receivePaymentNotification, startPayment } from "./payment-service";
@@ -146,5 +157,63 @@ describe("receivePaymentNotification", () => {
     });
     expect(status).toBe(400);
     expect(recordPaymentEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("shop order confirmation email", () => {
+  const settled = {
+    provider: "payfast_sandbox", eventId: "evt-2", paymentId: "pay-2", reference: "cfaorder",
+    status: "succeeded", amountCents: "90000", currency: "ZAR",
+  };
+  const claim = {
+    order_id: orderId, recipient_email: "buyer@example.test", recipient_name: "Sam Buyer", total_cents: 90000,
+    items: [{ name: "Training jacket", quantity: 2, size: "M", handedness: null, lineCents: 90000 }],
+  };
+  const notify = () => receivePaymentNotification("payfast_sandbox", {
+    body: "", headers: new Headers(), url: "https://stage.example/api/payments/payfast/webhook",
+  });
+
+  beforeEach(() => {
+    gateway.verifyWebhook.mockResolvedValue(settled);
+    recordPaymentEvent.mockResolvedValue(true);
+    getEmailTransport.mockReturnValue({ kind: "smtp", config: { host: "smtp.example", port: 465, user: "u", password: "p", from: "no-reply@cfa.example" } });
+    claimShopOrderConfirmation.mockResolvedValue(claim);
+    sendEmail.mockResolvedValue({ ok: true });
+  });
+
+  it("emails the buyer once the payment is recorded", async () => {
+    expect(await notify()).toBe(200);
+    expect(claimShopOrderConfirmation).toHaveBeenCalledWith("payfast_sandbox", "cfaorder");
+    const email = sendEmail.mock.calls[0][1];
+    expect(email.to).toBe("buyer@example.test");
+    expect(email.text).toContain("2 x Training jacket (size M)");
+    expect(email.text).toContain("https://stage.example/protected/shop/orders");
+  });
+
+  it("sends nothing when the claim is empty, such as a repeated notification", async () => {
+    claimShopOrderConfirmation.mockResolvedValue(null);
+    expect(await notify()).toBe(200);
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("releases the claim when the mail server refuses, and still acknowledges the payment", async () => {
+    sendEmail.mockResolvedValue({ ok: false, error: "The mail server refused the email (550)." });
+    expect(await notify()).toBe(200);
+    expect(releaseShopOrderConfirmation).toHaveBeenCalledWith(orderId);
+  });
+
+  it("does not try to email for a failed payment or without email settings", async () => {
+    gateway.verifyWebhook.mockResolvedValue({ ...settled, status: "failed" });
+    expect(await notify()).toBe(200);
+    gateway.verifyWebhook.mockResolvedValue(settled);
+    getEmailTransport.mockReturnValue(null);
+    expect(await notify()).toBe(200);
+    expect(claimShopOrderConfirmation).not.toHaveBeenCalled();
+  });
+
+  it("never sends before the payment itself is stored", async () => {
+    recordPaymentEvent.mockResolvedValue(false);
+    expect(await notify()).toBe(503);
+    expect(claimShopOrderConfirmation).not.toHaveBeenCalled();
   });
 });

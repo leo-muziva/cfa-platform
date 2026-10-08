@@ -78,6 +78,52 @@ export function membershipPaymentEmail(input: MembershipPaymentEmail): OutgoingE
   return { to: input.to, subject: "Your CFA membership is approved - payment due", text: lines.join("\n\n"), html };
 }
 
+export interface ShopOrderEmailItem {
+  name: string;
+  quantity: number;
+  size: string | null;
+  handedness: "right" | "left" | null;
+  lineCents: string;
+}
+
+export interface ShopOrderConfirmationEmail {
+  to: string;
+  recipientName: string;
+  items: ShopOrderEmailItem[];
+  totalCents: string;
+  ordersUrl: string | null;
+}
+
+function itemLabel(item: ShopOrderEmailItem): string {
+  const options = [item.size && `size ${item.size}`, item.handedness && `${item.handedness}-handed`].filter(Boolean).join(", ");
+  return `${item.quantity} x ${item.name}${options ? ` (${options})` : ""} - ${formatZar(item.lineCents)}`;
+}
+
+export function shopOrderConfirmationEmail(input: ShopOrderConfirmationEmail): OutgoingEmail {
+  const total = formatZar(input.totalCents);
+  const intro = `Thank you for your order. We have received your payment of ${total}.`;
+  const pooling = "CFA places kit orders with the supplier in bulk. Your items will be ordered with the next bulk order, and you can follow its progress on your orders page.";
+  const lines = [
+    `Hi ${input.recipientName},`,
+    intro,
+    ...input.items.map(itemLabel),
+    `Total paid: ${total}`,
+    pooling,
+    ...(input.ordersUrl ? [`Your orders: ${input.ordersUrl}`] : []),
+    "Cape Fencing Academy",
+  ];
+  const html = [
+    `<p>Hi ${escapeHtml(input.recipientName)},</p>`,
+    `<p>${escapeHtml(intro)}</p>`,
+    `<ul>${input.items.map((item) => `<li>${escapeHtml(itemLabel(item))}</li>`).join("")}</ul>`,
+    `<p>Total paid: <strong>${escapeHtml(total)}</strong></p>`,
+    `<p>${escapeHtml(pooling)}</p>`,
+    ...(input.ordersUrl ? [`<p><a href="${escapeHtml(input.ordersUrl)}">View your orders</a></p>`] : []),
+    "<p>Cape Fencing Academy</p>",
+  ].join("\n");
+  return { to: input.to, subject: "Your CFA shop order is confirmed", text: lines.join("\n\n"), html };
+}
+
 export type SendEmailResult = { ok: true } | { ok: false; error: string };
 
 export async function sendWithResend(config: ResendConfig, email: OutgoingEmail, fetchImpl: typeof fetch = fetch): Promise<SendEmailResult> {

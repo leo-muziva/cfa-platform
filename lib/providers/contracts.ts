@@ -1,6 +1,8 @@
 import 'server-only'
 import { getPaymentGateway } from '@/lib/payments/registry'
-import { getResendConfig, membershipPaymentEmail, plainEmail, sendWithResend, type MembershipPaymentEmail, type SendEmailResult } from '@/lib/providers/resend-email'
+import { membershipPaymentEmail, plainEmail, type MembershipPaymentEmail, type SendEmailResult } from '@/lib/providers/resend-email'
+import { getEmailTransport, sendEmail } from '@/lib/providers/email-transport'
+import { formatRands } from '@/lib/money'
 
 export interface PaymentLinkRequest {
   invoiceId: string
@@ -41,21 +43,21 @@ export function getPaymentProvider(): PaymentProvider | null {
 }
 
 export function getEmailProvider(): EmailProvider | null {
-  const config = getResendConfig()
-  if (!config) return null
+  const transport = getEmailTransport()
+  if (!transport) return null
   const send = async (to: string, subject: string, paragraphs: string[]) => {
-    const result = await sendWithResend(config, plainEmail(to, subject, paragraphs))
+    const result = await sendEmail(transport, plainEmail(to, subject, paragraphs))
     if (!result.ok) throw new Error(result.error)
   }
   return {
-    name: 'resend',
+    name: transport.kind,
     sendInvoice: ({ to, invoiceNumber, amount, paymentLink }) => send(to, `CFA invoice ${invoiceNumber}`, [
-      `Your Cape Fencing Academy invoice ${invoiceNumber} for R${amount.toFixed(2)} is ready.`,
+      `Your Cape Fencing Academy invoice ${invoiceNumber} for ${formatRands(amount)} is ready.`,
       ...(paymentLink ? [`Pay here: ${paymentLink}`] : []),
     ]),
     sendReceipt: ({ to, receiptNumber, amount }) => send(to, `CFA receipt ${receiptNumber}`, [
-      `Thank you. Cape Fencing Academy received your payment of R${amount.toFixed(2)} (receipt ${receiptNumber}).`,
+      `Thank you. Cape Fencing Academy received your payment of ${formatRands(amount)} (receipt ${receiptNumber}).`,
     ]),
-    sendMembershipPaymentRequest: (input) => sendWithResend(config, membershipPaymentEmail(input)),
+    sendMembershipPaymentRequest: (input) => sendEmail(transport, membershipPaymentEmail(input)),
   }
 }

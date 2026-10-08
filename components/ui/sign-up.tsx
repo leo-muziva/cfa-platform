@@ -111,7 +111,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
     });
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -128,6 +128,18 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
     }
 
     fireSideCannons();
+    // With email confirmation switched off, Supabase signs the user in at
+    // once, so "check your inbox" would be untrue.
+    if (data.session) {
+      setModal({
+        status: "success",
+        title: "Welcome to CFA!",
+        message: "Your account is ready. Next, complete your profile.",
+        actionLabel: "Continue",
+        onAction: () => router.push("/protected/complete-profile"),
+      });
+      return;
+    }
     setModal({
       status: "success",
       title: "Almost there!",

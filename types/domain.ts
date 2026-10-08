@@ -259,6 +259,7 @@ export interface Invoice {
   issued_at: string
   paid_at: string | null
   lines?: InvoiceLine[]
+  payer?: Pick<Profile, 'full_name' | 'email'> | null
 }
 
 export interface Receipt {
@@ -399,6 +400,8 @@ export interface AvailableLessonTime {
 /** A coach-offered 30-minute occurrence, with availability intentionally reason-free. */
 export interface LessonTimeOption extends AvailableLessonTime {
   isAvailable: boolean
+  /** Coach marked these standing hours for active members only. */
+  membersOnly?: boolean
 }
 
 /** Pricing is deliberately isolated from availability and booking DTOs. */
@@ -450,6 +453,11 @@ export interface LessonBooking {
   /** True while a pay-now hold is live. Money-free, so dependents may see it. */
   awaitingPayment?: boolean
   holdExpiresAt?: string | null
+  /** After this time a cancellation costs partialFeePercent of the lesson. */
+  partialFeeDeadline?: string | null
+  partialFeePercent?: number | null
+  /** Fee share inside the partial window. Percentages only, never amounts. */
+  lateFeePercent?: number | null
 }
 
 /** Payer-only row for a pay-now lesson whose hold can still be paid. */
@@ -470,6 +478,7 @@ export interface CoachAvailabilityRule {
   startsAtLocal: string
   endsAtLocal: string
   isActive: boolean
+  accessRule: LessonAccessRule
 }
 
 export interface CoachAvailabilityException {
@@ -502,8 +511,11 @@ export interface LessonBookingSettings {
   cancellationWindowHours: number
   lateCancellationAction: 'allow'
   lateCancellationFeeMultiplier: number
+  cancellationPartialWindowHours: number
+  cancellationPartialFeeMultiplier: number
   noShowFeeMultiplier: number
   bookingHorizonDays: number
+  bookingHorizonCalendarMonths: number
   bookingCutoffMinutes: number
   paymentMode: 'invoice_only'
   arrearsBlockingEnabled: false
@@ -558,6 +570,7 @@ export type LessonBookingErrorCode =
   | 'invalid_closure'
   | 'waiver_reason_required'
   | 'pay_now_required'
+  | 'members_only'
   | 'entitlement_unavailable'
   | 'invalid_product'
   | 'checkout_unavailable'

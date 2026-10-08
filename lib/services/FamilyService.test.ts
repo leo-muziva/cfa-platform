@@ -48,4 +48,15 @@ describe("family responsibility service", () => {
     expect(JSON.stringify(result)).not.toContain("private database detail");
     expect(result).not.toHaveProperty("success");
   });
+  it("confirms an unlink without mentioning a new payer", async () => {
+    vi.mocked(repository.requestFamilyChange).mockResolvedValue({ error: null } as Awaited<ReturnType<typeof repository.requestFamilyChange>>);
+    const result = await requestFamilyChange({ linkId: requestId, kind: "unlink", reason: "I am an adult now" });
+    expect(result).toEqual({ success: expect.stringContaining("Unlink requested") });
+    expect(JSON.stringify(result)).not.toContain("new payer");
+  });
+  it("tells a transfer requester the new payer must accept first", async () => {
+    vi.mocked(repository.requestFamilyChange).mockResolvedValue({ error: null } as Awaited<ReturnType<typeof repository.requestFamilyChange>>);
+    const result = await requestFamilyChange({ linkId: requestId, kind: "transfer", newPayerEmail: "new@cfa.test", reason: "Moving house" });
+    expect(result).toEqual({ success: expect.stringContaining("new payer must accept") });
+  });
 });

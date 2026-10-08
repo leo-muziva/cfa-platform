@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { getCurrentProfile } from "@/lib/services/MemberService";
+import { greetingName } from "@/lib/display-name";
 import { LogoutButton } from "./logout-button";
 
 export async function AuthButton() {
   const profile = await getCurrentProfile();
-  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "member";
+  const firstName = greetingName(profile?.full_name);
 
   return profile ? (
     <div className="flex items-center gap-3 text-sm text-[#140a2e] dark:text-white">

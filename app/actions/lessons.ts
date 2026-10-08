@@ -135,9 +135,10 @@ export async function updateLessonSettingsAction(_: LessonActionState, formData:
     cancellationWindowHours: optionalValue(formData, 'cancellationWindowHours', 'cancellation_window_hours'),
     lateCancellationFeeMultiplier: optionalValue(formData, 'lateCancellationFeeMultiplier', 'late_cancellation_fee_multiplier'),
     noShowFeeMultiplier: optionalValue(formData, 'noShowFeeMultiplier', 'no_show_fee_multiplier'),
-    bookingHorizonDays: optionalValue(formData, 'bookingHorizonDays', 'booking_horizon_days'),
+    cancellationPartialWindowHours: optionalValue(formData, 'cancellationPartialWindowHours', 'cancellation_partial_window_hours'),
+    cancellationPartialFeeMultiplier: optionalValue(formData, 'cancellationPartialFeeMultiplier', 'cancellation_partial_fee_multiplier'),
+    bookingHorizonCalendarMonths: optionalValue(formData, 'bookingHorizonCalendarMonths', 'booking_horizon_calendar_months'),
     bookingCutoffMinutes: optionalValue(formData, 'bookingCutoffMinutes', 'booking_cutoff_minutes'),
-    singleLessonPriceCents: optionalValue(formData, 'singleLessonPriceCents', 'single_lesson_price_cents'),
   })
   if (!result.success) return actionResult(result, '')
   revalidatePath('/protected/admin/lessons')
@@ -163,6 +164,7 @@ export async function createCoachAvailabilityRuleAction(_: LessonActionState, fo
     isoWeekday: value(formData, 'isoWeekday', 'iso_weekday'),
     startsAtLocal: value(formData, 'startsAtLocal', 'starts_at_local'),
     endsAtLocal: value(formData, 'endsAtLocal', 'ends_at_local'),
+    accessRule: formData.get('membersOnly') === 'on' ? 'active_members_only' : 'guest_allowed',
   })
   if (!result.success) return actionResult(result, '')
   revalidateAvailabilityPaths()

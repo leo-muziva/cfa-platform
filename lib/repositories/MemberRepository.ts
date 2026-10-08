@@ -123,8 +123,3 @@ export async function adminUpdateProfile(id: string, updates: AdminProfileUpdate
   return error ? null : data as unknown as Profile
 }
 
-export async function attachDependent(profileId: string, payerId: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.rpc('attach_dependent', { target_profile: profileId, target_payer: payerId })
-  return error ? { error: error.message } : { success: true as const }
-}

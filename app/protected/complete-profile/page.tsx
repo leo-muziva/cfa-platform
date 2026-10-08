@@ -1,5 +1,6 @@
 'use client'
 import Image from 'next/image'
+import Link from 'next/link'
 import { completeProfileAction } from '@/app/actions/onboarding'
 import { FieldError, useFormAction, ValidatedForm } from '@/components/forms/form-state'
 import { BirthDatePicker } from '@/components/forms/date-picker'
@@ -67,7 +68,7 @@ export default function CompleteProfilePage() {
                 <FieldError name="payer_consent" />
               </div>
               {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
-              {state.success && <p role="status" className="text-sm text-green-600 dark:text-green-400">{state.success}</p>}
+              {state.success && <p role="status" className="text-sm text-green-600 dark:text-green-400">{state.success}. You can now <Link className="underline" href="/protected/book">book a lesson</Link> or <Link className="underline" href="/protected">go to your dashboard</Link>.</p>}
               <Button disabled={pending}>{pending ? 'Saving…' : 'Complete profile'}</Button>
             </ValidatedForm>
           </CardContent>

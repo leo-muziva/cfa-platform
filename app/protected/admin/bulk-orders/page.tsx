@@ -4,6 +4,7 @@ import { ExportButtons } from "./ExportButtons";
 import { SupplierSheetPanel } from "./SupplierSheetPanel";
 import { getSheetsForBulkOrders } from "@/lib/repositories/supplier-sheet-repository";
 import { toSheetView } from "@/lib/services/supplier-sheet-view";
+import { formatRands } from "@/lib/money";
 
 const STATUS_LABELS: Record<string, string> = {
   collecting: "Collecting orders",
@@ -14,7 +15,6 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
-const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
 // Only paid orders count towards the threshold and go to the supplier.
 // 'submitted' orders joined bulk orders before checkout existed and were
@@ -113,7 +113,7 @@ export default async function BulkOrdersPage() {
                 {badge.label}
               </span>
             </p>
-            <p className="text-sm font-semibold">{zar.format(orderTotal)}</p>
+            <p className="text-sm font-semibold">{formatRands(orderTotal)}</p>
           </div>
           <div className="mt-1">{itemLines}</div>
         </div>
@@ -135,9 +135,9 @@ export default async function BulkOrdersPage() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xl font-semibold">{zar.format(total)}</p>
+            <p className="text-xl font-semibold">{formatRands(total)}</p>
             <p className="text-sm text-muted-foreground">
-              of {zar.format(threshold)} paid
+              of {formatRands(threshold)} paid
             </p>
           </div>
         </div>

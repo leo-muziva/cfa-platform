@@ -7,10 +7,10 @@ import { Label } from "@/components/ui/label";
 import { requestRefundAction } from "@/app/actions/refunds";
 import { getMyRefundablePayment } from "@/lib/services/refund-service";
 import type { PaymentKind } from "@/types/domain";
+import { formatZar } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
-const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
 const KIND_LABELS: Record<PaymentKind, string> = {
   booking: "Lesson booking",
@@ -88,7 +88,7 @@ export default async function NewRefundPage({
         <CardContent>
           <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             <div><dt className="inline text-muted-foreground">For: </dt><dd className="inline">{KIND_LABELS[payment.kind]}</dd></div>
-            <div><dt className="inline text-muted-foreground">Amount paid: </dt><dd className="inline">{zar.format(payment.amountCents / 100)}</dd></div>
+            <div><dt className="inline text-muted-foreground">Amount paid: </dt><dd className="inline">{formatZar(payment.amountCents)}</dd></div>
             {payment.completedAt ? (
               <div>
                 <dt className="inline text-muted-foreground">Paid on: </dt>
@@ -105,7 +105,7 @@ export default async function NewRefundPage({
             ) : null}
             <div>
               <dt className="inline text-muted-foreground">Can be refunded: </dt>
-              <dd className="inline font-semibold">{zar.format(payment.refundableCents / 100)}</dd>
+              <dd className="inline font-semibold">{formatZar(payment.refundableCents)}</dd>
             </div>
           </dl>
         </CardContent>
@@ -133,7 +133,7 @@ export default async function NewRefundPage({
                 aria-describedby="refund-amount-hint"
               />
               <p id="refund-amount-hint" className="text-sm text-muted-foreground">
-                Up to {zar.format(payment.refundableCents / 100)}. Leave the full amount for a full refund.
+                Up to {formatZar(payment.refundableCents)}. Leave the full amount for a full refund.
               </p>
             </div>
             <div className="grid gap-2">

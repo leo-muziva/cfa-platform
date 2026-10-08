@@ -10,6 +10,7 @@ import { SortSelect } from "./components/SortSelect";
 import { FavouriteButton } from "./components/FavouriteButton";
 import { Pagination } from "./components/Pagination";
 import { productImageUrl } from "@/lib/productImage";
+import { formatRands } from "@/lib/money";
 
 const SORTS: Record<string, { column: string; ascending: boolean; label: string }> = {
   code: { column: "item_code", ascending: true, label: "Item code" },
@@ -219,7 +220,7 @@ export default async function ShopPage({
               <p className="text-lg font-semibold text-card-foreground">
                 {Number(p.price) === 0
                   ? "Price on request"
-                  : "R" + Number(p.price).toFixed(2)}
+                  : formatRands(p.price)}
               </p>
               <span className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 {hasSizes ? "Multiple sizes" : "One size"}
@@ -247,8 +248,10 @@ export default async function ShopPage({
   return (
     <div className="relative">
       {/* Faded fencer behind the page. */}
-      <img
+      <Image
         src="/media/pages/cfa-side-profile-transparent.png"
+        width={900}
+        height={600}
         alt=""
         aria-hidden="true"
         style={{

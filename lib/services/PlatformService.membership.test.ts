@@ -107,7 +107,7 @@ describe('membershipPayUrl', () => {
 
 describe('getMembershipRequestPageData', () => {
   beforeEach(() => {
-    getMembershipTypes.mockResolvedValue([{ id: 'type-1', name: 'Month-to-month', price: 550 }])
+    getMembershipTypes.mockResolvedValue([{ id: 'type-1', code: 'month_to_month', name: 'Month-to-month', price: 550, term_months: 1, joining_fee: 350 }])
     repo.listMembershipRequestsForMember.mockResolvedValue([])
     repo.getMembership.mockResolvedValue(null)
   })
@@ -127,6 +127,6 @@ describe('getMembershipRequestPageData', () => {
     repo.listMembershipPaymentsDue.mockResolvedValue([own, dependent])
     const data = await getMembershipRequestPageData()
     expect(data).toMatchObject({ ownPaymentDue: own, dependentPaymentsDue: [dependent] })
-    expect('membershipTypes' in data && data.membershipTypes?.[0].priceLabel).toBe('R550.00')
+    expect('membershipTypes' in data && data.membershipTypes?.[0].priceLabel).toBe('R550.00 + R350.00 joining fee')
   })
 })

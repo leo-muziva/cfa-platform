@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/services/MemberService";
+import { greetingName } from "@/lib/display-name";
 
 /**
  * Auth links for the cinematic hero navbar, rendered into CinematicHero via
@@ -20,7 +21,7 @@ export async function HeroAuth() {
   const profile = await getCurrentProfile();
 
   if (profile) {
-    const firstName = profile.full_name?.trim().split(/\s+/)[0] || "member";
+    const firstName = greetingName(profile.full_name);
     return (
       <div className="liquid-glass rounded-full p-1.5 flex items-center gap-1">
         <span className="hidden md:inline px-2 text-sm text-gray-300">

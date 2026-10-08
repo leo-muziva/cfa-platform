@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { getResendConfig, membershipPaymentEmail, sendWithResend } from "./resend-email";
+import { getResendConfig, membershipPaymentEmail, sendWithResend, shopOrderConfirmationEmail } from "./resend-email";
 
 const input = {
   to: "payer@example.test",
@@ -65,5 +65,23 @@ describe("sendWithResend", () => {
     const fetchImpl = vi.fn(async () => { throw new Error("offline"); });
     expect(await sendWithResend(config, email, fetchImpl as unknown as typeof fetch))
       .toEqual({ ok: false, error: "Could not reach Resend." });
+  });
+});
+
+describe("shopOrderConfirmationEmail", () => {
+  it("lists each item with its options and the total, escaping HTML", () => {
+    const email = shopOrderConfirmationEmail({
+      to: "buyer@example.test", recipientName: "Sam <Buyer>", totalCents: "125050", ordersUrl: null,
+      items: [
+        { name: "Foil", quantity: 1, size: null, handedness: "left", lineCents: "80000" },
+        { name: "Glove", quantity: 2, size: "M", handedness: null, lineCents: "45050" },
+      ],
+    });
+    expect(email.subject).toBe("Your CFA shop order is confirmed");
+    expect(email.text).toContain("1 x Foil (left-handed)");
+    expect(email.text).toContain("2 x Glove (size M)");
+    expect(email.text).not.toContain("Your orders:");
+    expect(email.html).toContain("Sam &lt;Buyer&gt;");
+    expect(email.html).not.toContain("<Buyer>");
   });
 });
