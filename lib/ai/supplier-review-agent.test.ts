@@ -12,6 +12,7 @@ import {
   type ReviewContext,
   type ReviewModel,
   type ReviewOutput,
+  findUnknownAmounts,
 } from "./supplier-review-agent";
 
 const glove: SupplierLine = {
@@ -186,5 +187,47 @@ describe("scrubAiText", () => {
   it("removes email addresses and links", () => {
     expect(scrubAiText("send to a@b.co or www.x.com now")).toEqual({ text: "send to [removed] or [removed] now", removed: true });
     expect(scrubAiText("plain text")).toEqual({ text: "plain text", removed: false });
+  });
+});
+
+describe("findUnknownAmounts", () => {
+  it("accepts the order total, line totals and unit prices in any common format", () => {
+    expect(findUnknownAmounts("3 items worth R2 100.00, R900 for gloves at R450 each, 2,100 rands", [glove, { ...glove, lineTotalCents: 120000, unitPriceCents: 120000 }])).toEqual([]);
+  });
+
+  it("reports an amount that is not on the sheet", () => {
+    expect(findUnknownAmounts("a combined total of 22,951 rands", [glove])).toEqual(["22,951 rands"]);
+    expect(findUnknownAmounts("worth R2 160.00", [glove])).toEqual(["R2 160.00"]);
+  });
+});
+
+describe("amount guard", () => {
+  it("replaces AI wording that quotes a wrong total and flags the run", async () => {
+    const wrong: ReviewOutput = { ...goodOutput, summary: "3 items worth R2 160.", emailDraft: "Please process order BO-TEST, total R2 160." };
+    const result = await runSupplierReview(context(), [mockModel("groq", [toolCallStep("getSheetLines"), finalStep(wrong)])]);
+    expect(result.status).toBe("succeeded");
+    expect(result.flagged).toBe(true);
+    expect(result.summary).toContain("R2 100.00");
+    expect(result.summary).not.toContain("R2 160");
+    expect(result.emailDraft).not.toContain("R2 160");
+    expect(result.emailDraft).toContain("R2 100.00");
+    expect(result.findings.map((f) => f.ruleId)).toContain("hand_missing");
+  });
+
+  it("gives the model the totals so it does not add them up", async () => {
+    const model = mockModel("groq", [toolCallStep("getSheetLines"), finalStep(goodOutput)]);
+    await runSupplierReview(context(), [model]);
+    const prompts = JSON.stringify((model.model as MockLanguageModelV4).doGenerateCalls.map((c) => c.prompt));
+    expect(prompts).toContain("totalValueText");
+    expect(prompts).toContain("R2 100.00");
+  });
+
+  it("only offers submitReview on the last allowed step", async () => {
+    const model = mockModel("groq", [toolCallStep("getSheetLines"), toolCallStep("getRuleFindings"), finalStep(goodOutput)]);
+    const result = await runSupplierReview(context(), [model], { maxSteps: 3 });
+    expect(result.status).toBe("succeeded");
+    const last = (model.model as MockLanguageModelV4).doGenerateCalls.at(-1)!;
+    expect(last.tools?.map((t) => t.name)).toEqual(["submitReview"]);
+    expect(last.toolChoice).toEqual({ type: "tool", toolName: "submitReview" });
   });
 });
