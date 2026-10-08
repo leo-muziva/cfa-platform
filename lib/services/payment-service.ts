@@ -2,8 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentGateway, getPaymentOrigin, paymentSetupIssues } from "@/lib/payments/registry";
 import type { CheckoutResponse } from "@/lib/payments/gateway";
-import { claimShopOrderConfirmation, findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent, releaseShopOrderConfirmation } from "@/lib/repositories/payment-repository";
-import { shopOrderConfirmationEmail } from "@/lib/providers/resend-email";
+import { claimPaymentReceipt, claimShopOrderConfirmation, findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent, releasePaymentReceipt, releaseShopOrderConfirmation } from "@/lib/repositories/payment-repository";
+import { paymentReceiptEmail, shopOrderConfirmationEmail } from "@/lib/providers/resend-email";
 import { getEmailTransport, sendEmail } from "@/lib/providers/email-transport";
 import type { PreparePaymentErrorCode } from "@/lib/repositories/payment-repository";
 import { paymentAttemptSchema, paymentEventSchema, paymentTargetSchema } from "@/lib/validations/payment.schema";
@@ -98,7 +98,10 @@ export async function receivePaymentNotification(providerName: string, input: { 
     const parsed = paymentEventSchema.safeParse(event);
     if (!parsed.success || parsed.data.provider !== provider.name) return 400;
     if (!await recordPaymentEvent(parsed.data)) return 503;
-    if (parsed.data.status === "succeeded") await confirmShopOrder(parsed.data.provider, parsed.data.reference);
+    if (parsed.data.status === "succeeded") {
+      await confirmShopOrder(parsed.data.provider, parsed.data.reference);
+      await sendPaymentReceipt(parsed.data.provider, parsed.data.reference);
+    }
     return 200;
   } catch {
     return 503;
@@ -122,6 +125,30 @@ async function confirmShopOrder(provider: string, reference: string): Promise<vo
       ordersUrl: origin ? `${origin}/protected/shop/orders` : null,
     }));
     if (!result.ok) await releaseShopOrderConfirmation(claim.order_id);
+  } catch {
+    // Leave the claim in place: retrying an unknown failure could double-send.
+  }
+}
+
+// Same rules as the shop confirmation: never fail the webhook, send at most once.
+async function sendPaymentReceipt(provider: string, reference: string): Promise<void> {
+  const transport = getEmailTransport();
+  if (!transport) return;
+  try {
+    const claim = await claimPaymentReceipt(provider, reference);
+    if (!claim) return;
+    const origin = getPaymentOrigin();
+    const result = await sendEmail(transport, paymentReceiptEmail({
+      to: claim.recipient_email,
+      recipientName: claim.recipient_name,
+      kind: claim.kind,
+      description: claim.description,
+      amountCents: String(claim.amount_cents),
+      receiptNumber: claim.receipt_number,
+      credited: claim.credited,
+      billingUrl: origin ? `${origin}/protected/billing` : null,
+    }));
+    if (!result.ok) await releasePaymentReceipt(claim.attempt_id);
   } catch {
     // Leave the claim in place: retrying an unknown failure could double-send.
   }

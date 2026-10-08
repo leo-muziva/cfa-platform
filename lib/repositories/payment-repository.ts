@@ -19,6 +19,7 @@ export interface PaymentStatusRow {
   kind: "booking" | "invoice" | "order" | "membership";
   credited: boolean;
   amount_cents: string;
+  receipt_number: string | null;
 }
 
 export interface PreparedPaymentRow {
@@ -124,4 +125,31 @@ export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<b
     target_currency: event.currency,
   });
   return !error;
+}
+
+export interface PaymentReceiptRow {
+  attempt_id: string;
+  kind: "membership" | "booking" | "invoice";
+  recipient_email: string;
+  recipient_name: string;
+  amount_cents: number | string;
+  receipt_number: string | null;
+  description: string;
+  credited: boolean;
+}
+
+// Claims the one receipt email for a settled payment. Empty for shop orders,
+// which get their own confirmation, and when the email was already claimed.
+export async function claimPaymentReceipt(provider: string, reference: string): Promise<PaymentReceiptRow | null> {
+  const db = createAdminClient();
+  if (!db) return null;
+  const { data, error } = await db.rpc("claim_payment_receipt", { target_provider: provider, target_reference: reference });
+  if (error) return null;
+  return ((data ?? []) as PaymentReceiptRow[])[0] ?? null;
+}
+
+export async function releasePaymentReceipt(attemptId: string): Promise<void> {
+  const db = createAdminClient();
+  if (!db) return;
+  await db.rpc("release_payment_receipt", { target_attempt: attemptId });
 }

@@ -18,11 +18,15 @@ const preparePayment = vi.fn();
 const recordPaymentEvent = vi.fn();
 const claimShopOrderConfirmation = vi.fn();
 const releaseShopOrderConfirmation = vi.fn();
+const claimPaymentReceipt = vi.fn();
+const releasePaymentReceipt = vi.fn();
 vi.mock("@/lib/repositories/payment-repository", () => ({
   preparePayment: (...args: unknown[]) => preparePayment(...args),
   recordPaymentEvent: (...args: unknown[]) => recordPaymentEvent(...args),
   claimShopOrderConfirmation: (...args: unknown[]) => claimShopOrderConfirmation(...args),
   releaseShopOrderConfirmation: (...args: unknown[]) => releaseShopOrderConfirmation(...args),
+  claimPaymentReceipt: (...args: unknown[]) => claimPaymentReceipt(...args),
+  releasePaymentReceipt: (...args: unknown[]) => releasePaymentReceipt(...args),
   findCheckout: vi.fn(),
   findPaymentStatus: vi.fn(),
 }));
@@ -215,5 +219,51 @@ describe("shop order confirmation email", () => {
     recordPaymentEvent.mockResolvedValue(false);
     expect(await notify()).toBe(503);
     expect(claimShopOrderConfirmation).not.toHaveBeenCalled();
+  });
+});
+
+describe("payment receipt email", () => {
+  const settled = { provider: "payfast_sandbox", eventId: "evt-2", paymentId: "pf-2", reference: "cfamember", status: "succeeded", amountCents: "90000", currency: "ZAR" };
+  const receipt = {
+    attempt_id: "44444444-4444-4444-8444-444444444444", kind: "membership", recipient_email: "payer@example.test", recipient_name: "Dana Demo",
+    amount_cents: 90000, receipt_number: "REC-001009", description: "Month-to-month membership", credited: false,
+  };
+  const notify = () => receivePaymentNotification("payfast_sandbox", {
+    body: "", headers: new Headers(), url: "https://stage.example/api/payments/payfast/webhook",
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    gateway.verifyWebhook.mockResolvedValue(settled);
+    recordPaymentEvent.mockResolvedValue(true);
+    getEmailTransport.mockReturnValue({ kind: "smtp", config: { host: "smtp.example", port: 465, user: "u", password: "p", from: "no-reply@cfa.example" } });
+    claimShopOrderConfirmation.mockResolvedValue(null);
+    claimPaymentReceipt.mockResolvedValue(receipt);
+    sendEmail.mockResolvedValue({ ok: true });
+  });
+
+  it("emails the payer a receipt once the payment is recorded", async () => {
+    expect(await notify()).toBe(200);
+    expect(claimPaymentReceipt).toHaveBeenCalledWith("payfast_sandbox", "cfamember");
+    const email = sendEmail.mock.calls[0][1];
+    expect(email.to).toBe("payer@example.test");
+    expect(email.subject).toBe("Payment received - CFA receipt REC-001009");
+    expect(email.text).toContain("R900.00 for Month-to-month membership");
+    expect(email.text).toContain("Your membership is now active.");
+    expect(email.text).toContain("https://stage.example/protected/billing");
+  });
+
+  it("releases the claim when sending fails and still acknowledges the payment", async () => {
+    sendEmail.mockResolvedValue({ ok: false, error: "The mail server refused the email (550)." });
+    expect(await notify()).toBe(200);
+    expect(releasePaymentReceipt).toHaveBeenCalledWith(receipt.attempt_id);
+  });
+
+  it("sends nothing for a repeated notification or a failed payment", async () => {
+    claimPaymentReceipt.mockResolvedValue(null);
+    expect(await notify()).toBe(200);
+    gateway.verifyWebhook.mockResolvedValue({ ...settled, status: "failed" });
+    expect(await notify()).toBe(200);
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });
