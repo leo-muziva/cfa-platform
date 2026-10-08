@@ -231,3 +231,13 @@ describe("amount guard", () => {
     expect(last.toolChoice).toEqual({ type: "tool", toolName: "submitReview" });
   });
 });
+
+describe("email placeholders", () => {
+  it("replaces an email that still has a placeholder with the standard one", async () => {
+    const unfinished: ReviewOutput = { ...goodOutput, emailDraft: "Please process BO-TEST.\n\nKind regards,\n[Your Name]" };
+    const result = await runSupplierReview(context(), [mockModel("groq", [toolCallStep("getSheetLines"), finalStep(unfinished)])]);
+    expect(result.emailDraft).not.toContain("[Your Name]");
+    expect(result.emailDraft).toContain("Cape Fencing Academy");
+    expect(result.flagReasons).toContain("email contained a placeholder");
+  });
+});
