@@ -124,6 +124,53 @@ export function shopOrderConfirmationEmail(input: ShopOrderConfirmationEmail): O
   return { to: input.to, subject: "Your CFA shop order is confirmed", text: lines.join("\n\n"), html };
 }
 
+export type ReceiptKind = "membership" | "booking" | "invoice";
+
+export interface PaymentReceiptEmail {
+  to: string;
+  recipientName: string;
+  kind: ReceiptKind;
+  description: string;
+  amountCents: string;
+  receiptNumber: string | null;
+  // True when some or all of the payment was kept as account credit.
+  credited: boolean;
+  billingUrl: string | null;
+}
+
+const RECEIPT_OUTCOME: Record<ReceiptKind, string> = {
+  membership: "Your membership is now active. Welcome to Cape Fencing Academy.",
+  booking: "Your lesson is booked. See you on the piste.",
+  invoice: "Your invoice has been marked as paid.",
+};
+
+export function paymentReceiptEmail(input: PaymentReceiptEmail): OutgoingEmail {
+  const amount = formatZar(input.amountCents);
+  const paid = `We have received your payment of ${amount} for ${input.description}.`;
+  const outcome = input.credited
+    ? "Some or all of this payment was kept as account credit, because what it paid for changed before the payment arrived. Your billing page has the details."
+    : RECEIPT_OUTCOME[input.kind];
+  const receipt = input.receiptNumber ? `Receipt number: ${input.receiptNumber}` : null;
+  const lines = [
+    `Hi ${input.recipientName},`,
+    paid,
+    outcome,
+    ...(receipt ? [receipt] : []),
+    ...(input.billingUrl ? [`Your billing and receipts: ${input.billingUrl}`] : []),
+    "Cape Fencing Academy",
+  ];
+  const html = [
+    `<p>Hi ${escapeHtml(input.recipientName)},</p>`,
+    `<p>${escapeHtml(paid)}</p>`,
+    `<p>${escapeHtml(outcome)}</p>`,
+    ...(receipt ? [`<p><strong>${escapeHtml(receipt)}</strong></p>`] : []),
+    ...(input.billingUrl ? [`<p><a href="${escapeHtml(input.billingUrl)}">View your billing and receipts</a></p>`] : []),
+    "<p>Cape Fencing Academy</p>",
+  ].join("\n");
+  const subject = input.receiptNumber ? `Payment received - CFA receipt ${input.receiptNumber}` : "Payment received - Cape Fencing Academy";
+  return { to: input.to, subject, text: lines.join("\n\n"), html };
+}
+
 export type SendEmailResult = { ok: true } | { ok: false; error: string };
 
 export async function sendWithResend(config: ResendConfig, email: OutgoingEmail, fetchImpl: typeof fetch = fetch): Promise<SendEmailResult> {
