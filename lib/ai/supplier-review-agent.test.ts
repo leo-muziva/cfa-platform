@@ -48,15 +48,18 @@ const usage = {
 function toolCallStep(toolName: string, input: object = {}) {
   return {
     content: [{ type: "tool-call" as const, toolCallId: "call-" + toolName, toolName, input: JSON.stringify(input) }],
-    finishReason: { unified: "tool-calls" as const, raw: "tool_calls" },
+    finishReason: { unified: "tool-calls" as const, raw: "tool_calls" } as { unified: "tool-calls" | "stop"; raw: string },
     usage,
     warnings: [],
   };
 }
 
+// A finished review arrives as a submitReview call; a plain string is a
+// model that answered in text without submitting, which counts as a failure.
 function finalStep(output: ReviewOutput | string) {
+  if (typeof output !== "string") return toolCallStep("submitReview", output);
   return {
-    content: [{ type: "text" as const, text: typeof output === "string" ? output : JSON.stringify(output) }],
+    content: [{ type: "text" as const, text: output }],
     finishReason: { unified: "stop" as const, raw: "stop" },
     usage,
     warnings: [],
@@ -98,7 +101,7 @@ describe("runSupplierReview", () => {
     ]);
     expect(result.status).toBe("succeeded");
     expect(result.provider).toBe("groq");
-    expect(result.steps.filter((s) => s.toolName).map((s) => s.toolName)).toEqual(["getSheetLines", "getRuleFindings"]);
+    expect(result.steps.filter((s) => s.toolName).map((s) => s.toolName)).toEqual(["getSheetLines", "getRuleFindings", "submitReview"]);
     expect(result.findings.find((f) => f.ruleId === "hand_missing")?.suggestion).toBe(
       "Ask the member which hand they fence with."
     );

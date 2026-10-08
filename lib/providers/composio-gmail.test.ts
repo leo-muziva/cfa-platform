@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { extractDraftId, getComposioGmailConfig } from "./composio-gmail";
+import { cleanProviderError, extractDraftId, getComposioGmailConfig } from "./composio-gmail";
 
 describe("getComposioGmailConfig", () => {
   it("needs the API key and the connected account ID", () => {
@@ -35,5 +35,15 @@ describe("extractDraftId", () => {
     expect(extractDraftId({ draft: { id: "r2" } })).toBe("r2");
     expect(extractDraftId({ response_data: { id: "r3" } })).toBe("r3");
     expect(extractDraftId({})).toBeNull();
+  });
+});
+
+describe("cleanProviderError", () => {
+  it("removes addresses and links and keeps errors short", () => {
+    const cleaned = cleanProviderError("Error executing the tool at https://backend.composio.dev/x?token=abc for orders@supplier.example " + "x".repeat(500));
+    expect(cleaned).not.toContain("supplier.example");
+    expect(cleaned).not.toContain("token=abc");
+    expect(cleaned).toContain("[link]");
+    expect(cleaned.length).toBeLessThanOrEqual(300);
   });
 });
