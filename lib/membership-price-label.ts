@@ -17,7 +17,9 @@ export function membershipPriceLabel(type: PricedMembershipType, monthlyPrice: n
   const parts = [formatRands(price)];
   const months = type.term_months ?? 0;
   const monthly = monthlyPrice === null ? 0 : Number(monthlyPrice);
-  if (type.code !== "month_to_month" && months > 1 && monthly > 0) {
+  // Only longer terms of the same membership can be compared with monthly
+  // dues; the beginner package is a different product, not a discount.
+  if ((type.code === "six_month" || type.code === "twelve_month") && months > 1 && monthly > 0) {
     const percentOff = Math.round((1 - price / (monthly * months)) * 100);
     if (percentOff > 0) parts[0] += ` (${percentOff}% off)`;
   }
