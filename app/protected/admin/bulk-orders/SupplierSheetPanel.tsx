@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
   approveAndCreateDraftAction,
@@ -127,8 +128,13 @@ export function SupplierSheetPanel({
                 disabled={busy !== ""}
                 className={secondaryButton}
               >
-                {busy === "download" ? "Preparing..." : "Download spreadsheet"}
+                {busy === "download" ? "Preparing..." : "Download Excel file"}
               </button>
+            ) : null}
+            {sheet ? (
+              <Link href={`/protected/admin/bulk-orders/${bulkOrderId}/sheet`} className={secondaryButton}>
+                View spreadsheet
+              </Link>
             ) : null}
           </div>
         </Step>

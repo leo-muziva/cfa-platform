@@ -8,7 +8,7 @@ import {
   supplierLinesHash,
   type CatalogueEntry,
 } from "@/lib/services/supplier-sheet";
-import { buildSupplierWorkbook, readSupplierWorkbook, SupplierWorkbookError } from "@/lib/services/supplier-sheet-workbook";
+import { buildSupplierWorkbook, readSupplierWorkbook, readWorkbookGrid, SupplierWorkbookError, type WorkbookGrid } from "@/lib/services/supplier-sheet-workbook";
 import { runSupplierReview, type ReviewContext } from "@/lib/ai/supplier-review-agent";
 import { getReviewModels } from "@/lib/ai/models";
 import { getGmailDraftProvider } from "@/lib/providers/composio-gmail";
@@ -52,6 +52,15 @@ const SIGNED_URL_SECONDS = 300;
 
 function fail<T>(code: SheetErrorCode, message?: string): SheetResult<T> {
   return { ok: false, code, message };
+}
+
+const fileDate = new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Johannesburg" });
+
+// The name staff and the supplier see, e.g. "CFA Equipment Order - 8 Oct 2026.xlsx".
+// Storage paths keep the bulk order reference; only the download name changes.
+export function supplierSheetFileName(generatedAt: string | Date, withNotes = false): string {
+  const parts = Object.fromEntries(fileDate.formatToParts(new Date(generatedAt)).map((part) => [part.type, part.value]));
+  return `CFA Equipment Order - ${Number(parts.day)} ${parts.month} ${parts.year}${withNotes ? " (with notes)" : ""}.xlsx`;
 }
 
 export function supplierFilePath(bulkOrderId: string, reference: string): string {
@@ -364,7 +373,7 @@ export async function approveAndCreateDraft(
   if (!checked.ok) return checked;
   if (!checked.data.check.matches) return fail("needs_approval");
 
-  const url = await repo.createSheetSignedUrl(sheet.snapshotPath, SIGNED_URL_SECONDS, bulk.reference + "-supplier-order.xlsx");
+  const url = await repo.createSheetSignedUrl(sheet.snapshotPath, SIGNED_URL_SECONDS, supplierSheetFileName(sheet.generatedAt));
   if (!url) return fail("storage_failed");
 
   const draft = await gmail.createDraft({
@@ -410,7 +419,31 @@ export async function getSheetDownloadUrl(bulkOrderId: string): Promise<SheetRes
 
   const hasReview = sheet.aiFindings !== null;
   const path = hasReview ? reviewFilePath(bulk.id, bulk.reference) : sheet.snapshotPath;
-  const name = bulk.reference + (hasReview ? "-supplier-order-with-notes.xlsx" : "-supplier-order.xlsx");
+  const name = supplierSheetFileName(sheet.generatedAt, hasReview);
   const url = await repo.createSheetSignedUrl(path, SIGNED_URL_SECONDS, name);
   return url ? { ok: true, data: url } : fail("storage_failed");
+}
+
+export interface SheetPreview {
+  reference: string;
+  fileName: string;
+  withNotes: boolean;
+  sheets: WorkbookGrid[];
+}
+
+// The saved file read back for an in-browser preview (with review notes when
+// the AI proof has run), so nobody needs Excel to check it.
+export async function getSheetPreview(bulkOrderId: string): Promise<SheetResult<SheetPreview>> {
+  const bulk = await repo.getBulkOrderSummary(bulkOrderId);
+  if (!bulk) return fail("bulk_order_not_found");
+  const sheet = await repo.getSheet(bulkOrderId);
+  if (!sheet) return fail("no_sheet");
+  const withNotes = sheet.aiFindings !== null;
+  const file = await repo.downloadSheetFile(withNotes ? reviewFilePath(bulk.id, bulk.reference) : sheet.snapshotPath);
+  if (!file) return fail("storage_failed");
+  try {
+    return { ok: true, data: { reference: bulk.reference, fileName: supplierSheetFileName(sheet.generatedAt, withNotes), withNotes, sheets: await readWorkbookGrid(file) } };
+  } catch {
+    return fail("storage_failed");
+  }
 }
