@@ -295,13 +295,23 @@ export function CoachBookingCalendar({
             <fieldset className="space-y-2 text-sm">
               <legend className="mb-2">How would you like to pay?</legend>
               <div className="grid grid-cols-2 gap-2">
-                {([["pay_now", "Pay now", "Secure checkout"], ["pay_later", "Pay later", "On my monthly invoice"]] as const).map(([option, label, hint]) => (
-                  <label key={option} className={"cursor-pointer rounded-xl border px-3 py-2.5 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-white " + (paymentChoice === option ? "border-white bg-white text-[#25145c]" : "border-white/30 text-white hover:border-white/60")}>
-                    <input type="radio" name="paymentOption" value={option} checked={paymentChoice === option} onChange={() => setPaymentChoice(option)} className="sr-only" />
-                    <span className="block font-semibold">{label}</span>
-                    <span className={"block text-xs " + (paymentChoice === option ? "text-[#25145c]/75" : "text-white/70")}>{hint}</span>
-                  </label>
-                ))}
+                {([["pay_now", "Pay now", "Secure checkout with PayFast"], ["pay_later", "Pay later", "Added to my monthly invoice"]] as const).map(([option, label, hint]) => {
+                  const chosen = paymentChoice === option;
+                  return (
+                    <label key={option} className={"group relative flex cursor-pointer select-none items-start gap-3 overflow-hidden rounded-2xl border-2 px-3 py-3 shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm motion-reduce:transform-none motion-reduce:transition-none has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-white " + (chosen ? "border-white bg-white text-[#25145c] ring-2 ring-[#f0c71b]/70" : "border-white/45 bg-white/10 text-white hover:border-white/80 hover:bg-white/15")}>
+                      <input type="radio" name="paymentOption" value={option} checked={chosen} onChange={() => setPaymentChoice(option)} className="sr-only" />
+                      <span aria-hidden="true" className={"mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors " + (chosen ? "border-[#25145c] bg-[#25145c] text-white" : "border-white/70")}>
+                        {chosen && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                      <span>
+                        <span className="block font-semibold">{label}</span>
+                        <span className={"block text-xs " + (chosen ? "text-[#25145c]/75" : "text-white/75")}>{hint}</span>
+                      </span>
+                      {/* A light sweeps across on hover so the card reads as pressable. */}
+                      <span aria-hidden="true" className={"pointer-events-none absolute inset-y-0 -left-2/3 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-transparent transition-[left] duration-700 ease-out group-hover:left-[130%] motion-reduce:hidden " + (chosen ? "via-[#7c5cff]/20" : "via-white/35")} />
+                    </label>
+                  );
+                })}
               </div>
             </fieldset>
           ) : (
@@ -312,8 +322,9 @@ export function CoachBookingCalendar({
           {state.checkoutRequired && (
             <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
           )}
-          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
-            {pending ? "Booking…" : requiresPayNow || (paymentsAvailable && canSeeQuote && paymentChoice === "pay_now") ? "Book and pay now" : "Confirm booking"}
+          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="group relative min-h-12 w-full overflow-hidden rounded-full bg-white text-base font-semibold text-[#25145c] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-lg active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-none">
+            {pending ? "Booking…" : "Book"}
+            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-2/3 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-[#7c5cff]/25 to-transparent transition-[left] duration-700 ease-out group-hover:left-[130%] motion-reduce:hidden" />
           </Button>
         </ValidatedForm>
       </aside>
