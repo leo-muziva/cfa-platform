@@ -43,8 +43,7 @@ export default async function BookLessonPage() {
           Book a Fencing Lesson
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-          Choose an active CFA coach, then find a free 30-minute time. Lessons are
-          invoiced after their outcome is recorded.
+          Choose a coach, then pick a 30-minute lesson time.
         </p>
       </header>
 

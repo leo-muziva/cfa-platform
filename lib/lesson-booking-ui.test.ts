@@ -89,7 +89,7 @@ describe("lesson booking UI helpers", () => {
 
   it("publishes the exact accessible contention recovery message", () => {
     expect(BOOKING_CONTENTION_MESSAGE).toBe(
-      "That time has just been taken. Pick another available time.",
+      "Someone has just booked that time. Please pick another.",
     );
   });
 

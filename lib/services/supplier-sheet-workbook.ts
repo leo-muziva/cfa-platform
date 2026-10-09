@@ -2,7 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import type { SupplierLine } from "./bulk-order-export";
 import type { Severity } from "./supplier-sheet";
-import { formatRands } from "@/lib/money";
+import { formatRandsWithCents } from "@/lib/money";
 
 // Builds and reads back the supplier order xlsx. The AI never writes to
 // this file: every cell comes from paid orders in the database.
@@ -190,7 +190,7 @@ const PREVIEW_ROW_LIMIT = 1000;
 function previewText(cell: ExcelJS.Cell): string {
   const text = cellText(cell.value);
   // Money cells hold plain numbers with a rand format; show them as rands.
-  if (typeof cell.value === "number" && (cell.numFmt ?? "").includes("R")) return formatRands(cell.value);
+  if (typeof cell.value === "number" && (cell.numFmt ?? "").includes("R")) return formatRandsWithCents(cell.value);
   return text;
 }
 

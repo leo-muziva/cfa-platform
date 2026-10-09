@@ -9,14 +9,14 @@ import { TiltCard } from "@/components/ui/tilt-card";
 import { PUBLIC_CONTACT_LINKS } from "@/lib/public-site";
 import { cn } from "@/lib/utils";
 
-// Club info block: training times, drop-in fee, venue, photos and contact.
+// Club info block: training times, visiting fencers, venue, photos and contact.
 // Used on the home page and on /protected/info.
 
 const SESSIONS = [
   {
-    days: "Tuesday – Thursday",
+    days: "Tuesday to Thursday",
     time: "18:30 – 21:30",
-    description: "Club training — all levels",
+    description: "Club training, all levels",
   },
   {
     days: "Saturday",
@@ -136,7 +136,7 @@ export function ClubInfo({
                   : "text-3xl md:text-5xl font-normal tracking-[-0.04em]"
               }
             >
-              Weekly schedule.
+              Weekly schedule
             </h2>
           </div>
 
@@ -148,7 +148,7 @@ export function ClubInfo({
                 : "text-2xl font-normal tracking-[-0.03em]",
             )}
           >
-            Find us in Rondebosch.
+            Find us in Rondebosch
           </h3>
 
           {/* Times */}
@@ -229,9 +229,9 @@ export function ClubInfo({
             </motion.div>
           </div>
 
-          {/* TODO: schedule + drop-in fee conflict across old-site pages — confirm with sponsor (SPONSOR-QUESTIONS #11) */}
+          {/* TODO: schedule conflicts across old-site pages — confirm with sponsor (SPONSOR-QUESTIONS #11) */}
           <p className="order-5 mt-6 text-sm text-muted-foreground md:col-span-2">
-            Visiting fencers welcome — R120 drop-in.
+            In Cape Town for a while? Visiting fencers are always welcome to join us at any session.
           </p>
         </div>
 

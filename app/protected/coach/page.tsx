@@ -21,7 +21,10 @@ export default async function CoachDashboardPage() {
   }));
 
   return <div className="space-y-6">
-    <div className="flex justify-end"><Button asChild variant="outline"><Link href="/protected/coach/availability">Manage my availability</Link></Button></div>
+    <div className="flex justify-end gap-2">
+      <Button asChild variant="outline"><Link href="/protected/equipment">Equipment register</Link></Button>
+      <Button asChild variant="outline"><Link href="/protected/coach/availability">Manage my availability</Link></Button>
+    </div>
     <LessonAgenda items={agenda} outcomeAction={recordLessonOutcomeAction} />
   </div>;
 }

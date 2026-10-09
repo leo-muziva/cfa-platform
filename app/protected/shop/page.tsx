@@ -5,12 +5,19 @@ import { Search, LayoutGrid, Info, ArrowUp, ArrowDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCartCount } from "./actions/cart";
 import { BulkOrderProgress } from "./components/BulkOrderProgress";
-import { QuickAddButton } from "./components/QuickAddButton";
 import { SortSelect } from "./components/SortSelect";
-import { FavouriteButton } from "./components/FavouriteButton";
 import { Pagination } from "./components/Pagination";
-import { productImageUrl } from "@/lib/productImage";
-import { formatRands } from "@/lib/money";
+import { ProductCard } from "./components/ProductCard";
+import { BrowseCards } from "./components/BrowseCards";
+import {
+  GENERAL,
+  GENERAL_LABEL,
+  SECTIONS,
+  WEAPON_LABELS,
+  findSection,
+  groupProducts,
+  isShopWeapon,
+} from "@/lib/shop/browse";
 
 const SORTS: Record<string, { column: string; ascending: boolean; label: string }> = {
   code: { column: "item_code", ascending: true, label: "Item code" },
@@ -31,6 +38,9 @@ export default async function ShopPage({
     sort?: string;
     favourites?: string;
     page?: string;
+    section?: string;
+    weapon?: string;
+    view?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -60,15 +70,148 @@ export default async function ShopPage({
   const requestedPage = Number(sp.page);
   const page = Number.isInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
 
-  // Count how many products are in each category, for the sidebar.
-  const { data: allCats } = await supabase.from("products").select("category");
-  const counts: Record<string, number> = {};
-  for (const row of allCats ?? []) {
-    const c = row.category ?? "Uncategorised";
-    counts[c] = (counts[c] ?? 0) + 1;
+  // One light query for the section and weapon of every product. It feeds
+  // the counts on the browse cards, the sidebar and the total.
+  const { data: tagRows } = await supabase.from("products").select("section, weapon");
+  const rows = tagRows ?? [];
+  const totalCount = rows.length;
+  const sectionCount = (key: string) => rows.filter((r) => r.section === key).length;
+
+  // With nothing searched or filtered, the shop asks one thing at a time:
+  // section, then weapon (weapons and parts only), then the products. Every
+  // step is its own address, so the breadcrumbs and the browser's back and
+  // forward buttons walk through the choices. Search, favourites and "all
+  // products" show a flat list instead.
+  const section = findSection(sp.section);
+  const weaponParam = sp.weapon ?? "";
+  const viewAll = sp.view === "all";
+  const browsing = !term && !category && !favouritesOnly && !viewAll;
+  const browseView = browsing ? await renderBrowse() : null;
+
+  async function renderBrowse() {
+    if (!section) {
+      const items = SECTIONS.map((s) => ({
+        key: s.key,
+        label: s.label,
+        count: sectionCount(s.key),
+        href: "/protected/shop?section=" + s.key,
+        imageSrc: "/media/shop/" + s.key.replace("_", "-") + ".jpg",
+      })).filter((item) => item.count > 0);
+      return (
+        <BrowseStep crumbs={[]} title="Shop by section" favourites={favouriteIds.size}>
+          <BrowseCards items={items} />
+        </BrowseStep>
+      );
+    }
+
+    const sectionHref = "/protected/shop?section=" + section.key;
+    const weaponChosen = isShopWeapon(weaponParam) || weaponParam === GENERAL;
+
+    if (section.asksForWeapon && !weaponChosen) {
+      const inSection = rows.filter((r) => r.section === section.key);
+      // A weapon's count includes the parts that fit any weapon, because
+      // those show on its page too.
+      const weapons = (["foil", "epee", "sabre"] as const).map((w) => ({
+        key: w,
+        label: WEAPON_LABELS[w],
+        count: inSection.filter((r) => r.weapon === w || !r.weapon).length,
+        href: sectionHref + "&weapon=" + w,
+        imageSrc: "/media/shop/" + w + ".jpg",
+      }));
+      const items = [
+        ...weapons,
+        {
+          key: GENERAL,
+          label: GENERAL_LABEL,
+          count: inSection.filter((r) => !r.weapon).length,
+          href: sectionHref + "&weapon=" + GENERAL,
+          // general.jpg shows masks and kit, which reads wrong next to the
+          // pommels and nuts that end up here, so reuse the section's photo.
+          imageSrc: "/media/shop/" + section.key.replace("_", "-") + ".jpg",
+        },
+      ].filter((item) => item.count > 0);
+      return (
+        <BrowseStep
+          crumbs={[{ label: section.label }]}
+          title={section.label}
+          subtitle="Which weapon is it for?"
+          favourites={favouriteIds.size}
+        >
+          <BrowseCards items={items} />
+        </BrowseStep>
+      );
+    }
+
+    let listQuery = supabase
+      .from("products")
+      .select("id, item_code, name, price, sizes, needs_handedness, image_path, kind, level")
+      .eq("section", section.key);
+    let weaponLabel = "";
+    let listHref = sectionHref;
+    if (section.asksForWeapon) {
+      listHref += "&weapon=" + weaponParam;
+      if (weaponParam === GENERAL) {
+        listQuery = listQuery.is("weapon", null);
+        weaponLabel = GENERAL_LABEL;
+      } else {
+        // weaponParam passed isShopWeapon above, so it is safe in the filter.
+        // Parts that fit any weapon belong on every weapon's page.
+        listQuery = listQuery.or(`weapon.eq.${weaponParam},weapon.is.null`);
+        weaponLabel = WEAPON_LABELS[weaponParam as keyof typeof WEAPON_LABELS];
+      }
+    }
+    // The groups keep this order, so sorting applies inside each group.
+    const { data: list, error: listError } = await listQuery
+      .order(sort.column, { ascending: sort.ascending })
+      .order("id");
+    if (listError) {
+      return <p className="p-8 text-destructive">Failed to load: {listError.message}</p>;
+    }
+
+    const groups = groupProducts(list ?? []);
+    const crumbs = weaponLabel
+      ? [{ label: section.label, href: sectionHref }, { label: weaponLabel }]
+      : [{ label: section.label }];
+    const browseSorts = Object.keys(SORTS).map((k) => ({
+      key: k,
+      label: SORTS[k].label,
+      href: k === "code" ? listHref : listHref + "&sort=" + k,
+    }));
+    return (
+      <BrowseStep
+        crumbs={crumbs}
+        title={weaponLabel ? section.label + " - " + weaponLabel : section.label}
+        favourites={favouriteIds.size}
+        toolbar={
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Sort by</span>
+            <SortSelect value={sortKey} options={browseSorts} />
+          </div>
+        }
+      >
+        {groups.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-card/80 p-8 text-center text-muted-foreground backdrop-blur-sm">
+            No products here yet.
+          </p>
+        ) : (
+          <div className="space-y-8">
+            {groups.map((group) => (
+              <section key={group.key} aria-label={group.label}>
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {group.label} <span className="font-normal">({group.items.length})</span>
+                </h3>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {group.items.map((p) => (
+                    <ProductCard key={p.id} product={p} isFavourite={favouriteIds.has(p.id)} titleAs="h4" />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </BrowseStep>
+    );
   }
-  const categories = Object.keys(counts).sort();
-  const totalCount = allCats?.length ?? 0;
 
   // Build the product query in pieces — each filter is optional.
   let query = supabase
@@ -128,6 +271,7 @@ export default async function ShopPage({
     if (category) params.set("category", category);
     if (sortKey !== "code") params.set("sort", sortKey);
     if (favouritesOnly) params.set("favourites", "1");
+    if (viewAll) params.set("view", "all");
 
     if (changes.page && changes.page !== "1") params.set("page", changes.page);
 
@@ -148,102 +292,30 @@ export default async function ShopPage({
     return { key: k, label: SORTS[k].label, href: linkTo({ sort: k }) };
   });
 
-  const sidebarItems = categories.map(function (c) {
-    const active = category === c;
+  // The sidebar leads back into the section-by-section browse rather than
+  // the supplier's own category list.
+  const sidebarItems = SECTIONS.filter((s) => sectionCount(s.key) > 0).map(function (s) {
     return (
       <Link
-        key={c}
-        href={linkTo({ category: c })}
-        className={
-          "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition " +
-          (active
-            ? "bg-primary font-medium text-primary-foreground"
-            : "text-foreground hover:bg-accent")
-        }
+        key={s.key}
+        href={"/protected/shop?section=" + s.key}
+        className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm text-foreground transition hover:bg-accent"
       >
-        <span>{c}</span>
-        <span className={active ? "opacity-70" : "text-muted-foreground"}>
-          {counts[c]}
-        </span>
+        <span>{s.label}</span>
+        <span className="text-muted-foreground">{sectionCount(s.key)}</span>
       </Link>
     );
   });
 
-  const cards = products.map(function (p) {
-    const imageUrl = productImageUrl(p.image_path);
-    const hasSizes = Boolean(p.sizes);
-    // Sizes and weapon hand are chosen on the detail page.
-    const needsChoice = hasSizes || Boolean(p.needs_handedness);
-    const href = "/protected/shop/" + p.item_code;
+  const listTitle = favouritesOnly
+    ? "My favourites"
+    : term
+      ? `Results for "${term}"`
+      : category || "All products";
 
-    return (
-      <div
-        key={p.id}
-        className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm transition hover:border-foreground/30 hover:shadow-sm"
-      >
-        <Link href={href} className="block">
-            <div className="relative flex h-40 items-center justify-center bg-white">
-            <span className="absolute left-3 top-3 z-10 rounded-lg bg-background/90 px-2.5 py-1 font-mono text-xs text-muted-foreground shadow-sm">
-              {p.item_code}
-            </span>
-
-            {/* Heart sits top-right, opposite the item code. */}
-            <FavouriteButton
-              productId={p.id}
-              initiallyFavourite={favouriteIds.has(p.id)}
-            />
-
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={p.name}
-                fill
-                
-                className="object-contain p-6"
-                sizes="(max-width: 768px) 50vw, 33vw"
-              />
-            ) : (
-              <span className="text-xs text-muted-foreground">No image</span>
-            )}
-          </div>
-        </Link>
-
-        <div className="flex flex-1 flex-col p-4">
-          <Link href={href}>
-            <h2 className="text-sm font-medium leading-snug text-card-foreground hover:underline">
-              {p.name}
-            </h2>
-          </Link>
-
-          <div className="mt-auto flex items-end justify-between pt-3">
-            <div>
-              <p className="text-lg font-semibold text-card-foreground">
-                {Number(p.price) === 0
-                  ? "Price on request"
-                  : formatRands(p.price)}
-              </p>
-              <span className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                {hasSizes ? "Multiple sizes" : "One size"}
-              </span>
-            </div>
-
-            {/* Products with a size or hand to choose must open the page.
-                Everything else can be added straight from here. */}
-            {needsChoice ? (
-              <Link
-                href={href}
-                className="shrink-0 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:bg-primary hover:text-primary-foreground"
-              >
-                {hasSizes ? "Choose size" : "Choose hand"}
-              </Link>
-            ) : (
-              <QuickAddButton productId={p.id} />
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  });
+  const cards = products.map((p) => (
+    <ProductCard key={p.id} product={p} isFavourite={favouriteIds.has(p.id)} />
+  ));
 
   return (
     <div className="relative">
@@ -304,22 +376,23 @@ export default async function ShopPage({
           name="q"
           defaultValue={term}
           placeholder="Search by item code or name..."
-          className="flex-1 bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
         <input type="hidden" name="category" value={category} />
         <button
           type="submit"
-          className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 sm:px-6"
         >
           Search
         </button>
       </form>
 
+      {browseView ?? (
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="h-fit rounded-2xl border border-border bg-card/80 p-4 backdrop-blur-sm">
           <div className="mb-3 flex items-center gap-2 px-1">
             <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-            <p className="font-medium text-card-foreground">Categories</p>
+            <p className="font-medium text-card-foreground">Browse</p>
           </div>
 
           <div className="space-y-0.5">
@@ -346,20 +419,23 @@ export default async function ShopPage({
             </Link>
 
             <Link
-              href={linkTo({ category: "" })}
+              href="/protected/shop?view=all"
               className={
                 "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm transition " +
-                (category
+                (category || !viewAll
                   ? "text-foreground hover:bg-accent"
                   : "bg-primary font-medium text-primary-foreground")
               }
             >
               <span>All products</span>
-              <span className={category ? "text-muted-foreground" : "opacity-70"}>
+              <span className={category || !viewAll ? "text-muted-foreground" : "opacity-70"}>
                 {totalCount}
               </span>
             </Link>
 
+            <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Sections
+            </p>
             {sidebarItems}
           </div>
 
@@ -377,8 +453,13 @@ export default async function ShopPage({
         <section>
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
+              <nav aria-label="Breadcrumb" className="mb-1 text-sm text-muted-foreground">
+                <Link href="/protected/shop" className="hover:underline">Shop</Link>
+                {" / "}
+                <span aria-current="page" className="text-foreground">{listTitle}</span>
+              </nav>
               <h2 className="text-xl font-semibold text-foreground">
-                {favouritesOnly ? "My favourites" : category || "All products"}{" "}
+                {listTitle}{" "}
                 <span className="text-muted-foreground">({matchCount})</span>
               </h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -425,6 +506,59 @@ export default async function ShopPage({
           />
         </section>
       </div>
+      )}
+    </div>
+  );
+}
+
+function BrowseStep({
+  crumbs,
+  title,
+  subtitle,
+  favourites,
+  toolbar,
+  children,
+}: {
+  crumbs: { label: string; href?: string }[];
+  title: string;
+  subtitle?: string;
+  favourites: number;
+  toolbar?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative z-10 space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          {crumbs.length > 0 && (
+            <nav aria-label="Breadcrumb" className="mb-1 text-sm text-muted-foreground">
+              <Link href="/protected/shop" className="hover:underline">Shop</Link>
+              {crumbs.map((crumb) => (
+                <span key={crumb.label}>
+                  {" / "}
+                  {crumb.href ? (
+                    <Link href={crumb.href} className="hover:underline">{crumb.label}</Link>
+                  ) : (
+                    <span aria-current="page" className="text-foreground">{crumb.label}</span>
+                  )}
+                </span>
+              ))}
+            </nav>
+          )}
+          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {toolbar}
+          <Link href="/protected/shop?favourites=1" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+            My favourites ({favourites})
+          </Link>
+          <Link href="/protected/shop?view=all" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+            See all products
+          </Link>
+        </div>
+      </div>
+      {children}
     </div>
   );
 }

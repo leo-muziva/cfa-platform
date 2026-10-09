@@ -19,6 +19,14 @@ const applicationStatusLabels: Record<MembershipApplicationStatus, string> = {
   approved: 'Approved and paid',
 }
 
+// Same names as the plan cards on the membership page.
+const PLAN_NAMES: Record<string, string> = {
+  beginner_package: 'Beginner package',
+  month_to_month: 'Month to month',
+  six_month: '6 months',
+  twelve_month: '12 months',
+}
+
 // Where this person is with membership, and whether the apply (or amend and
 // resubmit) form shows for them. Membership starts once approved and paid.
 export function membershipApplyState(membershipData: MembershipData) {
@@ -59,7 +67,7 @@ export function MembershipPanel({
           Your membership
         </h2>
         <p className="text-sm text-muted-foreground">
-          Apply for membership and follow your application. Membership starts once it is approved and paid.
+          Apply below and check your application&rsquo;s progress here. Your membership starts once it is approved and paid.
         </p>
       </div>
 
@@ -155,7 +163,7 @@ export function MembershipPanel({
           <CardHeader>
             <CardTitle className="flex flex-wrap items-center justify-between gap-3">
               <span>
-                {item.membership_type?.name} - version {item.version}
+                {PLAN_NAMES[membershipData.membershipTypes.find((type) => type.id === item.membership_type_id)?.code ?? ''] ?? item.membership_type?.name}
               </span>
               <Badge>{applicationStatusLabels[item.status]}</Badge>
             </CardTitle>

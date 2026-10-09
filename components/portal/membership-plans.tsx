@@ -13,14 +13,18 @@ export function termLabel(months: number | null) {
   return `${months} months`;
 }
 
-// Saving against paying month to month for the same length, rounded to the
-// nearest half percent. Nothing if there's no saving.
-export function savingPercent(plan: PublicPricingPlan, monthly: number | null) {
-  if (!monthly || !plan.price || !plan.termMonths || plan.termMonths <= 1) return null;
-  const saving = (1 - plan.price / (monthly * plan.termMonths)) * 100;
-  if (saving < 0.5) return null;
-  return Math.round(saving * 2) / 2;
+const NUMBER_WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+// "three months", read from the plan so the text follows the database.
+export function monthsInWords(months: number) {
+  const word = NUMBER_WORDS[months] ?? String(months);
+  return months === 1 ? `${word} month` : `${word} months`;
 }
+
+const PLAN_BADGES: Partial<Record<string, string>> = {
+  six_month: "Pay once for 6 months",
+  twelve_month: "Pay once for the year",
+};
 
 function applyHref(code: string) {
   return `/protected/membership?plan=${code}#apply-membership`;
@@ -40,7 +44,6 @@ export function MembershipPlans({
   const terms = ["month_to_month", "six_month", "twelve_month"]
     .map((code) => plans.find((plan) => plan.code === code))
     .filter((plan): plan is PublicPricingPlan => Boolean(plan && plan.price !== null));
-  const monthly = plans.find((plan) => plan.code === "month_to_month")?.price ?? null;
 
   return (
     <div className="mx-auto max-w-4xl text-center">
@@ -63,8 +66,8 @@ export function MembershipPlans({
             {formatRands(beginner.price!)}
           </p>
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Four individual beginner lessons.
-            {beginner.termMonths ? ` Valid for ${beginner.termMonths} months.` : ""} Club kit for these lessons.
+            Four one-on-one lessons with a coach
+            {beginner.termMonths ? `, to use within ${monthsInWords(beginner.termMonths)}` : ""}. Club kit is provided.
           </p>
           {showButtons && (
             <Link
@@ -81,13 +84,13 @@ export function MembershipPlans({
         <>
           <h2 className="mt-14 font-semibold text-cfa-purple dark:text-white">Membership</h2>
           <p className="mx-auto mt-1 max-w-lg text-muted-foreground">
-            A monthly membership gives you access to all of the club&rsquo;s training times, and club
-            equipment if you don&rsquo;t have your own.
+            Members can attend every club session and use club equipment if they don&rsquo;t have
+            their own.
           </p>
 
           <ul className="mt-6 grid gap-4 sm:grid-cols-3">
             {terms.map((plan) => {
-              const saving = savingPercent(plan, monthly);
+              const badge = PLAN_BADGES[plan.code];
               return (
                 <li
                   key={plan.code}
@@ -103,10 +106,10 @@ export function MembershipPlans({
                   <p
                     className={cn(
                       "mt-1 min-h-5 text-xs font-semibold text-green-700 dark:text-green-400",
-                      !saving && "invisible",
+                      !badge && "invisible",
                     )}
                   >
-                    {saving ? `Save about ${saving}%` : "No saving"}
+                    {badge ?? "No saving"}
                   </p>
                   {showButtons && (
                     <Link
@@ -122,8 +125,6 @@ export function MembershipPlans({
           </ul>
         </>
       )}
-
-      <p className="mt-8 text-sm text-muted-foreground">Visiting fencers welcome — R120 drop-in</p>
     </div>
   );
 }
