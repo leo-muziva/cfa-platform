@@ -8,18 +8,17 @@ export type ShopLevel = 'practice' | 'electric' | 'fie'
 export interface SectionInfo {
   key: ShopSection
   label: string
-  blurb: string
   // Sections where the weapon changes what fits ask for it first.
   asksForWeapon: boolean
 }
 
 export const SECTIONS: SectionInfo[] = [
-  { key: 'weapons', label: 'Weapons', blurb: 'Complete foils, épées and sabres', asksForWeapon: true },
-  { key: 'clothing', label: 'Masks and clothing', blurb: 'Masks, jackets, pants, gloves and shoes', asksForWeapon: false },
-  { key: 'electric', label: 'Electric kit', blurb: 'Lames, body cords and plugs', asksForWeapon: false },
-  { key: 'parts', label: 'Parts and repairs', blurb: 'Blades, grips, guards, points and more', asksForWeapon: true },
-  { key: 'bags_tools', label: 'Bags and tools', blurb: 'Bags, blade covers and repair tools', asksForWeapon: false },
-  { key: 'club', label: 'Club and coaching', blurb: 'Coach gear and scoring equipment', asksForWeapon: false },
+  { key: 'weapons', label: 'Weapons', asksForWeapon: true },
+  { key: 'clothing', label: 'Masks and clothing', asksForWeapon: false },
+  { key: 'electric', label: 'Electric kit', asksForWeapon: false },
+  { key: 'parts', label: 'Parts and repairs', asksForWeapon: true },
+  { key: 'bags_tools', label: 'Bags and tools', asksForWeapon: false },
+  { key: 'club', label: 'Club and coaching', asksForWeapon: false },
 ]
 
 export const SECTION_KEYS = ['weapons', 'clothing', 'electric', 'parts', 'bags_tools', 'club'] as const

@@ -4,8 +4,6 @@ import { ImageIcon } from "lucide-react";
 export interface BrowseCardItem {
   key: string;
   label: string;
-  blurb?: string;
-  count: number;
   href: string;
   // A 16:9 photo from public/media/shop. Without one the card shows a
   // placeholder icon instead.
@@ -29,13 +27,7 @@ export function BrowseCards({ items }: { items: BrowseCardItem[] }) {
               <ImageIcon aria-hidden="true" className="h-8 w-8 text-muted-foreground/50" />
             )}
           </div>
-          <div className="flex items-end justify-between gap-3 p-4">
-            <div>
-              <p className="font-medium text-card-foreground group-hover:underline">{item.label}</p>
-              {item.blurb && <p className="mt-0.5 text-sm text-muted-foreground">{item.blurb}</p>}
-            </div>
-            <span className="shrink-0 text-sm text-muted-foreground">{item.count}</span>
-          </div>
+          <p className="p-4 text-center font-medium text-card-foreground group-hover:underline">{item.label}</p>
         </Link>
       ))}
     </div>

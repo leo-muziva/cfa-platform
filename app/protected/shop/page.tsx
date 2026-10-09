@@ -93,7 +93,6 @@ export default async function ShopPage({
       const items = SECTIONS.map((s) => ({
         key: s.key,
         label: s.label,
-        blurb: s.blurb,
         count: sectionCount(s.key),
         href: "/protected/shop?section=" + s.key,
         imageSrc: "/media/shop/" + s.key.replace("_", "-") + ".jpg",
