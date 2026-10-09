@@ -266,7 +266,7 @@ export function SignInFlow({
           <p className="text-center text-sm text-muted-foreground">
             New to CFA?{" "}
             <Link href={`/auth/sign-up?next=${encodeURIComponent(next)}`} className="font-medium text-foreground underline underline-offset-4">
-              Create a guest account
+              Create an account
             </Link>
           </p>
         </fieldset>

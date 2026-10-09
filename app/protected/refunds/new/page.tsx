@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { requestRefundAction } from "@/app/actions/refunds";
 import { getMyRefundablePayment } from "@/lib/services/refund-service";
 import type { PaymentKind } from "@/types/domain";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +88,7 @@ export default async function NewRefundPage({
         <CardContent>
           <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             <div><dt className="inline text-muted-foreground">For: </dt><dd className="inline">{KIND_LABELS[payment.kind]}</dd></div>
-            <div><dt className="inline text-muted-foreground">Amount paid: </dt><dd className="inline">{formatZar(payment.amountCents)}</dd></div>
+            <div><dt className="inline text-muted-foreground">Amount paid: </dt><dd className="inline">{formatZarWithCents(payment.amountCents)}</dd></div>
             {payment.completedAt ? (
               <div>
                 <dt className="inline text-muted-foreground">Paid on: </dt>
@@ -105,7 +105,7 @@ export default async function NewRefundPage({
             ) : null}
             <div>
               <dt className="inline text-muted-foreground">Can be refunded: </dt>
-              <dd className="inline font-semibold">{formatZar(payment.refundableCents)}</dd>
+              <dd className="inline font-semibold">{formatZarWithCents(payment.refundableCents)}</dd>
             </div>
           </dl>
         </CardContent>
@@ -133,7 +133,7 @@ export default async function NewRefundPage({
                 aria-describedby="refund-amount-hint"
               />
               <p id="refund-amount-hint" className="text-sm text-muted-foreground">
-                Up to {formatZar(payment.refundableCents)}. Leave the full amount for a full refund.
+                Up to {formatZarWithCents(payment.refundableCents)}. Leave the full amount for a full refund.
               </p>
             </div>
             <div className="grid gap-2">

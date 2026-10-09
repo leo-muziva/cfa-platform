@@ -3,30 +3,26 @@ import Image from "next/image";
 const COACHES = [
   {
     name: "Dr. Misha Galukhin",
-    designation: "Founder & Head Coach",
     description:
-      "Founder and head coach of Cape Fencing Academy, guiding the club's coaching programme and the development of its fencers.",
+      "Russian maestro Dr. Misha Galukhin earned a PhD in sport science in Moscow, with research on attacking technique and footwork in elite foil fencers. He founded Cape Fencing Academy in 1997 and still leads its coaching. He has been the coach behind many of South Africa’s National Champions over the years.",
     src: "/media/coaches/coach_misha.png",
   },
   {
     name: "Jacques Viljoen",
-    designation: "Senior Foil Coach",
     description:
-      "Focused on foil coaching, technical foundations and helping fencers build precision, timing and confidence on the piste.",
+      "Jacques started fencing with Misha at CFA in 2000. He went on to fence professionally, winning multiple South African foil titles and medalling internationally while living and training in the UK, Germany and Italy. He returned to Cape Town during the Covid pandemic and now coaches foil at the club.",
     src: "/media/coaches/coach_jacques.png",
   },
   {
     name: "Jeremy Saner",
-    designation: "Sabre · Épée · Foil",
     description:
-      "Works across all three weapons, supporting fencers as they develop their technique, tactical awareness and competitive experience.",
+      "Jeremy learned to fence under Misha’s compatriot Dr. Tyshler in Johannesburg before moving to Cape Town to train with Misha. He coaches all three weapons, specialises in sabre, and is the current South African senior men’s sabre champion.",
     src: "/media/coaches/coach_jeremy.png",
   },
   {
     name: "Caden Sampson",
-    designation: "Foil Coach",
     description:
-      "Supports foil fencers with focused individual attention and practical coaching for training, sparring and competition.",
+      "Caden is a multiple-time South African senior men’s foil champion and the current national title holder. He also coaches fencing at Bishops.",
     src: "/media/coaches/coach_caden.png",
   },
 ] as const;
@@ -44,11 +40,12 @@ export function CoachesSection() {
           The Coaches
         </p>
         <h2 className="mb-4 max-w-3xl text-3xl font-normal tracking-[-0.04em] md:text-5xl">
-          Learn from the best blades in the country.
+          Train with national champions
         </h2>
         <p className="max-w-2xl text-muted-foreground">
-          Meet the coaching team behind CFA&rsquo;s individual attention,
-          technical development and competitive fencing.
+          Our coaches include several South African champions who have competed
+          on the international circuit, led by founder and head coach Dr. Misha
+          Galukhin.
         </p>
 
         {/* 4 across on desktop, 2x2 on tablet. On phones it's a short list
@@ -68,7 +65,6 @@ export function CoachesSection() {
                 </div>
                 <div className="p-4 sm:px-5 sm:pt-5 sm:pb-2">
                   <h3 className="text-base font-medium sm:text-lg">{coach.name}</h3>
-                  <p className="text-sm text-[#8a6810] dark:text-cfa-gold">{coach.designation}</p>
                 </div>
               </div>
               <p className="px-4 pb-4 text-sm leading-6 text-muted-foreground sm:px-5 sm:pb-5">

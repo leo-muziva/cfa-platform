@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaymentStatusRefresher } from "@/components/payments/payment-status-refresher";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 import { getPaymentStatus } from "@/lib/services/payment-service";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export default async function PaymentResultPage({
           {succeeded && (
             <dl className="mx-auto grid max-w-xs grid-cols-2 gap-x-4 gap-y-1 text-left text-sm">
               <dt className="text-muted-foreground">Amount paid</dt>
-              <dd className="font-semibold">{formatZar(payment.amount_cents)}</dd>
+              <dd className="font-semibold">{formatZarWithCents(payment.amount_cents)}</dd>
               {payment.receipt_number && <>
                 <dt className="text-muted-foreground">Receipt</dt>
                 <dd className="font-semibold">{payment.receipt_number}</dd>
