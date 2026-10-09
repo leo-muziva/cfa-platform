@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/services/MemberService";
 import { MemberPortalLink } from "@/components/site-navigation";
+import { greetingName } from "@/lib/display-name";
 
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#140a2e] dark:focus-visible:outline-white";
@@ -12,7 +13,7 @@ export async function SiteAuth() {
   const profile = await getCurrentProfile();
 
   if (profile) {
-    const firstName = profile.full_name?.trim().split(/\s+/)[0] || "member";
+    const firstName = greetingName(profile.full_name);
     return (
       <div className="flex items-center gap-3">
         <span className="whitespace-nowrap text-sm text-[#140a2e]/75 dark:text-white/75">

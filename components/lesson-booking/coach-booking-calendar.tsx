@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { GlassButton } from "@/components/ui/glass-auth";
 import { GlassDialog } from "@/components/ui/glass-dialog";
 import {
+  capeTownDateKey,
   formatCapeTownCompactDate,
   formatCapeTownDate,
   formatCapeTownLessonDate,
@@ -19,9 +20,7 @@ import {
   lessonBillingCopy,
   lessonBillingDetailCopy,
   firstAvailableLessonTime,
-  lessonDateHasAvailableTime,
   lessonDates,
-  timesForLessonDate,
   toggleLessonParticipant,
 } from "@/lib/lesson-booking-ui";
 import Link from "next/link";
@@ -74,7 +73,21 @@ export function CoachBookingCalendar({
 }) {
   const router = useRouter();
   const availableDates = useMemo(() => lessonDates(times), [times]);
-  const initialDate = availableDates.find((date) => lessonDateHasAvailableTime(times, date)) ?? availableDates[0] ?? "";
+  // Group once: the date strip and time list would otherwise rescan every
+  // time for every date on each render.
+  const timesByDate = useMemo(() => {
+    const grouped = new Map<string, LessonTimeOption[]>();
+    for (const time of times) {
+      const key = capeTownDateKey(time.startsAt);
+      grouped.set(key, [...(grouped.get(key) ?? []), time]);
+    }
+    return grouped;
+  }, [times]);
+  const datesWithOpenTimes = useMemo(
+    () => new Set([...timesByDate].filter(([, dayTimes]) => dayTimes.some((time) => time.isAvailable)).map(([date]) => date)),
+    [timesByDate],
+  );
+  const initialDate = availableDates.find((date) => datesWithOpenTimes.has(date)) ?? availableDates[0] ?? "";
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [selectedTime, setSelectedTime] = useState(() => firstAvailableLessonTime(times, initialDate)?.startsAt ?? "");
   const [selectedWeapon, setSelectedWeapon] = useState<Weapon>(coach.weapons[0]);
@@ -83,9 +96,10 @@ export function CoachBookingCalendar({
     defaultParticipant ? [defaultParticipant.id] : [],
   );
   const [attemptedSlot, setAttemptedSlot] = useState<LessonTimeOption | null>(null);
+  const [paymentChoice, setPaymentChoice] = useState<"pay_now" | "pay_later">("pay_later");
   const [state, formAction, pending] = useFormAction(createAction, initialActionState);
 
-  const timesForDate = timesForLessonDate(times, selectedDate);
+  const timesForDate = timesByDate.get(selectedDate) ?? [];
   const hasAvailableTimes = times.some((time) => time.isAvailable);
   const selected = times.find((time) => time.startsAt === selectedTime && time.isAvailable) ?? null;
   const quote = quotes.find(
@@ -180,7 +194,7 @@ export function CoachBookingCalendar({
           </div>
           <div className="mt-5 flex flex-wrap gap-2" aria-label="Dates with scheduled lesson times">
             {availableDates.map((date) => {
-              const isAvailable = lessonDateHasAvailableTime(times, date);
+              const isAvailable = datesWithOpenTimes.has(date);
               const isSelected = selectedDate === date;
               return (
                 <button key={date} type="button" onClick={() => chooseDate(date)} disabled={!isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownCompactDate(date)}${isAvailable ? "" : ", unavailable"}`} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] dark:focus-visible:outline-violet-300 " + (isSelected ? "bg-[#2d176b] text-white dark:bg-violet-600" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40 dark:enabled:border-white/15 dark:enabled:text-white/75 dark:enabled:hover:border-white/40") + (!isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-white/40" : "")}>
@@ -211,8 +225,8 @@ export function CoachBookingCalendar({
               {timesForDate.map((time) => {
                 const isSelected = selectedTime === time.startsAt;
                 return (
-                  <button key={time.startsAt} type="button" onClick={() => time.isAvailable && setSelectedTime(time.startsAt)} disabled={!time.isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownTime(time.startsAt)}${time.isAvailable ? "" : ", unavailable"}`} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] dark:focus-visible:outline-violet-300 " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308] dark:border-cfa-gold dark:bg-cfa-gold/15 dark:text-amber-100" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35 dark:enabled:border-white/15 dark:enabled:bg-white/5 dark:enabled:text-white/75 dark:enabled:hover:border-white/40") + (!time.isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-white/40" : "")}>
-                    <span>{formatCapeTownTime(time.startsAt)}</span>
+                  <button key={time.startsAt} type="button" onClick={() => time.isAvailable && setSelectedTime(time.startsAt)} disabled={!time.isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownTime(time.startsAt)}${time.membersOnly ? ", members only" : ""}${time.isAvailable ? "" : ", unavailable"}`} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] dark:focus-visible:outline-violet-300 " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308] dark:border-cfa-gold dark:bg-cfa-gold/15 dark:text-amber-100" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35 dark:enabled:border-white/15 dark:enabled:bg-white/5 dark:enabled:text-white/75 dark:enabled:hover:border-white/40") + (!time.isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-white/40" : "")}>
+                    <span>{formatCapeTownTime(time.startsAt)}{time.membersOnly && <span className="block text-[0.65rem] font-semibold uppercase tracking-wide opacity-70">Members only</span>}</span>
                     {time.isAvailable ? (isSelected && <Check className="h-4 w-4" aria-hidden="true" />) : <span className="text-xs font-semibold uppercase tracking-wide">Unavailable</span>}
                   </button>
                 );
@@ -278,23 +292,40 @@ export function CoachBookingCalendar({
               <p className="text-sm text-white/85">Guest lessons are paid now. Your slot is held while you complete secure checkout.</p>
             </>
           ) : paymentsAvailable ? (
-            <label className="block space-y-2 text-sm">
-              <span>Payment option</span>
-              <select name="paymentOption" defaultValue="pay_later" className="min-h-12 w-full rounded-xl border border-white/30 bg-[#25145c] px-3 text-white">
-                <option value="pay_later">Pay later on my invoice</option>
-                <option value="pay_now">Pay now (secure checkout)</option>
-              </select>
-            </label>
+            <fieldset className="space-y-2 text-sm">
+              <legend className="mb-2">How would you like to pay?</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {([["pay_now", "Pay now", "Secure checkout with PayFast"], ["pay_later", "Pay later", "Added to my monthly invoice"]] as const).map(([option, label, hint]) => {
+                  const chosen = paymentChoice === option;
+                  return (
+                    <label key={option} className={"group relative flex cursor-pointer select-none items-start gap-3 overflow-hidden rounded-2xl border-2 px-3 py-3 shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm motion-reduce:transform-none motion-reduce:transition-none has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-white " + (chosen ? "border-white bg-[#ffffff] text-[#25145c] ring-2 ring-[#f0c71b]/70" : "border-white/45 bg-white/10 text-white hover:border-white/80 hover:bg-white/15")}>
+                      <input type="radio" name="paymentOption" value={option} checked={chosen} onChange={() => setPaymentChoice(option)} className="sr-only" />
+                      <span aria-hidden="true" className={"mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors " + (chosen ? "border-[#25145c] bg-[#25145c] text-white" : "border-white/70")}>
+                        {chosen && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                      <span>
+                        <span className="block font-semibold">{label}</span>
+                        <span className={"block text-xs " + (chosen ? "text-[#25145c]/75" : "text-white/75")}>{hint}</span>
+                      </span>
+                      {/* A light sweeps across on hover so the card reads as pressable.
+                          bg-[#ffffff] rather than bg-white: the portal glass theme
+                          frosts bg-white, which made these controls look disabled. */}
+                      <span aria-hidden="true" className={"pointer-events-none absolute inset-y-0 -left-2/3 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-transparent transition-[left] duration-700 ease-out group-hover:left-[130%] motion-reduce:hidden " + (chosen ? "via-[#7c5cff]/20" : "via-white/35")} />
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
           ) : (
             <input type="hidden" name="paymentOption" value="pay_later" />
           ))}
-          {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}</p>}
+          {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}{state.errorCode === "account_incomplete" && <> <Link className="underline" href="/protected/complete-profile">Complete your profile</Link></>}</p>}
           {state.success && <p role="status" className="rounded-xl bg-emerald-950/40 p-3 text-sm text-emerald-50">{state.success}</p>}
           {state.checkoutRequired && (
             <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
           )}
-          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
-            {pending ? "Booking…" : requiresPayNow ? "Book and pay now" : "Confirm booking"}
+          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-[#ffffff] text-base font-semibold text-[#25145c] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffffff] hover:shadow-lg active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-none">
+            {pending ? "Booking…" : "Book"}
           </Button>
         </ValidatedForm>
       </aside>

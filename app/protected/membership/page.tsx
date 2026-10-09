@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 
 // Prices at the top, then the member's current membership and the apply
 // form. The price buttons come back here with ?plan= so the form has that
-// plan picked. They're hidden when there's no form to go to.
+// plan picked. They're hidden when there's no form to go to. Dependents
+// see no prices, like everywhere else in the portal.
 export default async function MembershipPage({
   searchParams,
 }: {
@@ -29,7 +30,7 @@ export default async function MembershipPage({
 
   return (
     <div className="space-y-14 py-4">
-      <MembershipPlans plans={plans} showButtons={showForm} />
+      {membershipData.canSeeMoney && <MembershipPlans plans={plans} showButtons={showForm} />}
 
       <div
         id="apply-membership"

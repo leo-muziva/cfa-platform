@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CoachDirectory } from "@/components/lesson-booking/coach-directory";
+import { ProfileIncompleteNotice } from "@/components/lesson-booking/profile-incomplete-notice";
+import { getCurrentAccountContext } from "@/lib/services/MemberService";
 import {
   getAvailableLessonTimes,
   getLessonCoachDirectory,
@@ -11,7 +13,8 @@ export const metadata: Metadata = {
 };
 
 export default async function BookLessonPage() {
-  const result = await getLessonCoachDirectory();
+  const [result, context] = await Promise.all([getLessonCoachDirectory(), getCurrentAccountContext()]);
+  const profileIncomplete = !("error" in context) && !context.profile.profile_completed_at && !context.capabilities.isAdmin;
   if (!result.success && result.errorCode === "not_authenticated") {
     redirect("/auth/login?next=%2Fprotected%2Fbook");
   }
@@ -44,6 +47,8 @@ export default async function BookLessonPage() {
           invoiced after their outcome is recorded.
         </p>
       </header>
+
+      {profileIncomplete && <ProfileIncompleteNotice />}
 
       {result.success ? (
         <CoachDirectory coaches={coaches} />

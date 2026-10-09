@@ -25,7 +25,7 @@ export function MembershipDecisionForm({ applicationId, privateNotes }: {
       {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
       {state.success && <p role="status" className="text-sm text-green-600 dark:text-green-400">{state.success}</p>}
       <div className="flex flex-wrap gap-2">
-        <Button name="decision" value="approve" disabled={pending}>Approve</Button>
+        <Button name="decision" value="approve" disabled={pending}>Approve and request payment</Button>
         <Button name="decision" value="request_changes" variant="outline" disabled={pending}>Request changes</Button>
         <Button name="decision" value="reject" variant="outline" disabled={pending}>Reject</Button>
       </div>

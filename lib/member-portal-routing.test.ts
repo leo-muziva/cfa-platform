@@ -19,14 +19,18 @@ describe("consolidated member portal routing", () => {
     const layout = read("app/protected/layout.tsx");
     const navigation = read("components/site-navigation.tsx");
     expect(layout).toContain("{ href: '/protected', label: 'Profile' }");
-    expect(layout).not.toMatch(/label: ["'](?:Overview|Membership|Dependents)["']/);
+    expect(layout).not.toMatch(/label: ["'](?:Overview|Dependents)["']/);
     expect(navigation).toContain('href="/"');
     expect(navigation).toContain('aria-label="Cape Fencing Academy home"');
   });
 
-  it("keeps Book and Shop on the main bar, not the member portal bar", () => {
+  it("keeps Book, Membership and Shop on the main bar, not the member portal bar", () => {
     const layout = read("app/protected/layout.tsx");
-    expect(layout).not.toMatch(/label: ["'](?:Book|Shop)["']/);
+    expect(layout).not.toMatch(/label: ["'](?:Book|Membership|Shop)["']/);
+  });
+
+  it("links the Profile page to the membership section", () => {
+    expect(read("app/protected/page.tsx")).toContain('href="/protected/membership"');
   });
 
   it("keeps legacy member destinations as compatibility redirects", () => {

@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { validationFailure, type ValidationFailure } from '@/lib/validations/form-errors'
 
 // Field names as the profile forms label them, for validation messages.
@@ -16,7 +17,7 @@ import { createClient } from '@/lib/supabase/server'
 import {
   getProfileById, updateProfile, getProfilesPage, adminUpdateProfile,
   getMemberStatsRows, getMembershipTypes, inviteMemberByEmail,
-  getHouseholdMembership, getHouseholdMembers, completeProfile, attachDependent,
+  getHouseholdMembership, getHouseholdMembers, completeProfile,
   getActiveBillingPayer,
 } from '@/lib/repositories/MemberRepository'
 import { getMembership } from '@/lib/repositories/PlatformRepository'
@@ -28,11 +29,14 @@ import type {
   Capabilities, HouseholdMember,
 } from '@/types/domain'
 
-export async function getCurrentProfile(): Promise<Profile | null> {
+// The layout, header and page each ask who is signed in. cache() makes that
+// one Supabase Auth round trip and one profile query per request; outside a
+// server render (Server Actions, route handlers) it simply runs each time.
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user ? getProfileById(user.id) : null
-}
+})
 
 export async function requireAdmin(): Promise<{ profile: Profile } | { error: string }> {
   const profile = await getCurrentProfile()
@@ -58,19 +62,22 @@ export function deriveCapabilities(profile: Profile, household: HouseholdMember,
   }
 }
 
-export async function getCurrentAccountContext(): Promise<
+export const getCurrentAccountContext = cache(async (): Promise<
   { profile: Profile; household: HouseholdMember; householdMembers: HouseholdMember[]; capabilities: Capabilities } |
   { error: string }
-> {
+> => {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
-  const household = await getHouseholdMembership(profile.id)
+  // Household and payer are independent lookups, so fetch them together.
+  const [household, effectivePayerId] = await Promise.all([
+    getHouseholdMembership(profile.id),
+    getActiveBillingPayer(profile.id),
+  ])
   if (!household) return { error: 'Household setup is incomplete' }
-  const effectivePayerId = await getActiveBillingPayer(profile.id)
   if (!effectivePayerId) return { error: 'Billing responsibility is unavailable' }
   const householdMembers = await getHouseholdMembers(household.household_id)
   return { profile, household, householdMembers, capabilities: deriveCapabilities(profile, household, effectivePayerId) }
-}
+})
 
 export async function requireStaff(): Promise<{ profile: Profile } | { error: string }> {
   const profile = await getCurrentProfile()
@@ -181,7 +188,3 @@ export async function getHouseholdAdminData() {
   return { profiles, memberships: await getHouseholdMembers() }
 }
 
-export async function attachDependentForAdmin(profileId: string, payerId: string) {
-  const guard = await requireAdmin()
-  return 'error' in guard ? guard : attachDependent(profileId, payerId)
-}

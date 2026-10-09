@@ -4,11 +4,11 @@ import type { FamilyChangeRequest } from "@/types/family";
 
 export async function listFamilyChanges(profileId: string, staffScope: boolean): Promise<FamilyChangeRequest[]> {
   const db = await createClient();
-  let query = db.from("family_change_requests").select("id,family_link_id,dependent_id,old_guardian_id,new_guardian_id,requested_by,kind,status,reason,accepted_at,review_note,created_at");
+  let query = db.from("family_change_requests").select("id,family_link_id,dependent_id,old_guardian_id,new_guardian_id,requested_by,kind,status,reason,accepted_at,review_note,created_at,dependent:profiles!family_change_requests_dependent_id_fkey(full_name,email),old_guardian:profiles!family_change_requests_old_guardian_id_fkey(full_name,email),new_guardian:profiles!family_change_requests_new_guardian_id_fkey(full_name,email)");
   if (!staffScope) query = query.or(`dependent_id.eq.${profileId},old_guardian_id.eq.${profileId},new_guardian_id.eq.${profileId}`);
   const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw new Error("Family change requests are unavailable.");
-  return (data ?? []) as FamilyChangeRequest[];
+  return (data ?? []) as unknown as FamilyChangeRequest[];
 }
 export async function requestFamilyChange(input: { linkId: string; kind: string; newPayerEmail: string; reason: string }) {
   const db = await createClient();

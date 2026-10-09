@@ -15,7 +15,12 @@ export async function requestFamilyChange(raw: unknown) {
   if (!parsed.success) return validationFailure(parsed.error);
   if (!await getCurrentProfile()) return { error: "Not authenticated" };
   const { error } = await repository.requestFamilyChange(parsed.data);
-  return error ? { error: "Unable to request this change. Check the account details and any pending request." } : { success: "Change requested. Transfers need the new payer's acceptance before staff review." };
+  return error ? { error: "Unable to request this change. Check the account details and any pending request." } : { success: requestedChangeMessage(parsed.data.kind) };
+}
+export function requestedChangeMessage(kind: "unlink" | "transfer") {
+  return kind === "unlink"
+    ? "Unlink requested. Staff will review it, and the relationship stays active until they approve."
+    : "Transfer requested. The new payer must accept it, then staff will review it.";
 }
 export async function acceptFamilyTransfer(raw: unknown) {
   const parsed = familyAcceptanceSchema.safeParse(raw);

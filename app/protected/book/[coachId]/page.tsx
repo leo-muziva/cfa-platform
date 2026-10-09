@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createLessonBookingAction } from "@/app/actions/lessons";
 import { CoachBookingCalendar } from "@/components/lesson-booking/coach-booking-calendar";
+import { ProfileIncompleteNotice } from "@/components/lesson-booking/profile-incomplete-notice";
 import {
   getLessonBookingPageData,
   quoteLesson,
@@ -66,7 +67,7 @@ export default async function CoachLessonBookingPage({
         </p>
       </header>
 
-      <CoachBookingCalendar
+      {!data.profile.profile_completed_at && !data.capabilities.isAdmin ? <ProfileIncompleteNotice /> : <CoachBookingCalendar
         coach={data.coach}
         times={data.timeOptions}
         participants={participants}
@@ -74,7 +75,7 @@ export default async function CoachLessonBookingPage({
         canSeeQuote={data.capabilities.canSeeHouseholdMoney}
         paymentsAvailable={data.paymentsAvailable}
         createAction={createLessonBookingAction}
-      />
+      />}
     </div>
   );
 }

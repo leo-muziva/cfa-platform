@@ -1,19 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { adminUpdateMember, inviteMemberForAdmin, attachDependentForAdmin } from '@/lib/services/MemberService'
+import { adminUpdateMember, inviteMemberForAdmin } from '@/lib/services/MemberService'
 import { failureState } from '@/lib/validations/form-errors'
 import type { FormFieldState } from '@/types/domain'
 
 export type AdminMemberActionState = FormFieldState & {
   success?: boolean
   message?: string
-}
-
-export async function attachDependentAction(formData: FormData) {
-  await attachDependentForAdmin(String(formData.get('profile_id')), String(formData.get('payer_id')))
-  revalidatePath('/protected/admin/households')
-  revalidatePath('/protected/admin/members')
 }
 
 export async function adminUpdateMemberAction(

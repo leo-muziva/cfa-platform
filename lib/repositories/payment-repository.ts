@@ -16,9 +16,10 @@ export interface CheckoutRow {
 export interface PaymentStatusRow {
   attempt_id: string;
   status: "pending" | "succeeded" | "failed";
-  kind: "booking" | "invoice" | "order";
+  kind: "booking" | "invoice" | "order" | "membership";
   credited: boolean;
   amount_cents: string;
+  receipt_number: string | null;
 }
 
 export interface PreparedPaymentRow {
@@ -51,7 +52,12 @@ export async function preparePayment(target: PaymentTarget, provider: string): P
       target_provider: provider,
       target_notes: target.notes ?? null,
     })
-    : await db.rpc("prepare_payment_checkout", {
+    : target.membershipApplicationId
+      ? await db.rpc("prepare_membership_checkout", {
+        target_application: target.membershipApplicationId,
+        target_provider: provider,
+      })
+      : await db.rpc("prepare_payment_checkout", {
       target_booking: target.bookingId ?? null,
       target_invoice: target.invoiceId ?? null,
       target_provider: provider,
@@ -82,6 +88,30 @@ export async function findPaymentStatus(attemptId: string): Promise<PaymentStatu
   return error ? null : (Array.isArray(data) ? data[0] ?? null : data) as PaymentStatusRow | null;
 }
 
+export interface ShopOrderConfirmationRow {
+  order_id: string;
+  recipient_email: string;
+  recipient_name: string;
+  items: Array<{ name: string; quantity: number; size: string | null; handedness: "right" | "left" | null; lineCents: number | string }>;
+  total_cents: number | string;
+}
+
+// Claims the one confirmation email for a settled order. Empty when the
+// payment is not a paid shop order or the email was already claimed.
+export async function claimShopOrderConfirmation(provider: string, reference: string): Promise<ShopOrderConfirmationRow | null> {
+  const db = createAdminClient();
+  if (!db) return null;
+  const { data, error } = await db.rpc("claim_shop_order_confirmation", { target_provider: provider, target_reference: reference });
+  if (error) return null;
+  return ((data ?? []) as ShopOrderConfirmationRow[])[0] ?? null;
+}
+
+export async function releaseShopOrderConfirmation(orderId: string): Promise<void> {
+  const db = createAdminClient();
+  if (!db) return;
+  await db.rpc("release_shop_order_confirmation", { target_order: orderId });
+}
+
 export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<boolean> {
   const db = createAdminClient();
   if (!db) return false;
@@ -95,4 +125,31 @@ export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<b
     target_currency: event.currency,
   });
   return !error;
+}
+
+export interface PaymentReceiptRow {
+  attempt_id: string;
+  kind: "membership" | "booking" | "invoice";
+  recipient_email: string;
+  recipient_name: string;
+  amount_cents: number | string;
+  receipt_number: string | null;
+  description: string;
+  credited: boolean;
+}
+
+// Claims the one receipt email for a settled payment. Empty for shop orders,
+// which get their own confirmation, and when the email was already claimed.
+export async function claimPaymentReceipt(provider: string, reference: string): Promise<PaymentReceiptRow | null> {
+  const db = createAdminClient();
+  if (!db) return null;
+  const { data, error } = await db.rpc("claim_payment_receipt", { target_provider: provider, target_reference: reference });
+  if (error) return null;
+  return ((data ?? []) as PaymentReceiptRow[])[0] ?? null;
+}
+
+export async function releasePaymentReceipt(attemptId: string): Promise<void> {
+  const db = createAdminClient();
+  if (!db) return;
+  await db.rpc("release_payment_receipt", { target_attempt: attemptId });
 }

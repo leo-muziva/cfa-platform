@@ -11,14 +11,11 @@ import {
 } from "@/app/actions/refunds";
 import { listRefundQueue, providerRefundsEnabled } from "@/lib/services/refund-service";
 import type { PaymentKind, RefundRequest, RefundStatus } from "@/types/domain";
+import { formatZar } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
-const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
-function formatCents(cents: number) {
-  return zar.format(cents / 100);
-}
 
 function formatDateTime(value: string | null) {
   if (!value) return "";
@@ -35,6 +32,7 @@ function formatDateTime(value: string | null) {
 const KIND_LABELS: Record<PaymentKind, string> = {
   booking: "Lesson booking",
   order: "Shop order",
+  membership: "Membership",
   invoice: "Invoice",
 };
 
@@ -113,7 +111,7 @@ function DecisionForms({ refund, providerAvailable }: { refund: RefundRequest; p
               aria-describedby={`approve-${id}-amount-hint`}
             />
             <p id={`approve-${id}-amount-hint`} className="text-xs text-muted-foreground">
-              Leave blank to approve the requested {formatCents(refund.amountCents)}. You can only lower it.
+              Leave blank to approve the requested {formatZar(refund.amountCents)}. You can only lower it.
             </p>
           </div>
           <div className="grid gap-2">
@@ -155,7 +153,7 @@ function StatusActions({ refund }: { refund: RefundRequest }) {
             <Label htmlFor={`complete-${id}-reference`}>Bank transfer reference</Label>
             <Input id={`complete-${id}-reference`} name="reference" required maxLength={200} aria-describedby={`complete-${id}-hint`} />
             <p id={`complete-${id}-hint`} className="text-xs text-muted-foreground">
-              Pay {formatCents(refund.amountCents)} to the payer by EFT first, then record the reference here.
+              Pay {formatZar(refund.amountCents)} to the payer by EFT first, then record the reference here.
             </p>
           </div>
         </ActionForm>
@@ -171,7 +169,7 @@ function StatusActions({ refund }: { refund: RefundRequest }) {
           <ActionForm action={sendProviderRefundAction} submitLabel="Send to PayFast" className="space-y-2">
             <input type="hidden" name="refundId" value={id} />
             <p className="text-sm text-muted-foreground">
-              Sends a refund of {formatCents(refund.amountCents)} to PayFast for the original payment.
+              Sends a refund of {formatZar(refund.amountCents)} to PayFast for the original payment.
             </p>
           </ActionForm>
         ) : (
@@ -249,9 +247,9 @@ function RefundCard({ refund }: { refund: RefundRequest }) {
       <CardContent className="space-y-3 text-sm">
         <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
           <div><dt className="inline text-muted-foreground">Payment for: </dt><dd className="inline">{KIND_LABELS[refund.kind]}</dd></div>
-          <div><dt className="inline text-muted-foreground">Payment amount: </dt><dd className="inline">{formatCents(refund.paymentAmountCents)}</dd></div>
-          <div><dt className="inline text-muted-foreground">Requested amount: </dt><dd className="inline font-semibold">{formatCents(refund.amountCents)}</dd></div>
-          <div><dt className="inline text-muted-foreground">Still refundable: </dt><dd className="inline">{formatCents(refund.refundableCents)}</dd></div>
+          <div><dt className="inline text-muted-foreground">Payment amount: </dt><dd className="inline">{formatZar(refund.paymentAmountCents)}</dd></div>
+          <div><dt className="inline text-muted-foreground">Requested amount: </dt><dd className="inline font-semibold">{formatZar(refund.amountCents)}</dd></div>
+          <div><dt className="inline text-muted-foreground">Still refundable: </dt><dd className="inline">{formatZar(refund.refundableCents)}</dd></div>
           <div><dt className="inline text-muted-foreground">Raised: </dt><dd className="inline">{formatDateTime(refund.createdAt)}</dd></div>
           {refund.method ? (
             <div>

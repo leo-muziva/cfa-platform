@@ -1,17 +1,12 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { PublicPricingPlan } from "@/lib/services/public-membership-service";
+import { formatRands } from "@/lib/money";
 
 // Prices on the membership page: the beginner package on its own at the top,
 // then the three membership terms side by side. Prices come from the
 // database. Buttons go to the apply form further down the page with that
 // plan picked, and are left out when there's no form to go to.
-
-const whole = new Intl.NumberFormat("en-ZA", { maximumFractionDigits: 0 });
-
-function rand(amount: number) {
-  return "R" + whole.format(amount);
-}
 
 export function termLabel(months: number | null) {
   if (!months || months === 1) return "Month to month";
@@ -65,7 +60,7 @@ export function MembershipPlans({
             Beginner package
           </p>
           <p className="mt-3 text-5xl font-semibold tracking-tight text-cfa-purple dark:text-white">
-            {rand(beginner.price!)}
+            {formatRands(beginner.price!)}
           </p>
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
             Four individual beginner lessons.
@@ -100,10 +95,10 @@ export function MembershipPlans({
                 >
                   <p className="text-sm text-muted-foreground">{termLabel(plan.termMonths)}</p>
                   <p className="mt-2 text-4xl font-semibold tracking-tight text-cfa-purple dark:text-white">
-                    {rand(plan.price!)}
+                    {formatRands(plan.price!)}
                   </p>
                   {plan.joiningFee ? (
-                    <p className="mt-2 text-xs text-muted-foreground">+ {rand(plan.joiningFee)} joining fee</p>
+                    <p className="mt-2 text-xs text-muted-foreground">+ {formatRands(plan.joiningFee)} joining fee</p>
                   ) : null}
                   <p
                     className={cn(

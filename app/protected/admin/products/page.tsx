@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatRands } from "@/lib/money";
 
 const selectClasses =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -203,7 +204,7 @@ export default async function AdminProductsPage({
                         <td className="px-4 py-3 text-right">
                           {Number(p.price) === 0
                             ? "On request"
-                            : "R" + Number(p.price).toFixed(2)}
+                            : formatRands(p.price)}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {p.sizes ?? "One size"}

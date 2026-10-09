@@ -20,15 +20,17 @@ export default async function ProfileDashboardPage() {
   // One line about membership here. Everything else is on the membership page.
   const membership = membershipData.membership
   const openRequest = membershipData.requests.find(
-    (item) => item.status === 'pending' || item.status === 'changes_requested',
+    (item) => item.status === 'pending' || item.status === 'changes_requested' || item.status === 'awaiting_payment',
   )
   const membershipLine = membership
     ? membership.membership_type?.name ?? 'Membership'
-    : openRequest?.status === 'changes_requested'
-      ? 'Your application needs changes'
-      : openRequest
-        ? 'Your application is waiting for review'
-        : 'You are not a member yet'
+    : openRequest?.status === 'awaiting_payment'
+      ? 'Your application is approved and waiting for payment'
+      : openRequest?.status === 'changes_requested'
+        ? 'Your application needs changes'
+        : openRequest
+          ? 'Your application is waiting for review'
+          : 'You are not a member yet'
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">

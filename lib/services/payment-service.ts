@@ -2,7 +2,9 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentGateway, getPaymentOrigin, paymentSetupIssues } from "@/lib/payments/registry";
 import type { CheckoutResponse } from "@/lib/payments/gateway";
-import { findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent } from "@/lib/repositories/payment-repository";
+import { claimPaymentReceipt, claimShopOrderConfirmation, findCheckout, findPaymentStatus, preparePayment, recordPaymentEvent, releasePaymentReceipt, releaseShopOrderConfirmation } from "@/lib/repositories/payment-repository";
+import { paymentReceiptEmail, shopOrderConfirmationEmail } from "@/lib/providers/resend-email";
+import { getEmailTransport, sendEmail } from "@/lib/providers/email-transport";
 import type { PreparePaymentErrorCode } from "@/lib/repositories/payment-repository";
 import { paymentAttemptSchema, paymentEventSchema, paymentTargetSchema } from "@/lib/validations/payment.schema";
 
@@ -16,6 +18,11 @@ const ORDER_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
   forbidden: "Only the account payer can pay for this order. Ask your guardian to pay.",
   empty_order: "Your cart is empty.",
   product_unavailable: "An item in your cart is no longer available. Remove it and try again.",
+};
+
+const MEMBERSHIP_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
+  forbidden: "Only the account payer can pay for this membership. Ask your guardian to pay.",
+  checkout_unavailable: "This membership is no longer waiting for payment. Refresh to see its status.",
 };
 
 async function isSignedIn() {
@@ -36,7 +43,7 @@ export function getPaymentSetupIssues(): string[] {
 
 export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   const target = paymentTargetSchema.safeParse(raw);
-  if (!target.success) return { ok: false, error: "Choose one valid lesson, invoice or order to pay." };
+  if (!target.success) return { ok: false, error: "Choose one valid lesson, invoice, order or membership to pay." };
   if (!await isSignedIn()) return { ok: false, error: "Please sign in before starting a payment." };
   const provider = getPaymentGateway();
   if (!provider || !getPaymentOrigin()) return { ok: false, error: "Online payments are not configured for this environment." };
@@ -44,7 +51,9 @@ export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   if (!result.ok) {
     const error = target.data.orderId
       ? ORDER_MESSAGES[result.code] ?? "This order can't be paid right now. Refresh and try again."
-      : "This payment is unavailable. Refresh to check the balance or lesson hold.";
+      : target.data.membershipApplicationId
+        ? MEMBERSHIP_MESSAGES[result.code] ?? "This membership can't be paid right now. Refresh and try again."
+        : "This payment is unavailable. Refresh to check the balance or lesson hold.";
     return { ok: false, error, code: result.code };
   }
   return { ok: true, attemptId: result.attempt.attempt_id, pricesChanged: result.attempt.prices_changed };
@@ -88,8 +97,59 @@ export async function receivePaymentNotification(providerName: string, input: { 
     const event = await provider.verifyWebhook(input);
     const parsed = paymentEventSchema.safeParse(event);
     if (!parsed.success || parsed.data.provider !== provider.name) return 400;
-    return await recordPaymentEvent(parsed.data) ? 200 : 503;
+    if (!await recordPaymentEvent(parsed.data)) return 503;
+    if (parsed.data.status === "succeeded") {
+      await confirmShopOrder(parsed.data.provider, parsed.data.reference);
+      await sendPaymentReceipt(parsed.data.provider, parsed.data.reference);
+    }
+    return 200;
   } catch {
     return 503;
+  }
+}
+
+// The payment is already recorded, so an email problem must never fail the
+// webhook. The database claim makes provider retries send at most once.
+async function confirmShopOrder(provider: string, reference: string): Promise<void> {
+  const transport = getEmailTransport();
+  if (!transport) return;
+  try {
+    const claim = await claimShopOrderConfirmation(provider, reference);
+    if (!claim) return;
+    const origin = getPaymentOrigin();
+    const result = await sendEmail(transport, shopOrderConfirmationEmail({
+      to: claim.recipient_email,
+      recipientName: claim.recipient_name,
+      items: claim.items.map((item) => ({ ...item, lineCents: String(item.lineCents) })),
+      totalCents: String(claim.total_cents),
+      ordersUrl: origin ? `${origin}/protected/shop/orders` : null,
+    }));
+    if (!result.ok) await releaseShopOrderConfirmation(claim.order_id);
+  } catch {
+    // Leave the claim in place: retrying an unknown failure could double-send.
+  }
+}
+
+// Same rules as the shop confirmation: never fail the webhook, send at most once.
+async function sendPaymentReceipt(provider: string, reference: string): Promise<void> {
+  const transport = getEmailTransport();
+  if (!transport) return;
+  try {
+    const claim = await claimPaymentReceipt(provider, reference);
+    if (!claim) return;
+    const origin = getPaymentOrigin();
+    const result = await sendEmail(transport, paymentReceiptEmail({
+      to: claim.recipient_email,
+      recipientName: claim.recipient_name,
+      kind: claim.kind,
+      description: claim.description,
+      amountCents: String(claim.amount_cents),
+      receiptNumber: claim.receipt_number,
+      credited: claim.credited,
+      billingUrl: origin ? `${origin}/protected/billing` : null,
+    }));
+    if (!result.ok) await releasePaymentReceipt(claim.attempt_id);
+  } catch {
+    // Leave the claim in place: retrying an unknown failure could double-send.
   }
 }
