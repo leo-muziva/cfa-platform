@@ -15,6 +15,10 @@ export type ProductInput = {
   price: string;
   category: string;
   sizes: string;
+  section?: string;
+  weapon?: string;
+  kind?: string;
+  level?: string;
   is_active: boolean;
 };
 

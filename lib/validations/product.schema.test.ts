@@ -8,6 +8,7 @@ const base = {
   price: '350.50',
   category: ' Masks ',
   sizes: '',
+  section: 'clothing',
   is_active: true,
 }
 
@@ -23,8 +24,16 @@ describe('productInputSchema', () => {
       price: 350.5,
       category: 'Masks',
       sizes: null,
+      section: 'clothing',
       is_active: true,
     })
+  })
+
+  it('needs a shop section, so new products show up when browsing', () => {
+    expect(productInputSchema.safeParse({ ...base, section: '' }).success).toBe(false)
+    expect(productInputSchema.safeParse({ ...base, section: 'nope' }).success).toBe(false)
+    expect(productInputSchema.safeParse({ item_code: 'EF1', name: 'Foil', price: '10', is_active: false }).success)
+      .toBe(false)
   })
 
   it('accepts a zero price and whole numbers', () => {
@@ -46,7 +55,7 @@ describe('productInputSchema', () => {
   })
 
   it('allows optional fields to be missing but rejects unknown fields', () => {
-    const required = { item_code: 'EF1', name: 'Foil', price: '10', is_active: false }
+    const required = { item_code: 'EF1', name: 'Foil', price: '10', section: 'weapons', is_active: false }
     expect(productInputSchema.safeParse(required).success).toBe(true)
     expect(productInputSchema.safeParse({ ...base, id: 1 }).success).toBe(false)
   })
