@@ -42,6 +42,7 @@ export async function createSlotAction(_: ActionState, formData: FormData): Prom
 export async function requestMembershipAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const result = await requestMembership({ membership_type_id: formData.get('membership_type_id') })
   if ('error' in result) return failureState(result)
+  revalidatePath('/protected')
   revalidateMembershipViews()
   return { success: 'Membership request submitted for staff approval' }
 }

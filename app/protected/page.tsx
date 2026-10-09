@@ -4,18 +4,33 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
-import { getCurrentMembership } from '@/lib/services/PlatformService'
+import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 import { ProfileForm } from './profile/profile-form'
 
 export default async function ProfileDashboardPage() {
-  const [context, membership] = await Promise.all([
+  const [context, membershipData] = await Promise.all([
     getCurrentAccountContext(),
-    getCurrentMembership(),
+    getMembershipRequestPageData(),
   ])
 
-  if ('error' in context) {
+  if ('error' in context || 'error' in membershipData) {
     redirect('/auth/login?next=/protected')
   }
+
+  // One line about membership here. Everything else is on the membership page.
+  const membership = membershipData.membership
+  const openRequest = membershipData.requests.find(
+    (item) => item.status === 'pending' || item.status === 'changes_requested' || item.status === 'awaiting_payment',
+  )
+  const membershipLine = membership
+    ? membership.membership_type?.name ?? 'Membership'
+    : openRequest?.status === 'awaiting_payment'
+      ? 'Your application is approved and waiting for payment'
+      : openRequest?.status === 'changes_requested'
+        ? 'Your application needs changes'
+        : openRequest
+          ? 'Your application is waiting for review'
+          : 'You are not a member yet'
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
@@ -27,7 +42,8 @@ export default async function ProfileDashboardPage() {
           My Profile
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Welcome, {context.profile.full_name || context.profile.email}. Manage your account details here.
+          Welcome, {context.profile.full_name || context.profile.email}. Manage your account and
+          membership from one place.
         </p>
       </div>
 
@@ -50,19 +66,18 @@ export default async function ProfileDashboardPage() {
 
       <ProfileForm profile={context.profile} />
 
+      {/* Membership status and applying moved to /protected/membership. */}
       <Card className="cfa-light-card">
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center justify-between gap-3">
             <span>Membership</span>
-            <Badge>{membership?.status === 'active' ? 'Active' : 'Not active'}</Badge>
+            <Badge>{membership?.status ?? openRequest?.status ?? 'not a member yet'}</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Apply, follow your application and pay for an approved membership in the Membership section.
-          </p>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">{membershipLine}</p>
           <Button asChild variant="outline">
-            <Link href="/protected/membership">Go to Membership</Link>
+            <Link href="/protected/membership">Manage membership</Link>
           </Button>
         </CardContent>
       </Card>

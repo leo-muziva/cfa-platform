@@ -362,7 +362,7 @@ export const GradientBackground = () => (
 // ---------------------------------------------------------------------------
 export function GlassAuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-svh w-full flex flex-col bg-background relative overflow-hidden">
+    <div className="min-h-[calc(100svh-var(--site-nav-height))] w-full flex flex-col bg-background relative overflow-hidden">
       <div className="absolute inset-0 z-0">
         <GradientBackground />
       </div>

@@ -60,12 +60,12 @@ export function statusView(
       return {
         label: "Received (unpaid)",
         tone: "bg-muted text-muted-foreground",
-        note: "Placed before online payment was available. Contact CFA about payment.",
+        note: "Ordered before online payment was available. Contact CFA about payment.",
         group: "progress",
       };
     }
     const stage = bulkStageView(bulkStatus);
-    const legacyNote = "Placed before online payment was available.";
+    const legacyNote = "Ordered before online payment was available.";
     return { ...stage, note: stage.note ? stage.note + " " + legacyNote : legacyNote };
   }
 
@@ -76,7 +76,7 @@ export function statusView(
     return {
       label: "Paid",
       tone: "bg-muted text-muted-foreground",
-      note: "Your payment has been received.",
+      note: "Your payment has been received. Ships once the next bulk order is placed.",
       group: "progress",
     };
   }
@@ -88,9 +88,9 @@ export function statusView(
 function bulkStageView(bulkStatus: string): StatusView {
   if (bulkStatus === "collecting") {
     return {
-      label: "Waiting for next bulk order",
+      label: "Waiting for threshold",
       tone: "bg-muted text-muted-foreground",
-      note: "CFA places the order with the supplier once enough orders have come in.",
+      note: "Ships once the next bulk order is placed.",
       group: "progress",
     };
   }

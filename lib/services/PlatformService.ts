@@ -80,6 +80,7 @@ export async function requestMembership(raw: unknown) {
 
 export interface MembershipTypeOption {
   id: string
+  code: string
   name: string
   // Null for dependents, who never receive financial information.
   priceLabel: string | null
@@ -104,6 +105,7 @@ export async function getMembershipRequestPageData() {
     requests,
     membershipTypes: membershipTypes.map((type): MembershipTypeOption => ({
       id: type.id,
+      code: type.code,
       name: type.name,
       priceLabel: canSeeMoney ? membershipPriceLabel(type, monthlyPrice) : null,
     })),

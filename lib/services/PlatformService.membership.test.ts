@@ -116,7 +116,7 @@ describe('getMembershipRequestPageData', () => {
     getCurrentAccountContext.mockResolvedValue({ profile: { id: 'dependent-1' }, capabilities: { canSeeHouseholdMoney: false } })
     const data = await getMembershipRequestPageData()
     expect(data).toMatchObject({ canSeeMoney: false, ownPaymentDue: null, dependentPaymentsDue: [] })
-    expect('membershipTypes' in data && data.membershipTypes).toEqual([{ id: 'type-1', name: 'Month-to-month', priceLabel: null }])
+    expect('membershipTypes' in data && data.membershipTypes).toEqual([{ id: 'type-1', code: 'month_to_month', name: 'Month-to-month', priceLabel: null }])
     expect(repo.listMembershipPaymentsDue).not.toHaveBeenCalled()
   })
 

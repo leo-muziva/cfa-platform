@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CoachDirectory } from "@/components/lesson-booking/coach-directory";
 import { ProfileIncompleteNotice } from "@/components/lesson-booking/profile-incomplete-notice";
@@ -6,6 +7,10 @@ import {
   getAvailableLessonTimes,
   getLessonCoachDirectory,
 } from "@/lib/services/LessonBookingService";
+
+export const metadata: Metadata = {
+  title: "Book a Fencing Lesson — Cape Fencing Academy",
+};
 
 export default async function BookLessonPage() {
   const [result, context] = await Promise.all([getLessonCoachDirectory(), getCurrentAccountContext()]);
@@ -34,11 +39,8 @@ export default async function BookLessonPage() {
   return (
     <div className="space-y-8">
       <header className="max-w-3xl">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
-          Member Portal
-        </p>
         <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
-          Book a private lesson
+          Book a Fencing Lesson
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
           Choose an active CFA coach, then find a free 30-minute time. Lessons are

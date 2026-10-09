@@ -17,17 +17,19 @@ function protectedPages(directory = new URL("app/protected/", root)): string[] {
 describe("consolidated member portal routing", () => {
   it("uses Profile as the canonical first destination and links the crest to the public home", () => {
     const layout = read("app/protected/layout.tsx");
-    const navigation = read("components/portal/portal-navigation.tsx");
+    const navigation = read("components/site-navigation.tsx");
     expect(layout).toContain("{ href: '/protected', label: 'Profile' }");
     expect(layout).not.toMatch(/label: ["'](?:Overview|Dependents)["']/);
     expect(navigation).toContain('href="/"');
     expect(navigation).toContain('aria-label="Cape Fencing Academy home"');
   });
 
-  it("gives membership its own section after Profile", () => {
+  it("keeps Book, Membership and Shop on the main bar, not the member portal bar", () => {
     const layout = read("app/protected/layout.tsx");
-    expect(layout).toContain("{ href: '/protected/membership', label: 'Membership' }");
-    expect(layout.indexOf("label: 'Membership'")).toBeGreaterThan(layout.indexOf("label: 'Profile'"));
+    expect(layout).not.toMatch(/label: ["'](?:Book|Membership|Shop)["']/);
+  });
+
+  it("links the Profile page to the membership section", () => {
     expect(read("app/protected/page.tsx")).toContain('href="/protected/membership"');
   });
 

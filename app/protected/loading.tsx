@@ -1,5 +1,5 @@
-import { AiLoader } from "@/components/ui/ai-loader";
+import { CrestLoader } from "@/components/ui/crest-loader";
 
 export default function ProtectedLoading() {
-  return <AiLoader />;
+  return <CrestLoader />;
 }
