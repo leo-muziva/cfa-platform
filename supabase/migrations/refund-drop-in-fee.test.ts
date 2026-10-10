@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const sql = readFileSync(new URL('./0048_refund_drop_in_fee.sql', import.meta.url), 'utf8').toLowerCase()
+const sql = readFileSync(new URL('./0055_refund_drop_in_fee.sql', import.meta.url), 'utf8').toLowerCase()
 
 describe('drop-in fee refund migration', () => {
   it('runs on every cancel and reschedule of a scheduled lesson', () => {
