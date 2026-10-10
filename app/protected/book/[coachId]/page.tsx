@@ -74,6 +74,7 @@ export default async function CoachLessonBookingPage({
         quotes={data.capabilities.canSeeHouseholdMoney ? quotes : []}
         canSeeQuote={data.capabilities.canSeeHouseholdMoney}
         paymentsAvailable={data.paymentsAvailable}
+        dropInFeeCents={data.capabilities.canSeeHouseholdMoney ? data.dropInFeeCents : 0}
         createAction={createLessonBookingAction}
       />}
     </div>

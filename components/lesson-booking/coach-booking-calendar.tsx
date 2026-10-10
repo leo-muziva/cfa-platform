@@ -19,6 +19,7 @@ import {
   isValidLessonParticipantSelection,
   lessonBillingCopy,
   lessonBillingDetailCopy,
+  dropInFeeCopy,
   firstAvailableLessonTime,
   lessonDates,
   toggleLessonParticipant,
@@ -61,6 +62,7 @@ export function CoachBookingCalendar({
   quotes,
   canSeeQuote,
   paymentsAvailable,
+  dropInFeeCents,
   createAction,
 }: {
   coach: LessonCoachSummary;
@@ -69,6 +71,7 @@ export function CoachBookingCalendar({
   quotes: LessonQuote[];
   canSeeQuote: boolean;
   paymentsAvailable: boolean;
+  dropInFeeCents: number;
   createAction: LessonMemberFormAction;
 }) {
   const router = useRouter();
@@ -277,6 +280,9 @@ export function CoachBookingCalendar({
           <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null })}</p>
           {lessonBillingDetailCopy(canSeeQuote, paymentsAvailable) && (
             <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable)}</p>
+          )}
+          {requiresPayNow && dropInFeeCopy(dropInFeeCents) && (
+            <p className="mt-1 text-xs text-white/65">{dropInFeeCopy(dropInFeeCents)}</p>
           )}
         </div>
         <ValidatedForm action={formAction} state={state} className="mt-6 space-y-4">

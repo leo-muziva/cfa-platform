@@ -397,6 +397,7 @@ function mapSettings(row: SettingsRow): LessonBookingSettings {
     paymentMode: 'invoice_only', arrearsBlockingEnabled: false, futureBookingCapPerFencer: null,
     coachAssignmentMode: 'any_matching_weapon', coachWeaponsMode: 'per_coach',
     singleLessonPriceCents: Number(row.single_lesson_price_cents),
+    dropInFeeCents: Number(row.drop_in_fee_cents ?? 0),
     externalRemindersEnabled: Boolean(row.external_reminders_enabled),
     doubleLessonMultiplier: 2, doubleLessonAtomic: true, closureMode: 'club_wide_date_ranges',
     lessonDurationMinutes: 30, updatedAt: String(row.updated_at),
@@ -407,6 +408,13 @@ export async function getLessonSettings(): Promise<LessonBookingResult<LessonBoo
   const db = await createClient()
   const { data, error } = await db.from('lesson_booking_settings').select('*').eq('singleton', true).single()
   return error || !data ? failed(error) : { success: true, data: mapSettings(data as SettingsRow) }
+}
+
+// Guests can't read the settings row, so the fee comes through its own RPC.
+export async function getDropInFeeCents(): Promise<LessonBookingResult<number>> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('get_drop_in_fee_cents')
+  return error ? failed(error) : { success: true, data: Number(data ?? 0) }
 }
 
 export async function updateLessonSettingsRecord(input: LessonSettingsPatchInput): Promise<LessonBookingResult<LessonBookingSettings>> {
@@ -420,6 +428,7 @@ export async function updateLessonSettingsRecord(input: LessonSettingsPatchInput
   if (input.bookingHorizonDays !== undefined) patch.booking_horizon_days = input.bookingHorizonDays
   if (input.bookingCutoffMinutes !== undefined) patch.booking_cutoff_minutes = input.bookingCutoffMinutes
   if (input.singleLessonPriceCents !== undefined) patch.single_lesson_price_cents = input.singleLessonPriceCents
+  if (input.dropInFeeRands !== undefined) patch.drop_in_fee_cents = Math.round(input.dropInFeeRands * 100)
   const db = await createClient()
   const { data, error } = await db.rpc('update_lesson_booking_settings', { settings_patch: patch })
   return error || !data ? failed(error) : { success: true, data: mapSettings(data as SettingsRow) }

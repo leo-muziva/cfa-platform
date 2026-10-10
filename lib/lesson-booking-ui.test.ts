@@ -8,6 +8,7 @@ import {
   lessonDates,
   lessonBillingCopy,
   lessonBillingDetailCopy,
+  dropInFeeCopy,
   safeWeapon,
   splitMemberLessons,
   timesForLessonDate,
@@ -117,5 +118,15 @@ describe("lesson booking UI helpers", () => {
     expect(cancellationDeadline("2026-08-20T09:00:00.000Z", 24)).toBe(
       "2026-08-19T09:00:00.000Z",
     );
+  });
+});
+
+describe("dropInFeeCopy", () => {
+  it("names the fee in rands and says it is once per day", () => {
+    expect(dropInFeeCopy(12000)).toBe("Guests also pay a R120.00 drop-in fee, once per day.");
+  });
+
+  it("says nothing when the fee is switched off", () => {
+    expect(dropInFeeCopy(0)).toBeNull();
   });
 });

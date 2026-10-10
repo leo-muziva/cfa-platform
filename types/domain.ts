@@ -19,7 +19,7 @@ export type PaymentOption = 'pay_now' | 'pay_later'
 export type ReminderPreference = 'email' | 'whatsapp' | 'both'
 export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
 export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
-export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee' | 'lesson_adjustment' | 'shop'
+export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee' | 'lesson_adjustment' | 'shop' | 'drop_in'
 // 'submitted' is historical: orders placed before pay-now checkout existed.
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'submitted' | 'cancelled' | 'refunded'
 export type Handedness = 'right' | 'left'
@@ -523,6 +523,7 @@ export interface LessonBookingSettings {
   coachAssignmentMode: 'any_matching_weapon'
   coachWeaponsMode: 'per_coach'
   singleLessonPriceCents: number
+  dropInFeeCents: number
   externalRemindersEnabled: boolean
   doubleLessonMultiplier: 2
   doubleLessonAtomic: true
