@@ -2,7 +2,7 @@ import 'server-only'
 import { getPaymentGateway } from '@/lib/payments/registry'
 import { membershipPaymentEmail, plainEmail, type MembershipPaymentEmail, type SendEmailResult } from '@/lib/providers/resend-email'
 import { getEmailTransport, sendEmail } from '@/lib/providers/email-transport'
-import { formatRands } from '@/lib/money'
+import { formatRandsWithCents } from '@/lib/money'
 
 export interface PaymentLinkRequest {
   invoiceId: string
@@ -52,11 +52,11 @@ export function getEmailProvider(): EmailProvider | null {
   return {
     name: transport.kind,
     sendInvoice: ({ to, invoiceNumber, amount, paymentLink }) => send(to, `CFA invoice ${invoiceNumber}`, [
-      `Your Cape Fencing Academy invoice ${invoiceNumber} for ${formatRands(amount)} is ready.`,
+      `Your Cape Fencing Academy invoice ${invoiceNumber} for ${formatRandsWithCents(amount)} is ready.`,
       ...(paymentLink ? [`Pay here: ${paymentLink}`] : []),
     ]),
     sendReceipt: ({ to, receiptNumber, amount }) => send(to, `CFA receipt ${receiptNumber}`, [
-      `Thank you. Cape Fencing Academy received your payment of ${formatRands(amount)} (receipt ${receiptNumber}).`,
+      `Thank you. Cape Fencing Academy received your payment of ${formatRandsWithCents(amount)} (receipt ${receiptNumber}).`,
     ]),
     sendMembershipPaymentRequest: (input) => sendEmail(transport, membershipPaymentEmail(input)),
   }

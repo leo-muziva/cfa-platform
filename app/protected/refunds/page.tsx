@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listMyRefundablePayments, listMyRefundRequests } from "@/lib/services/refund-service";
 import type { PaymentKind, RefundRequest, RefundStatus } from "@/types/domain";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +74,8 @@ function RefundCard({ refund }: { refund: RefundRequest }) {
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
-          <div><dt className="inline text-muted-foreground">Payment: </dt><dd className="inline">{KIND_LABELS[refund.kind]} - {formatZar(refund.paymentAmountCents)}</dd></div>
-          <div><dt className="inline text-muted-foreground">Refund amount: </dt><dd className="inline font-semibold">{formatZar(refund.amountCents)}</dd></div>
+          <div><dt className="inline text-muted-foreground">Payment: </dt><dd className="inline">{KIND_LABELS[refund.kind]} - {formatZarWithCents(refund.paymentAmountCents)}</dd></div>
+          <div><dt className="inline text-muted-foreground">Refund amount: </dt><dd className="inline font-semibold">{formatZarWithCents(refund.amountCents)}</dd></div>
           <div><dt className="inline text-muted-foreground">Requested: </dt><dd className="inline">{formatDate(refund.createdAt)}</dd></div>
           {refund.processedAt ? (
             <div><dt className="inline text-muted-foreground">Paid out: </dt><dd className="inline">{formatDate(refund.processedAt)}</dd></div>
@@ -162,9 +162,9 @@ export default async function RefundsPage({
                         {payment.invoiceNumber ? " - invoice " + payment.invoiceNumber : ""}
                       </p>
                       <p className="text-muted-foreground">
-                        Paid {formatZar(payment.amountCents)}
+                        Paid {formatZarWithCents(payment.amountCents)}
                         {payment.completedAt ? " on " + formatDate(payment.completedAt) : ""}
-                        {" - "}up to {formatZar(payment.refundableCents)} can be refunded
+                        {" - "}up to {formatZarWithCents(payment.refundableCents)} can be refunded
                       </p>
                     </div>
                     <Link

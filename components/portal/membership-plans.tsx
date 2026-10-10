@@ -12,22 +12,26 @@ export function termLabel(months: number | null) {
   return `${months} months`;
 }
 
-// Saving against paying month to month for the same length, rounded to the
-// nearest half percent. Nothing if there's no saving.
-export function savingPercent(plan: PublicPricingPlan, monthly: number | null) {
-  if (!monthly || !plan.price || !plan.termMonths || plan.termMonths <= 1) return null;
-  const saving = (1 - plan.price / (monthly * plan.termMonths)) * 100;
-  if (saving < 0.5) return null;
-  return Math.round(saving * 2) / 2;
+const NUMBER_WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+// "three months", read from the plan so the text follows the database.
+export function monthsInWords(months: number) {
+  const word = NUMBER_WORDS[months] ?? String(months);
+  return months === 1 ? `${word} month` : `${word} months`;
 }
+
+const PLAN_BADGES: Partial<Record<string, string>> = {
+  six_month: "Pay once for 6 months",
+  twelve_month: "Pay once for the year",
+};
 
 function applyHref(code: string) {
   return `/protected/membership?plan=${code}#apply-membership`;
 }
 
 const MEMBERSHIP_FEATURES = [
-  "Access to all of the club’s training times",
-  "Club equipment if you don’t have your own",
+  "Attend every club session",
+  "Use club equipment if you don’t have your own",
 ];
 
 // Turns the database plans into the cards on the page: the beginner package
@@ -36,7 +40,6 @@ const MEMBERSHIP_FEATURES = [
 export function membershipPricingCards(plans: PublicPricingPlan[], showButtons: boolean) {
   const priced = (code: PublicPricingPlan["code"]) =>
     plans.find((plan): plan is PublicPricingPlan & { price: number } => plan.code === code && plan.price !== null);
-  const monthly = priced("month_to_month")?.price ?? null;
 
   const beginnerPlan = priced("beginner_package");
   const beginner: PricingCardPlan | null = beginnerPlan
@@ -45,9 +48,9 @@ export function membershipPricingCards(plans: PublicPricingPlan[], showButtons: 
         name: "Beginner package",
         priceLabel: formatRands(beginnerPlan.price),
         features: [
-          "Four individual beginner lessons",
-          ...(beginnerPlan.termMonths ? [`Valid for ${beginnerPlan.termMonths} months`] : []),
-          "Club kit for these lessons",
+          "Four one-on-one lessons with a coach",
+          ...(beginnerPlan.termMonths ? [`To use within ${monthsInWords(beginnerPlan.termMonths)}`] : []),
+          "Club kit is provided",
         ],
         buttonText: "Get started",
         href: showButtons ? applyHref(beginnerPlan.code) : undefined,
@@ -58,7 +61,6 @@ export function membershipPricingCards(plans: PublicPricingPlan[], showButtons: 
     .map((code) => priced(code))
     .filter((plan) => plan !== undefined)
     .map((plan): PricingCardPlan => {
-      const saving = savingPercent(plan, monthly);
       const months = plan.termMonths ?? 1;
       return {
         key: plan.code,
@@ -66,8 +68,8 @@ export function membershipPricingCards(plans: PublicPricingPlan[], showButtons: 
         priceLabel: formatRands(plan.price),
         period: months > 1 ? undefined : "month",
         note: plan.joiningFee ? `+ ${formatRands(plan.joiningFee)} joining fee` : undefined,
-        saving: saving ? `Save about ${saving}%` : undefined,
-        features: [...MEMBERSHIP_FEATURES, months > 1 ? `Pay once for ${months} months` : "Pay month by month"],
+        badge: PLAN_BADGES[plan.code],
+        features: [...MEMBERSHIP_FEATURES, months > 1 ? `Covers ${monthsInWords(months)}` : "Pay month by month"],
         buttonText: "Apply",
         href: showButtons ? applyHref(plan.code) : undefined,
       };
@@ -112,8 +114,6 @@ export function MembershipPlans({
           <Pricing plans={terms} />
         </>
       )}
-
-      <p className="mt-8 text-sm text-muted-foreground">Visiting fencers welcome — R120 drop-in</p>
     </div>
   );
 }

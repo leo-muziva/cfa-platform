@@ -28,7 +28,7 @@ const initialActionState: LessonMemberActionState = {};
 
 const weaponLabels: Record<Weapon, string> = {
   foil: "Foil",
-  epee: "Epee",
+  epee: "Épée",
   sabre: "Sabre",
 };
 

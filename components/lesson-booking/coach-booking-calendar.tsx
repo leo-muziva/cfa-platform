@@ -51,7 +51,7 @@ const initialActionState: LessonMemberActionState = {};
 
 const weaponLabels: Record<Weapon, string> = {
   foil: "Foil",
-  epee: "Epee",
+  epee: "Épée",
   sabre: "Sabre",
 };
 
@@ -156,9 +156,7 @@ export function CoachBookingCalendar({
       <GlassDialog open={attemptedSlot !== null} onClose={() => setAttemptedSlot(null)} labelledBy="slot-unavailable-heading">
         <h2 id="slot-unavailable-heading" className="text-xl font-semibold text-foreground">Time no longer available</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {attemptedSlot
-            ? `${coach.fullName} isn't available at ${formatCapeTownLessonDate(attemptedSlot.startsAt)} anymore. Pick another time.`
-            : BOOKING_CONTENTION_MESSAGE}
+          {BOOKING_CONTENTION_MESSAGE}
         </p>
         <GlassButton type="button" className="mt-6" onClick={() => setAttemptedSlot(null)}>
           Choose another time
@@ -171,7 +169,6 @@ export function CoachBookingCalendar({
             <ShieldCheck className="mt-1 h-5 w-5 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <div>
               <h2 id="lesson-weapon-heading" className="font-serif text-2xl text-slate-950 dark:text-white">Choose a weapon</h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-white/75">Only weapons offered by this coach are shown.</p>
             </div>
           </div>
           <fieldset className="mt-5">
@@ -243,7 +240,7 @@ export function CoachBookingCalendar({
             <Users className="mt-1 h-5 w-5 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <div>
               <h2 id="lesson-participants-heading" className="font-serif text-2xl text-slate-950 dark:text-white">Choose one or two fencers</h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-white/75">A double lesson keeps both fencers with the same coach for one 30-minute time.</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-white/75">Two fencers can share one 30-minute lesson with the same coach.</p>
             </div>
           </div>
           <fieldset className="mt-5">
@@ -277,7 +274,7 @@ export function CoachBookingCalendar({
           <p className="mt-4 text-sm text-white/70">Choose an available time to continue.</p>
         )}
         <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4">
-          <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null })}</p>
+          <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null, participantCount: selectedParticipants.length })}</p>
           {lessonBillingDetailCopy(canSeeQuote, paymentsAvailable) && (
             <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable)}</p>
           )}
@@ -295,7 +292,7 @@ export function CoachBookingCalendar({
           ) : canSeeQuote && (requiresPayNow ? (
             <>
               <input type="hidden" name="paymentOption" value="pay_now" />
-              <p className="text-sm text-white/85">Guest lessons are paid now. Your slot is held while you complete secure checkout.</p>
+              <p className="text-sm text-white/85">Guest lessons are paid when you book.</p>
             </>
           ) : paymentsAvailable ? (
             <fieldset className="space-y-2 text-sm">

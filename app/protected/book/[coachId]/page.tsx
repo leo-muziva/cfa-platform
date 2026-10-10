@@ -62,9 +62,6 @@ export default async function CoachLessonBookingPage({
         <h1 className="mt-2 font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl">
           Book with {data.coach.fullName}
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Scheduled times are current when this page loads and are always rechecked when you confirm.
-        </p>
       </header>
 
       {!data.profile.profile_completed_at && !data.capabilities.isAdmin ? <ProfileIncompleteNotice /> : <CoachBookingCalendar

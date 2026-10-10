@@ -12,21 +12,21 @@ import { VerticalVideoReel } from "@/components/landing/vertical-video-reel";
 const WEAPONS = [
   {
     name: "Foil",
-    description: "The duel of precision — point control, tempo and right-of-way.",
+    description: "Hits are scored with the point on the torso. When both fencers hit, right-of-way decides who scores.",
     image: "/media/weapon-examples/foil_ex_card.png",
     alt: "Two fencers in a close foil exchange.",
     video: "https://www.youtube.com/watch?v=g-P_q5gdvRM",
   },
   {
     name: "Épée",
-    description: "The whole body is a target. Patience, timing, nerve.",
+    description: "Hits are scored with the point anywhere on the body. There is no right-of-way: whoever hits first scores, and if both hit together, both score.",
     image: "/media/weapon-examples/epee_ex_card.png",
     alt: "An épée bout mid-lunge, referee looking on.",
     video: "https://www.youtube.com/watch?v=88mBQ2u2Wb0",
   },
   {
     name: "Sabre",
-    description: "Slashing speed — the cavalry weapon of explosive attacks.",
+    description: "Hits are scored with the edge or point anywhere above the waist. Right-of-way applies, and bouts are the fastest of the three weapons.",
     image: "/media/weapon-examples/sabre_ex_card.png",
     alt: "Two sabre fencers in a fast exchange.",
     video: "https://www.youtube.com/watch?v=4ipiJFlU_Dg",
@@ -52,12 +52,12 @@ export function AboutSection() {
               The Club
             </p>
             <h2 className="text-3xl md:text-5xl font-normal tracking-[-0.04em] mb-4">
-              Cape Town&rsquo;s home of fencing since 1997.
+              South Africa&rsquo;s premier fencing club since 1997
             </h2>
             <p className="text-muted-foreground max-w-2xl mb-8">
-              South Africa&rsquo;s premier fencing club, training at the Belvedere
-              Community Centre in Rondebosch — from first-time beginners to
-              national champions.
+              We train at the Belvedere Community Centre in Rondebosch and coach
+              fencers of every age and level, from first-timers to national
+              champions.
             </p>
 
             {/* Logged-out visitors get sent to login by the proxy. */}
@@ -126,7 +126,6 @@ export function AboutSection() {
                   />
                 </div>
               </button>
-              {/* Placeholder text until the new weapon excerpts (H-08) are written. */}
               <div id={panelId} hidden={!open} className="p-6">
                 <p className="text-muted-foreground">{weapon.description}</p>
                 {/* Video opens on YouTube in a new tab. Booking goes to the

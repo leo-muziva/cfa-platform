@@ -1,6 +1,6 @@
 import "server-only";
 import { generateText, hasToolCall, isStepCount, tool, type LanguageModel } from "ai";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 import { z } from "zod";
 import type { SupplierLine } from "@/lib/services/bulk-order-export";
 import {
@@ -245,7 +245,7 @@ export function scrubAiText(text: string): { text: string; removed: boolean } {
 }
 
 function rands(cents: number): string {
-  return formatZar(cents);
+  return formatZarWithCents(cents);
 }
 
 const PLACEHOLDER_PATTERN = /\[[^\]\n]{1,60}\]/;

@@ -17,7 +17,7 @@ export interface PricingCardPlan {
   priceLabel: string;
   period?: string;
   note?: string;
-  saving?: string;
+  badge?: string;
   features: string[];
   buttonText: string;
   // Left out when there is nowhere to send the visitor, which hides the button.
@@ -52,10 +52,10 @@ export function PricingCard({ plan, className }: { plan: PricingCardPlan; classN
       <p
         className={cn(
           "mt-1 min-h-5 text-xs font-semibold text-green-700 dark:text-green-400",
-          !plan.saving && "invisible",
+          !plan.badge && "invisible",
         )}
       >
-        {plan.saving ?? "No saving"}
+        {plan.badge ?? "No saving"}
       </p>
 
       <ul className="mt-5 flex flex-1 flex-col gap-2 text-sm">

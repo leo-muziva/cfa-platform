@@ -36,7 +36,7 @@ const errorMessages: Record<LessonBookingErrorCode, string> = {
   invalid_participants: 'Choose one or two different participants.',
   participant_unauthorized: 'You cannot book for one of the selected participants.',
   mixed_payers: 'Both participants must have the same payer.',
-  slot_taken: 'That time has just been taken. Pick another available time.',
+  slot_taken: 'Someone has just booked that time. Please pick another.',
   booking_not_scheduled: 'This lesson is no longer scheduled.',
   booking_already_started: 'This lesson has already started and can no longer be changed.',
   invalid_actor_type: 'This cancellation type is not allowed.',

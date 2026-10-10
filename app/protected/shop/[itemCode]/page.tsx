@@ -5,6 +5,7 @@ import { AddToCartButton } from "../components/AddToCartButton";
 import Image from "next/image";
 import { productImageUrl } from "@/lib/productImage";
 import { formatRands } from "@/lib/money";
+import { GENERAL, GENERAL_LABEL, WEAPON_LABELS, findSection, isShopWeapon } from "@/lib/shop/browse";
 
 export default async function ProductPage({
   params,
@@ -16,7 +17,7 @@ export default async function ProductPage({
 
   const { data: product } = await supabase
     .from("products")
-    .select("id, item_code, name, description, price, image_path, sizes, needs_handedness")
+    .select("id, item_code, name, description, price, image_path, sizes, needs_handedness, section, weapon")
     .eq("item_code", itemCode.toUpperCase())
     .single();
 
@@ -26,12 +27,34 @@ export default async function ProductPage({
   }
    const imageUrl = productImageUrl(product.image_path);
 
+  // Breadcrumbs back up the same steps the shop browse uses, so a member can
+  // go back to the section or weapon this product sits in.
+  const section = findSection(product.section ?? undefined);
+  const crumbs: { label: string; href: string }[] = [];
+  if (section) {
+    const sectionHref = "/protected/shop?section=" + section.key;
+    crumbs.push({ label: section.label, href: sectionHref });
+    if (section.asksForWeapon) {
+      const weapon = isShopWeapon(product.weapon ?? undefined) ? product.weapon : GENERAL;
+      crumbs.push({
+        label: weapon === GENERAL ? GENERAL_LABEL : WEAPON_LABELS[weapon as keyof typeof WEAPON_LABELS],
+        href: sectionHref + "&weapon=" + weapon,
+      });
+    }
+  }
+
   return (
     <main className="mx-auto max-w-3xl p-8">
            <div className="flex items-center justify-between">
-        <Link href="/protected/shop" className="text-sm text-gray-500 underline dark:text-white/60">
-          Back to catalogue
-        </Link>
+        <nav aria-label="Breadcrumb" className="text-sm text-gray-500 dark:text-white/60">
+          <Link href="/protected/shop" className="underline-offset-4 hover:underline">Shop</Link>
+          {crumbs.map((crumb) => (
+            <span key={crumb.href}>
+              {" / "}
+              <Link href={crumb.href} className="underline-offset-4 hover:underline">{crumb.label}</Link>
+            </span>
+          ))}
+        </nav>
         <Link href="/protected/shop/cart" className="text-sm underline">
           View cart
         </Link>

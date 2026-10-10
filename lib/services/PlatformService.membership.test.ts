@@ -127,6 +127,6 @@ describe('getMembershipRequestPageData', () => {
     repo.listMembershipPaymentsDue.mockResolvedValue([own, dependent])
     const data = await getMembershipRequestPageData()
     expect(data).toMatchObject({ ownPaymentDue: own, dependentPaymentsDue: [dependent] })
-    expect('membershipTypes' in data && data.membershipTypes?.[0].priceLabel).toBe('R550.00 + R350.00 joining fee')
+    expect('membershipTypes' in data && data.membershipTypes?.[0].priceLabel).toBe('R550 + R350 joining fee')
   })
 })

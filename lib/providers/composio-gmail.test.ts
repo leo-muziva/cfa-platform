@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { cleanProviderError, extractDraftId, getComposioGmailConfig } from "./composio-gmail";
+import { cleanProviderError, connectionOwner, describeComposioError, extractDraftId, getComposioGmailConfig } from "./composio-gmail";
 
 describe("getComposioGmailConfig", () => {
   it("needs the API key and the connected account ID", () => {
@@ -45,5 +45,46 @@ describe("cleanProviderError", () => {
     expect(cleaned).not.toContain("token=abc");
     expect(cleaned).toContain("[link]");
     expect(cleaned.length).toBeLessThanOrEqual(300);
+  });
+});
+
+describe("describeComposioError", () => {
+  it("adds the API status and message hidden on the cause", () => {
+    const apiError = Object.assign(new Error("400 Bad Request"), {
+      status: 400,
+      error: { error: { message: "Invalid request: attachment.s3key is required" } },
+    });
+    const wrapped = new Error("Error executing the tool GMAIL_CREATE_EMAIL_DRAFT", { cause: apiError });
+    expect(describeComposioError(wrapped)).toBe(
+      "Error executing the tool GMAIL_CREATE_EMAIL_DRAFT - 400: Invalid request: attachment.s3key is required"
+    );
+  });
+
+  it("still removes addresses and links from the cause", () => {
+    const wrapped = new Error("Error executing the tool X", { cause: new Error("bad recipient orders@supplier.example see https://x.example/a") });
+    const text = describeComposioError(wrapped);
+    expect(text).not.toContain("supplier.example");
+    expect(text).not.toContain("x.example");
+  });
+
+  it("handles a plain error and a non-error", () => {
+    expect(describeComposioError(new Error("timeout"))).toBe("timeout");
+    expect(describeComposioError("nope")).toBe("Could not reach Composio.");
+  });
+});
+
+describe("connectionOwner", () => {
+  it("uses the user that owns an active Gmail connection", () => {
+    expect(connectionOwner({ user_id: "pg-test-1", status: "ACTIVE" })).toEqual({ ok: true, userId: "pg-test-1" });
+  });
+
+  it("asks staff to reconnect an expired connection", () => {
+    const result = connectionOwner({ user_id: "pg-test-1", status: "EXPIRED" });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toContain("expired");
+  });
+
+  it("explains when the connection has no user", () => {
+    expect(connectionOwner({ status: "ACTIVE" })).toMatchObject({ ok: false });
   });
 });

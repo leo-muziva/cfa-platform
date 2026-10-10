@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { KIND_LABELS, LEVEL_LABELS, SECTIONS, WEAPON_LABELS } from "@/lib/shop/browse";
 import {
   createProduct,
   updateProduct,
@@ -20,6 +21,10 @@ export type ProductRow = {
   price: number;
   category: string | null;
   sizes: string | null;
+  section?: string | null;
+  weapon?: string | null;
+  kind?: string | null;
+  level?: string | null;
   is_active: boolean;
 };
 
@@ -40,6 +45,10 @@ export function ProductForm({
     price: product ? String(product.price) : "0",
     category: product?.category ?? "",
     sizes: product?.sizes ?? "",
+    section: product?.section ?? "",
+    weapon: product?.weapon ?? "",
+    kind: product?.kind ?? "",
+    level: product?.level ?? "",
     is_active: product?.is_active ?? true,
   });
 
@@ -172,6 +181,47 @@ export function ProductForm({
         </p>
       </div>
 
+      <ChoiceField
+        id="section"
+        label="Shop section"
+        value={form.section ?? ""}
+        onChange={(value) => set("section", value)}
+        options={SECTIONS.map((s) => [s.key, s.label])}
+        blank="Choose a section..."
+        required
+        className={selectClasses}
+      />
+
+      <ChoiceField
+        id="weapon"
+        label="Weapon"
+        value={form.weapon ?? ""}
+        onChange={(value) => set("weapon", value)}
+        options={Object.entries(WEAPON_LABELS)}
+        blank="Fits any weapon"
+        className={selectClasses}
+      />
+
+      <ChoiceField
+        id="kind"
+        label="Type of item"
+        value={form.kind ?? ""}
+        onChange={(value) => set("kind", value)}
+        options={Object.entries(KIND_LABELS)}
+        blank="Not set"
+        className={selectClasses}
+      />
+
+      <ChoiceField
+        id="level"
+        label="Practice, electric or FIE"
+        value={form.level ?? ""}
+        onChange={(value) => set("level", value)}
+        options={Object.entries(LEVEL_LABELS)}
+        blank="Does not apply"
+        className={selectClasses}
+      />
+
       <div className="grid gap-2 sm:col-span-2">
         <Label htmlFor="sizes">Sizes</Label>
         <Input
@@ -231,6 +281,38 @@ export function ProductForm({
           </Button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function ChoiceField({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  blank,
+  required,
+  className,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: [string, string][];
+  blank: string;
+  required?: boolean;
+  className: string;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <select id={id} value={value} required={required} onChange={(e) => onChange(e.target.value)} className={className}>
+        <option value="">{blank}</option>
+        {options.map(([key, text]) => (
+          <option key={key} value={key}>{text}</option>
+        ))}
+      </select>
     </div>
   );
 }

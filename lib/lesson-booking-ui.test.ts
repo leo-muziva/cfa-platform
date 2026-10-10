@@ -90,7 +90,7 @@ describe("lesson booking UI helpers", () => {
 
   it("publishes the exact accessible contention recovery message", () => {
     expect(BOOKING_CONTENTION_MESSAGE).toBe(
-      "That time has just been taken. Pick another available time.",
+      "Someone has just booked that time. Please pick another.",
     );
   });
 
@@ -123,7 +123,7 @@ describe("lesson booking UI helpers", () => {
 
 describe("dropInFeeCopy", () => {
   it("names the fee in rands and says it is once per day", () => {
-    expect(dropInFeeCopy(12000)).toBe("Guests also pay a R120.00 drop-in fee, once per day.");
+    expect(dropInFeeCopy(12000)).toBe("Guests also pay a R120 drop-in fee, once per day.");
   });
 
   it("says nothing when the fee is switched off", () => {

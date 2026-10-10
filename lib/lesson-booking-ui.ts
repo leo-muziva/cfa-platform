@@ -10,7 +10,7 @@ import { capeTownDateKey } from "@/lib/booking-calendar";
 
 export const MAX_LESSON_PARTICIPANTS = 2;
 export const BOOKING_CONTENTION_MESSAGE =
-  "That time has just been taken. Pick another available time.";
+  "Someone has just booked that time. Please pick another.";
 
 export function toggleLessonParticipant(selected: string[], participantId: string): string[] {
   if (selected.includes(participantId)) {
@@ -55,12 +55,15 @@ export function formatLessonQuote(quote: LessonQuote): string {
 export function lessonBillingCopy({
   canSeeQuote,
   quote,
+  participantCount = 1,
 }: {
   canSeeQuote: boolean;
   quote: LessonQuote | null;
+  participantCount?: number;
 }): string {
   if (!canSeeQuote) return "Your payer will be billed";
-  return quote ? formatLessonQuote(quote) + " will be added to your account" : "Choose a payment option";
+  if (participantCount === 2) return "Shared lesson for two fencers";
+  return quote ? formatLessonQuote(quote) + " for this lesson" : "Choose a payment option";
 }
 
 export function lessonBillingDetailCopy(canSeeQuote: boolean, paymentsAvailable = true): string | null {

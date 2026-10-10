@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
-import { ArrowUpRight, CalendarClock, Swords } from "lucide-react";
+import { ArrowUpRight, CalendarClock } from "lucide-react";
 import { formatCapeTownLessonDate } from "@/lib/booking-calendar";
 import type { LessonCoachSummary } from "@/types/domain";
 
 const weaponLabels = {
   foil: "Foil",
-  epee: "Epee",
+  epee: "Épée",
   sabre: "Sabre",
 } as const;
 
@@ -78,10 +78,6 @@ export function CoachDirectory({ coaches }: { coaches: LessonCoachDirectoryEntry
 
               <div className="absolute inset-x-3.5 bottom-3.5 grid grid-cols-[1fr_auto] items-start gap-x-3 gap-y-1.5 rounded-[18px] border border-white/25 bg-white/[0.13] px-[18px] pb-[18px] pt-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-[22px] backdrop-saturate-150">
                 <div className="min-w-0">
-                  <p className="mb-2 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-white/85">
-                    <Swords className="h-[13px] w-[13px]" aria-hidden="true" />
-                    CFA coach
-                  </p>
                   <h2 className="text-[21px] font-semibold leading-tight">
                     <Link
                       href={href}

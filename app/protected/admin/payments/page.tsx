@@ -7,7 +7,7 @@ import { getInvoicesForAdmin } from '@/lib/services/PlatformService'
 import { listRefundablePaymentsForStaff } from '@/lib/services/refund-service'
 import { getPaymentSetupIssues } from '@/lib/services/payment-service'
 import type { PaymentKind } from '@/types/domain'
-import { formatZar, formatRands } from '@/lib/money'
+import { formatZarWithCents, formatRandsWithCents } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +41,7 @@ export default async function PaymentsPage() {
         </CardContent>
       </Card>
       <Card><CardHeader><CardTitle>Outstanding invoices</CardTitle></CardHeader><CardContent>{outstanding.length}</CardContent></Card>
-      {outstanding.map((invoice) => <Card key={invoice.id}><CardContent className="pt-6">{invoice.invoice_number} - {formatRands(invoice.total)}</CardContent></Card>)}
+      {outstanding.map((invoice) => <Card key={invoice.id}><CardContent className="pt-6">{invoice.invoice_number} - {formatRandsWithCents(invoice.total)}</CardContent></Card>)}
 
       <section className="space-y-3" aria-labelledby="settled-payments-heading">
         <div>
@@ -74,8 +74,8 @@ export default async function PaymentsPage() {
                           </p>
                         </div>
                         <p className="shrink-0 text-right">
-                          <span className="font-semibold">{formatZar(payment.amountCents)}</span>
-                          <span className="block text-muted-foreground">Refundable {formatZar(payment.refundableCents)}</span>
+                          <span className="font-semibold">{formatZarWithCents(payment.amountCents)}</span>
+                          <span className="block text-muted-foreground">Refundable {formatZarWithCents(payment.refundableCents)}</span>
                         </p>
                       </div>
                       {payment.refundableCents > 0 ? (

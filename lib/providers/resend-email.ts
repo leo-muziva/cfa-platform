@@ -1,5 +1,5 @@
 import "server-only";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 
 // Sends CFA transactional email through Resend's REST API. The same Resend
 // account that relays Supabase Auth email can issue the API key; the From
@@ -54,7 +54,7 @@ export function plainEmail(to: string, subject: string, paragraphs: string[]): O
 }
 
 export function membershipPaymentEmail(input: MembershipPaymentEmail): OutgoingEmail {
-  const amount = formatZar(input.amountCents);
+  const amount = formatZarWithCents(input.amountCents);
   const whose = input.recipientIsApplicant
     ? `your ${input.membershipName} membership application`
     : `${input.applicantName}'s ${input.membershipName} membership application`;
@@ -96,11 +96,11 @@ export interface ShopOrderConfirmationEmail {
 
 function itemLabel(item: ShopOrderEmailItem): string {
   const options = [item.size && `size ${item.size}`, item.handedness && `${item.handedness}-handed`].filter(Boolean).join(", ");
-  return `${item.quantity} x ${item.name}${options ? ` (${options})` : ""} - ${formatZar(item.lineCents)}`;
+  return `${item.quantity} x ${item.name}${options ? ` (${options})` : ""} - ${formatZarWithCents(item.lineCents)}`;
 }
 
 export function shopOrderConfirmationEmail(input: ShopOrderConfirmationEmail): OutgoingEmail {
-  const total = formatZar(input.totalCents);
+  const total = formatZarWithCents(input.totalCents);
   const intro = `Thank you for your order. We have received your payment of ${total}.`;
   const pooling = "CFA places kit orders with the supplier in bulk. Your items will be ordered with the next bulk order, and you can follow its progress on your orders page.";
   const lines = [
@@ -145,7 +145,7 @@ const RECEIPT_OUTCOME: Record<ReceiptKind, string> = {
 };
 
 export function paymentReceiptEmail(input: PaymentReceiptEmail): OutgoingEmail {
-  const amount = formatZar(input.amountCents);
+  const amount = formatZarWithCents(input.amountCents);
   const paid = `We have received your payment of ${amount} for ${input.description}.`;
   const outcome = input.credited
     ? "Some or all of this payment was kept as account credit, because what it paid for changed before the payment arrived. Your billing page has the details."

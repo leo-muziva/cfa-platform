@@ -190,7 +190,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
               >
                 <BlurFade>
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
-                    Create your guest account
+                    Create your account
                   </h1>
                   <p className="mt-2 text-muted-foreground">What should we call you?</p>
                 </BlurFade>

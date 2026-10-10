@@ -21,9 +21,10 @@ vi.mock("@/lib/repositories/supplier-sheet-repository", () => ({
 // No AI keys in tests: the review falls back to the basic checks.
 vi.mock("@/lib/ai/models", () => ({ getReviewModels: () => [] }));
 const createDraft = vi.fn();
+const sendDraft = vi.fn();
 vi.mock("@/lib/providers/composio-gmail", () => ({
   getGmailDraftProvider: (env: Record<string, string | undefined>) =>
-    env.COMPOSIO_API_KEY ? { createDraft } : null,
+    env.COMPOSIO_API_KEY ? { createDraft, sendDraft } : null,
 }));
 
 import * as repo from "@/lib/repositories/supplier-sheet-repository";
@@ -38,6 +39,7 @@ import {
   getSheetPreview,
   markSheetSent,
   runAiProof,
+  sendDraftToSupplier,
   supplierSheetFileName,
 } from "./supplier-sheet-service";
 
@@ -226,6 +228,59 @@ describe("markSheetSent", () => {
     expect(await markSheetSent(BULK.id)).toMatchObject({ ok: false, code: "not_approved" });
     mocked.getSheet.mockResolvedValue(sheet({ status: "approved" }));
     expect(await markSheetSent(BULK.id)).toMatchObject({ ok: true });
+  });
+});
+
+describe("sendDraftToSupplier", () => {
+  const env = { COMPOSIO_API_KEY: "k" };
+  const approved = () => sheet({ status: "approved", gmailDraftId: "r-123" });
+
+  it("only sends an approved draft", async () => {
+    mocked.getSheet.mockResolvedValue(sheet({ status: "proofed" }));
+    expect(await sendDraftToSupplier(BULK.id, env)).toMatchObject({ ok: false, code: "not_approved" });
+    mocked.getSheet.mockResolvedValue(sheet({ status: "sent" }));
+    expect(await sendDraftToSupplier(BULK.id, env)).toMatchObject({ ok: false, code: "already_sent" });
+    expect(sendDraft).not.toHaveBeenCalled();
+  });
+
+  it("explains when the draft id or Gmail is missing", async () => {
+    mocked.getSheet.mockResolvedValue(sheet({ status: "approved", gmailDraftId: null }));
+    expect(await sendDraftToSupplier(BULK.id, env)).toMatchObject({ code: "draft_missing" });
+    mocked.getSheet.mockResolvedValue(approved());
+    expect(await sendDraftToSupplier(BULK.id, {})).toMatchObject({ code: "gmail_not_connected" });
+  });
+
+  it("refuses and rebuilds when an order was paid after the draft was made", async () => {
+    mocked.getSheet.mockResolvedValue(approved());
+    mocked.getBulkOrderLines.mockResolvedValue({ orders: orders(5), paidOrderIds: ["order-1", "order-2"] });
+    expect(await sendDraftToSupplier(BULK.id, env)).toMatchObject({ code: "needs_approval" });
+    expect(sendDraft).not.toHaveBeenCalled();
+  });
+
+  it("claims the sheet as sent before calling Gmail, then sends the saved draft", async () => {
+    mocked.getSheet.mockResolvedValue(approved());
+    sendDraft.mockResolvedValue({ ok: true });
+    const result = await sendDraftToSupplier(BULK.id, env);
+    expect(result.ok).toBe(true);
+    expect(sendDraft).toHaveBeenCalledWith("r-123");
+    expect(mocked.updateSheet).toHaveBeenCalledWith("sheet-1", ["approved"], expect.objectContaining({ status: "sent" }));
+    expect(mocked.updateSheet.mock.invocationCallOrder[0]).toBeLessThan(sendDraft.mock.invocationCallOrder[0]);
+    expect(mocked.logSheetEvent).toHaveBeenCalledWith("sheet-1", "supplier_sheet.sent", { via: "gmail", gmail_draft_id: "r-123" });
+  });
+
+  it("does not call Gmail when another click already claimed the send", async () => {
+    mocked.getSheet.mockResolvedValue(approved());
+    mocked.updateSheet.mockResolvedValue(null);
+    expect(await sendDraftToSupplier(BULK.id, env)).toMatchObject({ ok: false, code: "changed" });
+    expect(sendDraft).not.toHaveBeenCalled();
+  });
+
+  it("puts the sheet back to approved and records why when Gmail refuses", async () => {
+    mocked.getSheet.mockResolvedValue(approved());
+    sendDraft.mockResolvedValue({ ok: false, error: "Draft not found" });
+    expect(await sendDraftToSupplier(BULK.id, env)).toMatchObject({ ok: false, code: "send_failed", message: "Draft not found" });
+    expect(mocked.updateSheet).toHaveBeenLastCalledWith("sheet-1", ["sent"], { status: "approved", sent_at: null });
+    expect(mocked.logSheetEvent).toHaveBeenCalledWith("sheet-1", "supplier_sheet.send_failed", { error: "Draft not found" });
   });
 });
 
