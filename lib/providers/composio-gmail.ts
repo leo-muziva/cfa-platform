@@ -2,17 +2,15 @@ import "server-only";
 import { Composio } from "@composio/core";
 import { cleanErrorText } from "@/lib/clean-error";
 
-// Creates a Gmail draft in CFA's ordering mailbox through Composio, and
-// sends that saved draft when a staff member clicks Send. Nothing here can
-// write a new email and send it in one go: only a draft staff have already
-// read can go out, and only to the address that draft was created for.
+// Creates a Gmail draft in CFA's ordering mailbox through Composio. Only
+// the draft action is ever called: nothing here can send mail. A person
+// opens the draft in Gmail and presses Send.
 //
 // The Gmail connection needs the gmail.compose scope, which Google also
 // allows to send mail, so connect a dedicated ordering mailbox rather than
 // someone's personal account.
 
 const DRAFT_TOOL = "GMAIL_CREATE_EMAIL_DRAFT";
-const SEND_DRAFT_TOOL = "GMAIL_SEND_DRAFT";
 const GMAIL_TOOLKIT = "gmail";
 // Kept as a named export for this provider's callers and tests.
 export const cleanProviderError = (message: string) => cleanErrorText(message);
@@ -59,11 +57,9 @@ export interface GmailDraftInput {
 }
 
 export type GmailDraftResult = { ok: true; draftId: string | null } | { ok: false; error: string };
-export type GmailSendResult = { ok: true } | { ok: false; error: string };
 
 export interface GmailDraftProvider {
   createDraft(input: GmailDraftInput): Promise<GmailDraftResult>;
-  sendDraft(draftId: string): Promise<GmailSendResult>;
 }
 
 type Env = Record<string, string | undefined>;
@@ -161,20 +157,6 @@ export function createComposioGmailProvider(config: ComposioGmailConfig): GmailD
         return { ok: true, draftId: extractDraftId(response.data) };
       } catch (error) {
         return failure(DRAFT_TOOL, error);
-      }
-    },
-
-    async sendDraft(draftId) {
-      try {
-        const owner = await ownerId();
-        if (!owner.ok) return owner;
-        const response = await execute(SEND_DRAFT_TOOL, owner.userId, { draft_id: draftId });
-        if (!response.successful) {
-          return { ok: false, error: cleanProviderError(response.error ?? "Gmail did not send the draft.") };
-        }
-        return { ok: true };
-      } catch (error) {
-        return failure(SEND_DRAFT_TOOL, error);
       }
     },
   };

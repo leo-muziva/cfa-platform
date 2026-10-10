@@ -9,7 +9,6 @@ import {
   getSpreadsheetDownloadAction,
   markSpreadsheetSentAction,
   runAiProofAction,
-  sendToSupplierAction,
   type SheetActionResult,
 } from "./sheet-actions";
 import type { SheetFindingRowView, SheetView } from "@/lib/services/supplier-sheet-view";
@@ -66,7 +65,6 @@ export function SupplierSheetPanel({
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState(sheet?.emailDraft ?? "");
   const [shownDraft, setShownDraft] = useState(sheet?.emailDraft ?? null);
-  const [confirmSend, setConfirmSend] = useState(false);
 
   // A fresh AI proof brings a new draft; show it unless staff are mid-edit.
   if ((sheet?.emailDraft ?? null) !== shownDraft) {
@@ -78,7 +76,6 @@ export function SupplierSheetPanel({
 
   async function run(which: string, action: () => Promise<SheetActionResult>) {
     setBusy(which);
-    setConfirmSend(false);
     setError("");
     setMessage("");
     const result = await action();
@@ -245,7 +242,7 @@ export function SupplierSheetPanel({
               ) : null}
               {sheet?.approvedAt ? (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Draft created {dateTime.format(new Date(sheet.approvedAt))} with the spreadsheet attached. It is in Gmail Drafts if you want to look before sending.
+                  Draft created {dateTime.format(new Date(sheet.approvedAt))} with the spreadsheet attached. Open Gmail Drafts, check it and press Send.
                 </p>
               ) : null}
             </>
@@ -254,44 +251,19 @@ export function SupplierSheetPanel({
           )}
         </Step>
 
-        <Step number={4} title="Send to supplier" done={sent}>
+        <Step number={4} title="Mark as sent" done={sent}>
           {sent && sheet?.sentAt ? (
             <p className="text-sm text-muted-foreground">Sent {dateTime.format(new Date(sheet.sentAt))}.</p>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">
-                Sends the Gmail draft, exactly as approved and with the spreadsheet attached, to the supplier. This moves the bulk order to &quot;placed&quot;.
-              </p>
-              {confirmSend ? (
-                <div role="group" aria-label="Confirm sending" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-500/40 dark:bg-amber-500/10">
-                  <p className="font-medium">Send this order to the supplier now? This cannot be undone.</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button onClick={() => run("send", () => sendToSupplierAction(bulkOrderId))} disabled={busy !== ""} className={primaryButton}>
-                      Yes, send it
-                    </button>
-                    <button onClick={() => setConfirmSend(false)} disabled={busy !== ""} className={secondaryButton}>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setConfirmSend(true)}
-                    disabled={busy !== "" || status !== "approved"}
-                    className={primaryButton}
-                  >
-                    {busy === "send" ? "Sending..." : "Send to supplier"}
-                  </button>
-                  <button
-                    onClick={() => run("sent", () => markSpreadsheetSentAction(bulkOrderId))}
-                    disabled={busy !== "" || status !== "approved"}
-                    className={secondaryButton}
-                  >
-                    {busy === "sent" ? "Saving..." : "I sent it from Gmail"}
-                  </button>
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground">After you press Send in Gmail. This moves the bulk order to &quot;placed&quot;.</p>
+              <button
+                onClick={() => run("sent", () => markSpreadsheetSentAction(bulkOrderId))}
+                disabled={busy !== "" || status !== "approved"}
+                className={secondaryButton + " mt-2"}
+              >
+                {busy === "sent" ? "Saving..." : "Mark as sent"}
+              </button>
             </>
           )}
         </Step>
