@@ -14,6 +14,7 @@ import {
   deleteCoachAvailabilityExceptionRecord,
   deleteCoachAvailabilityRuleRecord,
   getLessonQuote,
+  getDropInFeeCents,
   getLessonSettings,
   insertLessonBooking,
   lessonBookingError,
@@ -88,10 +89,11 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
   }
   // These three do not depend on each other. Lapsed pay-now holds still
   // occupy their slot until released, so that finishes before times load.
-  const [coachesResult, participantsResult] = await Promise.all([
+  const [coachesResult, participantsResult, , dropInFee] = await Promise.all([
     listLessonCoaches(),
     listEligibleLessonParticipants(context.profile.id, context.capabilities.isAdmin),
     releaseExpiredLessonHolds(),
+    getDropInFeeCents(),
   ])
   if (!coachesResult.success) return pageError(coachesResult)
   const coach = coachesResult.data.find((item) => item.coachId === coachId)
@@ -105,6 +107,8 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
     profile: context.profile,
     capabilities: context.capabilities,
     paymentsAvailable: onlinePaymentsAvailable(),
+    // Only shown as a note; the booking itself reads the fee from settings.
+    dropInFeeCents: dropInFee.success ? dropInFee.data : 0,
     coach,
     participants: eligibleParticipantsForActor(participantsResult.data, context.profile.id, context.capabilities.isDependent),
     timeOptions: optionsResult.data,

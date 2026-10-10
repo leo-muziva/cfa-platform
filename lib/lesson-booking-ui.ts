@@ -73,6 +73,13 @@ export function lessonBillingDetailCopy(canSeeQuote: boolean, paymentsAvailable 
     : "Lessons are added to your monthly invoice.";
 }
 
+// Guests pay the drop-in fee once per day on top of the lesson. Nothing to
+// say when the fee is switched off.
+export function dropInFeeCopy(feeCents: number): string | null {
+  if (!(feeCents > 0)) return null;
+  return `Guests also pay a ${formatZar(feeCents)} drop-in fee, once per day.`;
+}
+
 export function splitMemberLessons(
   lessons: LessonBooking[],
   now = new Date(),

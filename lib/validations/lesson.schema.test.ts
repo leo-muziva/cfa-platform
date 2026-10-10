@@ -78,3 +78,15 @@ describe('standalone preview schemas', () => {
     }).success).toBe(false)
   })
 })
+
+describe('drop-in fee setting', () => {
+  it('accepts a rand amount, including zero to switch it off', () => {
+    expect(lessonSettingsPatchSchema.parse({ dropInFeeRands: '120' })).toEqual({ dropInFeeRands: 120 })
+    expect(lessonSettingsPatchSchema.parse({ dropInFeeRands: '0' })).toEqual({ dropInFeeRands: 0 })
+  })
+
+  it('rejects negative amounts and fractions of a cent', () => {
+    expect(lessonSettingsPatchSchema.safeParse({ dropInFeeRands: '-1' }).success).toBe(false)
+    expect(lessonSettingsPatchSchema.safeParse({ dropInFeeRands: '120.005' }).success).toBe(false)
+  })
+})

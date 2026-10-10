@@ -139,6 +139,7 @@ export async function updateLessonSettingsAction(_: LessonActionState, formData:
     cancellationPartialFeeMultiplier: optionalValue(formData, 'cancellationPartialFeeMultiplier', 'cancellation_partial_fee_multiplier'),
     bookingHorizonCalendarMonths: optionalValue(formData, 'bookingHorizonCalendarMonths', 'booking_horizon_calendar_months'),
     bookingCutoffMinutes: optionalValue(formData, 'bookingCutoffMinutes', 'booking_cutoff_minutes'),
+    dropInFeeRands: optionalValue(formData, 'dropInFeeRands', 'drop_in_fee_rands'),
   })
   if (!result.success) return actionResult(result, '')
   revalidatePath('/protected/admin/lessons')

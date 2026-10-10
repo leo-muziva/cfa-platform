@@ -57,6 +57,7 @@ export const lessonSettingsPatchSchema = z.object({
   bookingHorizonDays: z.coerce.number().int().min(1).max(365).optional(),
   bookingCutoffMinutes: z.coerce.number().int().min(0).optional(),
   singleLessonPriceCents: z.coerce.number().int().min(0).optional(),
+  dropInFeeRands: z.coerce.number().min(0).max(10000).multipleOf(0.01).optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, 'At least one setting is required')
   .refine((value) => value.cancellationPartialWindowHours === undefined || value.cancellationWindowHours === undefined
     || value.cancellationPartialWindowHours <= value.cancellationWindowHours, {
