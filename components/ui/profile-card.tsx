@@ -100,8 +100,10 @@ export function ProfileCard({
       initial="rest"
       whileHover={shouldAnimate ? "hover" : undefined}
       variants={containerVariants}
+      // "dark" scopes the dark theme tokens to the card, so it stays black with
+      // white text in both site themes and the text stays readable on photos.
       className={cn(
-        "group relative isolate aspect-[4/5] w-full overflow-hidden rounded-3xl border border-border/40 bg-card text-card-foreground",
+        "dark group relative isolate aspect-[4/5] w-full overflow-hidden rounded-3xl border border-border/40 bg-card text-card-foreground",
         "shadow-xl shadow-black/5 dark:shadow-black/30",
         className
       )}
