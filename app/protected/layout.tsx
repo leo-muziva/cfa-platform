@@ -13,7 +13,6 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     { href: '/protected/lessons', label: 'Lessons' },
     { href: '/protected/family', label: 'Family' },
     { href: '/protected/billing', label: 'Billing' },
-    ...(capabilities?.canManageEquipment ? [{ href: '/protected/equipment', label: 'Equipment' }] : []),
     ...(capabilities?.isCoach ? [{ href: '/protected/coach', label: 'Coach' }] : []),
     ...(capabilities?.canManageStaffArea ? [{ href: '/protected/admin', label: 'Admin' }] : []),
   ]

@@ -13,8 +13,6 @@ const links = [
   { href: '/protected/admin/coaches', label: 'Coaches' },
   { href: '/protected/admin/closures', label: 'Closures' },
   { href: '/protected/admin/lesson-settings', label: 'Lesson settings' },
-  // Shared with coaches, so it sits outside /protected/admin.
-  { href: '/protected/equipment', label: 'Equipment' },
   { href: '/protected/admin/invoicing', label: 'Invoicing' },
   { href: '/protected/admin/payments', label: 'Payments' },
   { href: '/protected/admin/refunds', label: 'Refunds' },
