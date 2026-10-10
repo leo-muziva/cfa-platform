@@ -26,7 +26,8 @@ const EVENT_LABELS: Record<string, string> = {
   "supplier_sheet.update_approved": "Changed data approved",
   "supplier_sheet.draft_created": "Gmail draft created",
   "supplier_sheet.draft_failed": "Gmail draft failed",
-  "supplier_sheet.sent": "Marked as sent",
+  "supplier_sheet.sent": "Sent to supplier",
+  "supplier_sheet.send_failed": "Sending failed",
 };
 
 // Shows staff that the AI proof actually ran, and with what. Every value
