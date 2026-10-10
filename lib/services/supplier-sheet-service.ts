@@ -19,7 +19,7 @@ import type { SheetCheck, SheetRecord } from "@/lib/repositories/supplier-sheet-
 // The supplier order flow. Every step is a staff button; nothing here runs
 // on a schedule. The order of steps is enforced here, not just by which
 // buttons the page shows:
-//   Generate  ->  AI proof (database check, then AI review)  ->  Gmail draft  ->  Send (or mark sent)
+//   Generate  ->  AI proof (database check, then AI review)  ->  Gmail draft  ->  Mark sent
 // If the check finds the sheet out of date, it rebuilds it and stops until
 // staff approve the updated sheet.
 
@@ -40,8 +40,6 @@ export type SheetErrorCode =
   | "gmail_not_connected"
   | "supplier_email_missing"
   | "gmail_failed"
-  | "draft_missing"
-  | "send_failed"
   | "changed";
 
 export type SheetResult<T> = { ok: true; data: T } | { ok: false; code: SheetErrorCode; message?: string };
@@ -405,45 +403,7 @@ export async function approveAndCreateDraft(
   return { ok: true, data: updated };
 }
 
-// [4a] Send the approved Gmail draft to the supplier. The code sends it,
-// never the AI: the AI only wrote the text staff read and approved. The
-// sheet is marked sent before Gmail is called, so a double click cannot
-// send the order twice; if Gmail refuses, it goes back to approved.
-export async function sendDraftToSupplier(
-  bulkOrderId: string,
-  env: Record<string, string | undefined> = process.env
-): Promise<SheetResult<SheetRecord>> {
-  const bulk = await repo.getBulkOrderSummary(bulkOrderId);
-  if (!bulk) return fail("bulk_order_not_found");
-  const sheet = await repo.getSheet(bulkOrderId);
-  if (!sheet) return fail("no_sheet");
-  if (sheet.status === "sent") return fail("already_sent");
-  if (sheet.status !== "approved") return fail("not_approved");
-  if (!sheet.gmailDraftId) return fail("draft_missing");
-  const gmail = getGmailDraftProvider(env);
-  if (!gmail) return fail("gmail_not_connected");
-
-  // Orders paid after the draft was made would be missing from it.
-  const checked = await checkAgainstDatabase(bulk, sheet);
-  if (!checked.ok) return checked;
-  if (!checked.data.check.matches) return fail("needs_approval");
-
-  const claimed = await repo.updateSheet(sheet.id, ["approved"], { status: "sent", sent_at: new Date().toISOString() });
-  if (!claimed) return fail("changed");
-
-  const sent = await gmail.sendDraft(sheet.gmailDraftId);
-  if (!sent.ok) {
-    await repo.updateSheet(sheet.id, ["sent"], { status: "approved", sent_at: null });
-    await repo.logSheetEvent(sheet.id, "supplier_sheet.send_failed", { error: sent.error });
-    return fail("send_failed", sent.error);
-  }
-
-  await repo.logSheetEvent(sheet.id, "supplier_sheet.sent", { via: "gmail", gmail_draft_id: sheet.gmailDraftId });
-  return { ok: true, data: claimed };
-}
-
-// [4b] Mark as sent, for a draft staff sent from Gmail themselves. The
-// caller then moves the bulk order to "placed".
+// [4] Mark as sent. The caller then moves the bulk order to "placed".
 export async function markSheetSent(bulkOrderId: string): Promise<SheetResult<SheetRecord>> {
   const sheet = await repo.getSheet(bulkOrderId);
   if (!sheet) return fail("no_sheet");
