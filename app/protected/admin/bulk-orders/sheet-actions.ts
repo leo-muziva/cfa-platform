@@ -11,6 +11,7 @@ import {
   getSheetDownloadUrl,
   markSheetSent,
   runAiProof,
+  sendDraftToSupplier,
   type SheetErrorCode,
   type SheetResult,
 } from "@/lib/services/supplier-sheet-service";
@@ -41,6 +42,8 @@ const MESSAGES: Record<SheetErrorCode, string> = {
   gmail_not_connected: "Gmail is not connected yet. Ask the site admin to set up the ordering mailbox.",
   supplier_email_missing: "The supplier's email address has not been set up yet.",
   gmail_failed: "Gmail did not accept the draft.",
+  draft_missing: "The Gmail draft could not be found. Open Gmail, send it from Drafts, then click 'I sent it from Gmail'.",
+  send_failed: "Gmail did not send the email. Nothing was sent; try again or send it from Gmail Drafts.",
   changed: "Someone else changed this spreadsheet. Refresh the page and try again.",
 };
 
@@ -102,7 +105,33 @@ export async function approveAndCreateDraftAction(bulkOrderId: string, emailBody
   const result = await approveAndCreateDraft(bulkOrderId, actor.actorId, { emailBody: body.data });
   if (!result.ok) return toError(result);
   refresh();
-  return { success: true, message: "Gmail draft created with the spreadsheet attached. Open Gmail, check it and press Send." };
+  return { success: true, message: "Gmail draft created with the spreadsheet attached. Read it, then click Send to supplier." };
+}
+
+// Sending the order is what "placed with supplier" means, so move the
+// bulk order on and let new orders start the next one.
+async function placeBulkOrder(bulkOrderId: string, done: string): Promise<SheetActionResult> {
+  const bulk = await getBulkOrderSummary(bulkOrderId);
+  if (bulk?.status === "collecting") {
+    const advanced = await advanceStatus(bulkOrderId, "placed");
+    if (advanced.error) {
+      refresh();
+      return { success: true, message: done + " The bulk order status did not change: " + advanced.error };
+    }
+  }
+  refresh();
+  return { success: true, message: done + " New orders will go into the next bulk order." };
+}
+
+export async function sendToSupplierAction(bulkOrderId: string): Promise<SheetActionResult> {
+  const actor = await staff(bulkOrderId);
+  if ("error" in actor) return { error: actor.error };
+  const result = await sendDraftToSupplier(bulkOrderId);
+  if (!result.ok) {
+    if (result.code === "needs_approval") refresh();
+    return toError(result);
+  }
+  return placeBulkOrder(bulkOrderId, "Sent to the supplier from Gmail.");
 }
 
 export async function markSpreadsheetSentAction(bulkOrderId: string): Promise<SheetActionResult> {
@@ -110,19 +139,7 @@ export async function markSpreadsheetSentAction(bulkOrderId: string): Promise<Sh
   if ("error" in actor) return { error: actor.error };
   const result = await markSheetSent(bulkOrderId);
   if (!result.ok) return toError(result);
-
-  // Sending the order is what "placed with supplier" means, so move the
-  // bulk order on and let new orders start the next one.
-  const bulk = await getBulkOrderSummary(bulkOrderId);
-  if (bulk?.status === "collecting") {
-    const advanced = await advanceStatus(bulkOrderId, "placed");
-    if (advanced.error) {
-      refresh();
-      return { success: true, message: "Marked as sent, but the bulk order status did not change: " + advanced.error };
-    }
-  }
-  refresh();
-  return { success: true, message: "Marked as sent. New orders will go into the next bulk order." };
+  return placeBulkOrder(bulkOrderId, "Marked as sent.");
 }
 
 export async function getSpreadsheetDownloadAction(bulkOrderId: string): Promise<SheetActionResult> {
