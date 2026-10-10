@@ -70,7 +70,7 @@ type Env = Record<string, string | undefined>;
 
 export interface ComposioGmailConfig {
   apiKey: string;
-  // Optional: the connected account ID alone identifies the inbox.
+  // Optional: when unset, the owner is read from the connected account.
   userId: string | null;
   connectedAccountId: string;
   toolkitVersion: string | null;
@@ -96,16 +96,43 @@ export function extractDraftId(data: Record<string, unknown>): string | null {
   return typeof found === "string" ? found : null;
 }
 
+// Composio needs the user that owns the Gmail connection as well as the
+// connection itself. When COMPOSIO_USER_ID is not set, read the owner from
+// the connection record. A connection that is not ACTIVE (for example
+// expired) needs reconnecting in Composio, so say that plainly.
+export function connectionOwner(account: { user_id?: unknown; status?: unknown }): { ok: true; userId: string } | { ok: false; error: string } {
+  if (typeof account.status === "string" && account.status !== "ACTIVE") {
+    return { ok: false, error: "The Gmail connection in Composio is " + account.status.toLowerCase() + ". Reconnect Gmail in Composio and try again." };
+  }
+  if (typeof account.user_id !== "string" || account.user_id === "") {
+    return { ok: false, error: "The Gmail connection in Composio has no user. Set COMPOSIO_USER_ID in Vercel." };
+  }
+  return { ok: true, userId: account.user_id };
+}
+
+// Owners only change if Gmail is reconnected, which also changes the ID.
+const ownerCache = new Map<string, string>();
+
 export function createComposioGmailProvider(config: ComposioGmailConfig): GmailDraftProvider {
   // Automatic file staging stays off (the SDK default): it would let tool
   // arguments name files on this server. The attachment is staged explicitly.
   const composio = new Composio({ apiKey: config.apiKey });
 
-  function execute(tool: string, args: Record<string, unknown>) {
+  async function ownerId(): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+    if (config.userId) return { ok: true, userId: config.userId };
+    const cached = ownerCache.get(config.connectedAccountId);
+    if (cached) return { ok: true, userId: cached };
+    const account = await composio.getClient().connectedAccounts.retrieve(config.connectedAccountId, { signal: AbortSignal.timeout(15_000) });
+    const owner = connectionOwner(account);
+    if (owner.ok) ownerCache.set(config.connectedAccountId, owner.userId);
+    return owner;
+  }
+
+  function execute(tool: string, userId: string, args: Record<string, unknown>) {
     return composio.tools.execute(
       tool,
       {
-        ...(config.userId ? { userId: config.userId } : {}),
+        userId,
         connectedAccountId: config.connectedAccountId,
         ...(config.toolkitVersion ? { version: config.toolkitVersion } : { dangerouslySkipVersionCheck: true }),
         arguments: args,
@@ -117,9 +144,11 @@ export function createComposioGmailProvider(config: ComposioGmailConfig): GmailD
   return {
     async createDraft(input) {
       try {
+        const owner = await ownerId();
+        if (!owner.ok) return owner;
         const file = new File([new Uint8Array(input.attachment.content)], input.attachment.name, { type: input.attachment.mimeType });
         const staged = await composio.files.upload({ file, toolSlug: DRAFT_TOOL, toolkitSlug: GMAIL_TOOLKIT });
-        const response = await execute(DRAFT_TOOL, {
+        const response = await execute(DRAFT_TOOL, owner.userId, {
           recipient_email: input.recipient,
           subject: input.subject,
           body: input.body,
@@ -137,7 +166,9 @@ export function createComposioGmailProvider(config: ComposioGmailConfig): GmailD
 
     async sendDraft(draftId) {
       try {
-        const response = await execute(SEND_DRAFT_TOOL, { draft_id: draftId });
+        const owner = await ownerId();
+        if (!owner.ok) return owner;
+        const response = await execute(SEND_DRAFT_TOOL, owner.userId, { draft_id: draftId });
         if (!response.successful) {
           return { ok: false, error: cleanProviderError(response.error ?? "Gmail did not send the draft.") };
         }
