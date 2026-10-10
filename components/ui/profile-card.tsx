@@ -117,15 +117,15 @@ export function ProfileCard({
       {/* Layered fades into the theme background so the text stays readable. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-[linear-gradient(to_top,hsl(var(--background)/0.95)_0%,hsl(var(--background)/0.4)_35%,hsl(var(--background)/0.1)_60%,transparent_80%)]"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(to_top,hsl(var(--background)/0.9)_0%,hsl(var(--background)/0.35)_20%,transparent_42%)]"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 -z-10 h-2/3 bg-[linear-gradient(to_top,hsl(var(--background)/0.9)_0%,hsl(var(--background)/0.5)_40%,transparent_100%)] backdrop-blur-[1px]"
+        className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-[linear-gradient(to_top,hsl(var(--background)/0.8)_0%,hsl(var(--background)/0.3)_50%,transparent_100%)]"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-[linear-gradient(to_top,hsl(var(--background)/0.85)_0%,hsl(var(--background)/0.4)_60%,transparent_100%)] backdrop-blur-sm"
+        className="absolute inset-x-0 bottom-0 -z-10 h-1/5 bg-[linear-gradient(to_top,hsl(var(--background)/0.6)_0%,transparent_100%)] backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_40%,transparent)]"
       />
 
       <motion.div
@@ -137,7 +137,7 @@ export function ProfileCard({
         <motion.div variants={itemVariants} className="flex items-center gap-2">
           <motion.h2
             aria-label={name}
-            className="font-serif text-2xl font-semibold leading-tight text-foreground"
+            className="text-2xl font-semibold leading-tight tracking-tight text-cfa-purple dark:text-white"
             variants={{ visible: { transition: { staggerChildren: 0.02 } } }}
           >
             {/* Letters animate inside whole words so long names wrap between words. */}

@@ -1,6 +1,5 @@
-import { CalendarClock, Swords } from "lucide-react";
+import { Swords } from "lucide-react";
 import { ProfileCard } from "@/components/ui/profile-card";
-import { formatCapeTownLessonDate } from "@/lib/booking-calendar";
 import type { LessonCoachSummary } from "@/types/domain";
 
 const weaponLabels = {
@@ -58,19 +57,11 @@ export function CoachDirectory({ coaches }: { coaches: LessonCoachDirectoryEntry
               name={coach.fullName}
               image={photo.url}
               imagePosition={photo.position}
-              isVerified={coach.nextAvailableAt !== null}
-              verifiedLabel="Taking bookings"
-              description={
-                coach.nextAvailableAt
-                  ? "Next free " + formatCapeTownLessonDate(coach.nextAvailableAt)
-                  : "No free times in the current booking window"
-              }
               stats={[
                 {
                   icon: <Swords aria-hidden="true" />,
                   label: coach.weapons.map((weapon) => weaponLabels[weapon]).join(" · "),
                 },
-                { icon: <CalendarClock aria-hidden="true" />, label: "30-minute lessons" },
               ]}
               actionHref={href}
               actionLabel={coach.nextAvailableAt ? "View times" : "See schedule"}
