@@ -15,8 +15,7 @@
     "test:db-payments": "npx supabase test db supabase/tests/database/provider-payments.test.sql supabase/tests/database/shop-order-payments.test.sql supabase/tests/database/refunds.test.sql supabase/tests/database/refund-resolution.test.sql supabase/tests/database/pay-now-lessons.test.sql",
     "seed:staging": "node scripts/seed-hosted-demo.mjs",
     "seed:demo-activity": "node scripts/seed-demo-activity.mjs",
-    "dev:hosted": "next dev --webpack",
-    "test:db-equipment": "npx supabase test db supabase/tests/database/equipment-register.test.sql supabase/tests/database/equipment-assigned-member.test.sql"
+    "dev:hosted": "next dev --webpack"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.87",
