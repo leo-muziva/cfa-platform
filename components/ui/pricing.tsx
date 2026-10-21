@@ -1,123 +1,125 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Star } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import { Check } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
-import { TiltCard } from "@/components/ui/tilt-card";
-import type { PublicPricingPlan } from "@/lib/services/public-membership-service";
 
-export interface PricingProps {
-  plans: PublicPricingPlan[];
-  className?: string;
+// Pricing cards adapted from the shadcn pricing block. The prices are
+// already formatted by the caller, and there is no billing switch, because
+// CFA sells fixed terms at database prices rather than monthly vs annual.
+
+export interface PricingCardPlan {
+  key: string;
+  name: string;
+  priceLabel: string;
+  period?: string;
+  note?: string;
+  badge?: string;
+  features: string[];
+  buttonText: string;
+  // Left out when there is nowhere to send the visitor, which hides the button.
+  href?: string;
 }
 
-const MEMBERSHIP_PERKS = [
-  "Club facility access",
-  "Group training and sparring",
-  "Competition representation and coaching",
-];
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-purple dark:focus-visible:outline-white";
 
-function formatRand(amount: number): string {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR",
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-function PricingCard({ plan, position, reducedMotion }: {
-  plan: PublicPricingPlan;
-  position: "outer-left" | "inner-left" | "inner-right" | "outer-right";
-  reducedMotion: boolean | null;
-}) {
-  const featured = position === "inner-left" || position === "inner-right";
-  const beginner = plan.code === "beginner_package";
-
+export function PricingCard({ plan, className }: { plan: PricingCardPlan; className?: string }) {
   return (
-    <motion.div
-      initial={reducedMotion ? false : { opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: reducedMotion ? 0 : 0.55 }}
+    <div
       className={cn(
-        "relative h-full min-w-0 [transform-style:preserve-3d]",
-        position === "outer-left" && "lg:z-0 lg:origin-right lg:translate-x-5 lg:rotate-[-2deg] lg:scale-[0.93]",
-        position === "inner-left" && "lg:z-20 lg:-translate-y-5 lg:translate-x-2 lg:scale-[1.04]",
-        position === "inner-right" && "lg:z-20 lg:-translate-y-5 lg:-translate-x-2 lg:scale-[1.04]",
-        position === "outer-right" && "lg:z-0 lg:origin-left lg:-translate-x-5 lg:rotate-[2deg] lg:scale-[0.93]",
+        "relative flex h-full flex-col rounded-2xl border border-[#140a2e]/10 bg-[#ffffff] p-6 text-center shadow-[0_10px_30px_rgba(45,23,107,0.05)] dark:border-white/10 dark:bg-white/5",
+        className,
       )}
     >
-      <div className={cn(
-        "pointer-events-none absolute inset-3 rounded-3xl bg-cfa-purple/15 blur-xl",
-        featured && "bg-cfa-gold/25 blur-2xl",
-      )} aria-hidden="true" />
-      <TiltCard
-        className={cn(
-          "cfa-light-card relative flex h-full min-h-[440px] flex-col rounded-3xl p-6 text-primary shadow-[0_25px_65px_rgba(45,23,107,0.14)] sm:p-7",
-          featured && "border-2 border-cfa-gold shadow-[0_35px_80px_rgba(45,23,107,0.24)]",
-        )}
-        tiltLimit={8}
-        scale={1.02}
-        spotlightColor="rgba(255,210,28,0.18)"
-      >
-        {featured && (
-          <span className="absolute right-0 top-0 z-20 inline-flex items-center gap-1 rounded-bl-xl rounded-tr-2xl bg-cfa-purple px-3 py-1.5 text-xs font-semibold text-white">
-            <Star size={14} aria-hidden="true" /> {plan.name} option
+      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8a6810] dark:text-cfa-gold">
+        {plan.name}
+      </p>
+      <div className="mt-6 flex flex-wrap items-baseline justify-center gap-x-2">
+        <span className="text-5xl font-bold tracking-tight tabular-nums text-cfa-purple dark:text-white">
+          {plan.priceLabel}
+        </span>
+        {plan.period && (
+          <span className="text-sm font-semibold leading-6 tracking-wide text-muted-foreground">
+            / {plan.period}
           </span>
         )}
-        <article className="relative z-20 flex h-full flex-col">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#8a6810] dark:text-cfa-gold">{beginner ? "Start fencing" : "CFA membership"}</p>
-          <h3 className="mt-3 text-xl font-semibold">{plan.name}</h3>
-          <div className="mt-7 flex items-baseline gap-2 border-b border-border/70 pb-5">
-            <span className="text-3xl font-semibold tracking-tight tabular-nums xl:text-4xl">
-              {plan.price === null ? "Ask CFA" : formatRand(plan.price)}
-            </span>
-            <span className="text-xs text-muted-foreground">{plan.code === "month_to_month" ? "/ month" : beginner ? "/ package" : "/ term"}</span>
-          </div>
-          <p className="mt-4 min-h-5 text-sm font-medium text-[#8a6810] dark:text-cfa-gold">
-            {plan.discountNote ?? (beginner ? "Four introductory lessons" : plan.code === "six_month" ? "Six months paid upfront" : plan.code === "twelve_month" ? "Twelve months paid upfront" : "Train month to month")}
-          </p>
-          <p className="mt-4 text-sm text-muted-foreground">{plan.description ?? (beginner ? "Start your fencing journey with CFA." : "Train and grow with CFA.")}</p>
-          <ul className="mt-6 flex flex-1 flex-col gap-3">
-            {(beginner ? ["Four individual beginner lessons", "An introduction to CFA fencing"] : MEMBERSHIP_PERKS).map((feature) => (
-              <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <Check size={16} className="mt-0.5 shrink-0 text-[#8a6810] dark:text-cfa-gold" aria-hidden="true" />
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
+      </div>
+      {plan.note && <p className="mt-2 text-xs leading-5 text-muted-foreground">{plan.note}</p>}
+      <p
+        className={cn(
+          "mt-1 min-h-5 text-xs font-semibold text-green-700 dark:text-green-400",
+          !plan.badge && "invisible",
+        )}
+      >
+        {plan.badge ?? "No saving"}
+      </p>
+
+      <ul className="mt-5 flex flex-1 flex-col gap-2 text-sm">
+        {plan.features.map((feature) => (
+          <li key={feature} className="flex items-start gap-2">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-cfa-purple dark:text-cfa-gold" aria-hidden="true" />
+            <span className="text-left">{feature}</span>
+          </li>
+        ))}
+      </ul>
+
+      {plan.href && (
+        <>
+          <hr className="my-5 w-full border-[#140a2e]/10 dark:border-white/10" />
           <Link
-            href="/auth/sign-up"
+            href={plan.href}
             className={cn(
-              "mt-8 inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-gold",
-              featured ? "border-cfa-purple bg-cfa-purple text-white hover:bg-cfa-purple/90" : "border-cfa-purple/25 bg-background text-cfa-purple hover:border-cfa-purple hover:bg-cfa-purple/10",
+              buttonVariants({ variant: "outline" }),
+              "min-h-11 w-full rounded-full border-[#140a2e]/20 bg-transparent text-base font-semibold text-cfa-purple shadow-none",
+              "transition-all duration-300 ease-out hover:bg-cfa-purple hover:text-white hover:ring-2 hover:ring-cfa-purple hover:ring-offset-1",
+              "dark:border-white/25 dark:text-white dark:hover:bg-white dark:hover:text-cfa-purple dark:hover:ring-white",
+              FOCUS,
             )}
           >
-            {beginner ? "Get started" : "Join the Academy"}
+            {plan.buttonText}
           </Link>
-        </article>
-      </TiltCard>
-    </motion.div>
+        </>
+      )}
+    </div>
   );
 }
 
-export function Pricing({ plans, className }: PricingProps) {
-  const shouldReduceMotion = useReducedMotion();
-  const displayPlans = ["month_to_month", "six_month", "twelve_month", "beginner_package"]
-    .map((code) => plans.find((plan) => plan.code === code))
-    .filter((plan): plan is PublicPricingPlan => Boolean(plan));
+export function Pricing({ plans }: { plans: PricingCardPlan[] }) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const reduceMotion = useReducedMotion();
+  const last = plans.length - 1;
 
   return (
-    <div className={cn("grid gap-6 overflow-visible pb-2 md:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:pt-5 lg:pb-0 [perspective:1200px]", className)}>
-      {displayPlans.map((plan, index) => (
-        <PricingCard
-          key={plan.code}
-          plan={plan}
-          position={(["outer-left", "inner-left", "inner-right", "outer-right"] as const)[index]}
-          reducedMotion={shouldReduceMotion}
-        />
-      ))}
-    </div>
+    <ul className="grid gap-4 md:grid-cols-3">
+      {plans.map((plan, index) => {
+        // On desktop the outer cards sit slightly smaller and lean in towards
+        // the middle one, as in the template.
+        const outer = plans.length === 3 && (index === 0 || index === last);
+        return (
+          <motion.li
+            key={plan.key}
+            initial={reduceMotion ? false : { y: 50, opacity: 1 }}
+            whileInView={
+              isDesktop && outer
+                ? { y: 0, opacity: 1, x: index === 0 ? 30 : -30, scale: 0.94 }
+                : { y: 0, opacity: 1, x: 0, scale: 1 }
+            }
+            viewport={{ once: true }}
+            transition={
+              reduceMotion
+                ? { duration: 0 }
+                : { duration: 1.6, type: "spring", stiffness: 100, damping: 30, delay: 0.4, opacity: { duration: 0.5 } }
+            }
+            className={cn(outer ? "z-0" : "z-10", index === 0 && "origin-right", index === last && "origin-left")}
+          >
+            <PricingCard plan={plan} />
+          </motion.li>
+        );
+      })}
+    </ul>
   );
 }

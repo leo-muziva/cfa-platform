@@ -1,1 +1,0 @@
-select count(*) from public.products where image_path is not null;

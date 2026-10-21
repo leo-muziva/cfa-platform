@@ -16,6 +16,7 @@ import type {
   LessonParticipant,
   LessonTimeOption,
   LessonQuote,
+  PayableLessonHold,
   Weapon,
 } from '@/types/domain'
 import type {
@@ -35,7 +36,7 @@ const errorMessages: Record<LessonBookingErrorCode, string> = {
   invalid_participants: 'Choose one or two different participants.',
   participant_unauthorized: 'You cannot book for one of the selected participants.',
   mixed_payers: 'Both participants must have the same payer.',
-  slot_taken: 'That time has just been taken. Pick another available time.',
+  slot_taken: 'Someone has just booked that time. Please pick another.',
   booking_not_scheduled: 'This lesson is no longer scheduled.',
   booking_already_started: 'This lesson has already started and can no longer be changed.',
   invalid_actor_type: 'This cancellation type is not allowed.',
@@ -50,11 +51,17 @@ const errorMessages: Record<LessonBookingErrorCode, string> = {
   affected_bookings_require_confirmation: 'Confirm cancellation of the affected bookings before blocking this time.',
   invalid_closure: 'Check the closure dates and reason.',
   waiver_reason_required: 'A waiver reason is required.',
+  members_only: 'This time is reserved for active members. Choose another time, or apply for membership first.',
+  pay_now_required: 'This lesson must be paid now. Guest lessons can only be booked by the account payer with online payment.',
+  entitlement_unavailable: 'No lesson package uses are left for this fencer.',
+  invalid_product: 'This lesson type is not available right now.',
+  checkout_unavailable: 'This lesson can no longer be paid online. The payment hold may have expired.',
+  payments_unavailable: 'Online payments are not available right now, so this lesson cannot be paid now.',
   not_found: 'The requested lesson record was not found.',
   request_failed: 'The lesson request could not be completed. Please try again.',
 }
 
-const databaseErrorCodes = Object.keys(errorMessages).filter((code) => !['invalid_input', 'not_found', 'request_failed'].includes(code)) as LessonBookingErrorCode[]
+const databaseErrorCodes = Object.keys(errorMessages).filter((code) => !['invalid_input', 'not_found', 'request_failed', 'payments_unavailable'].includes(code)) as LessonBookingErrorCode[]
 
 export function lessonBookingError(code: LessonBookingErrorCode): LessonBookingResult<never> {
   return { success: false, errorCode: code, error: errorMessages[code] }
@@ -67,12 +74,19 @@ export function lessonBookingErrorCode(error: unknown): LessonBookingErrorCode {
 }
 
 function failed(error: unknown): LessonBookingResult<never> {
-  return lessonBookingError(lessonBookingErrorCode(error))
+  const code = lessonBookingErrorCode(error)
+  // Unmapped database errors (for example a function missing on a hosted
+  // database) would otherwise vanish behind the generic message.
+  if (code === 'request_failed') {
+    const detail = error && typeof error === 'object' ? error as { code?: unknown; message?: unknown } : { message: error }
+    console.error('[lesson-booking] request failed', { code: detail.code ?? null, message: String(detail.message ?? '') })
+  }
+  return lessonBookingError(code)
 }
 
 type CoachRow = { coach_id: string; full_name: string; weapons: string[] | null }
 type TimeRow = { starts_at: string; ends_at: string }
-type TimeOptionRow = TimeRow & { is_available: boolean }
+type TimeOptionRow = TimeRow & { is_available: boolean; members_only?: boolean | null }
 type QuoteRow = { participant_count: number | string; total_cents: number | string; currency: string }
 
 export async function listLessonCoaches(): Promise<LessonBookingResult<LessonCoachSummary[]>> {
@@ -106,7 +120,7 @@ export async function listLessonTimeOptions(input: LessonAvailabilityInput): Pro
   })
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as TimeOptionRow[]).map((row) => ({
-    startsAt: row.starts_at, endsAt: row.ends_at, isAvailable: row.is_available,
+    startsAt: row.starts_at, endsAt: row.ends_at, isAvailable: row.is_available, membersOnly: Boolean(row.members_only),
   })) }
 }
 
@@ -174,6 +188,11 @@ type SafeBookingRow = {
   cancellation_reason?: string | null
   rescheduled_from_booking_id?: string | null
   rescheduled_to_booking_id?: string | null
+  awaiting_payment?: boolean | null
+  hold_expires_at?: string | null
+  partial_fee_deadline?: string | null
+  partial_fee_percent?: number | null
+  late_fee_percent?: number | null
 }
 
 export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
@@ -194,6 +213,11 @@ export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
     cancellationReason: row.cancellation_reason ?? null,
     rescheduledFromBookingId: row.rescheduled_from_booking_id ?? null,
     rescheduledToBookingId: row.rescheduled_to_booking_id ?? null,
+    awaitingPayment: row.awaiting_payment ?? false,
+    holdExpiresAt: row.hold_expires_at ?? null,
+    partialFeeDeadline: row.partial_fee_deadline ?? null,
+    partialFeePercent: row.partial_fee_percent ?? null,
+    lateFeePercent: row.late_fee_percent ?? null,
   }
 }
 
@@ -203,6 +227,32 @@ export async function listMemberLessonBookings(): Promise<LessonBookingResult<Le
   const { data, error } = await db.rpc('list_my_lesson_bookings')
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as SafeBookingRow[]).map(mapSafeLessonBooking) }
+}
+
+type PayableHoldRow = {
+  booking_id: string
+  coach_name: string
+  starts_at: string
+  weapon: string
+  participant_names: string[] | null
+  amount_cents: string | number
+  hold_expires_at: string
+}
+
+/** Payer-only: pay-now lessons whose hold is still live, with the amount due. */
+export async function listPayableLessonHolds(): Promise<LessonBookingResult<PayableLessonHold[]>> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('list_my_payable_lesson_holds')
+  if (error) return failed(error)
+  return { success: true, data: ((data ?? []) as PayableHoldRow[]).map((row) => ({
+    bookingId: row.booking_id,
+    coachName: row.coach_name,
+    startsAt: row.starts_at,
+    weapon: row.weapon as Weapon,
+    participantNames: row.participant_names ?? [],
+    amountCents: String(row.amount_cents),
+    holdExpiresAt: row.hold_expires_at,
+  })) }
 }
 
 export async function listCoachLessonAgenda(coachId?: string): Promise<LessonBookingResult<LessonBooking[]>> {
@@ -276,16 +326,17 @@ export async function listEligibleLessonParticipants(actorId: string, isAdmin: b
   return { success: true, data: participants }
 }
 
-type RuleRow = { id: string; coach_id: string; iso_weekday: number; starts_at_local: string; ends_at_local: string; is_active: boolean }
+type RuleRow = { id: string; coach_id: string; iso_weekday: number; starts_at_local: string; ends_at_local: string; is_active: boolean; access_rule: string }
 type ExceptionRow = { id: string; coach_id: string; exception_type: string; starts_at: string; ends_at: string; reason: string | null }
 
 export async function listCoachAvailabilityRules(coachId: string): Promise<LessonBookingResult<CoachAvailabilityRule[]>> {
   const db = await createClient()
-  const { data, error } = await db.from('coach_availability_rules').select('id,coach_id,iso_weekday,starts_at_local,ends_at_local,is_active').eq('coach_id', coachId).order('iso_weekday').order('starts_at_local')
+  const { data, error } = await db.from('coach_availability_rules').select('id,coach_id,iso_weekday,starts_at_local,ends_at_local,is_active,access_rule').eq('coach_id', coachId).order('iso_weekday').order('starts_at_local')
   if (error) return failed(error)
   return { success: true, data: ((data ?? []) as RuleRow[]).map((row) => ({
     id: row.id, coachId: row.coach_id, isoWeekday: row.iso_weekday as CoachAvailabilityRule['isoWeekday'],
     startsAtLocal: row.starts_at_local, endsAtLocal: row.ends_at_local, isActive: row.is_active,
+    accessRule: row.access_rule === 'active_members_only' ? 'active_members_only' : 'guest_allowed',
   })) }
 }
 
@@ -293,7 +344,7 @@ export async function createCoachAvailabilityRuleRecord(input: CoachAvailability
   const db = await createClient()
   const { data, error } = await db.from('coach_availability_rules').insert({
     coach_id: input.coachId, iso_weekday: input.isoWeekday,
-    starts_at_local: input.startsAtLocal, ends_at_local: input.endsAtLocal,
+    starts_at_local: input.startsAtLocal, ends_at_local: input.endsAtLocal, access_rule: input.accessRule,
   }).select('id').single()
   return error ? failed(error) : { success: true, data: { ruleId: data.id } }
 }
@@ -337,12 +388,16 @@ function mapSettings(row: SettingsRow): LessonBookingSettings {
     cancellationWindowHours: Number(row.cancellation_window_hours),
     lateCancellationAction: 'allow',
     lateCancellationFeeMultiplier: Number(row.late_cancellation_fee_multiplier),
+    cancellationPartialWindowHours: Number(row.cancellation_partial_window_hours),
+    cancellationPartialFeeMultiplier: Number(row.cancellation_partial_fee_multiplier),
     noShowFeeMultiplier: Number(row.no_show_fee_multiplier),
     bookingHorizonDays: Number(row.booking_horizon_days),
+    bookingHorizonCalendarMonths: Number(row.booking_horizon_calendar_months),
     bookingCutoffMinutes: Number(row.booking_cutoff_minutes),
     paymentMode: 'invoice_only', arrearsBlockingEnabled: false, futureBookingCapPerFencer: null,
     coachAssignmentMode: 'any_matching_weapon', coachWeaponsMode: 'per_coach',
     singleLessonPriceCents: Number(row.single_lesson_price_cents),
+    dropInFeeCents: Number(row.drop_in_fee_cents ?? 0),
     externalRemindersEnabled: Boolean(row.external_reminders_enabled),
     doubleLessonMultiplier: 2, doubleLessonAtomic: true, closureMode: 'club_wide_date_ranges',
     lessonDurationMinutes: 30, updatedAt: String(row.updated_at),
@@ -355,14 +410,25 @@ export async function getLessonSettings(): Promise<LessonBookingResult<LessonBoo
   return error || !data ? failed(error) : { success: true, data: mapSettings(data as SettingsRow) }
 }
 
+// Guests can't read the settings row, so the fee comes through its own RPC.
+export async function getDropInFeeCents(): Promise<LessonBookingResult<number>> {
+  const db = await createClient()
+  const { data, error } = await db.rpc('get_drop_in_fee_cents')
+  return error ? failed(error) : { success: true, data: Number(data ?? 0) }
+}
+
 export async function updateLessonSettingsRecord(input: LessonSettingsPatchInput): Promise<LessonBookingResult<LessonBookingSettings>> {
   const patch: Record<string, number> = {}
   if (input.cancellationWindowHours !== undefined) patch.cancellation_window_hours = input.cancellationWindowHours
   if (input.lateCancellationFeeMultiplier !== undefined) patch.late_cancellation_fee_multiplier = input.lateCancellationFeeMultiplier
+  if (input.cancellationPartialWindowHours !== undefined) patch.cancellation_partial_window_hours = input.cancellationPartialWindowHours
+  if (input.cancellationPartialFeeMultiplier !== undefined) patch.cancellation_partial_fee_multiplier = input.cancellationPartialFeeMultiplier
+  if (input.bookingHorizonCalendarMonths !== undefined) patch.booking_horizon_calendar_months = input.bookingHorizonCalendarMonths
   if (input.noShowFeeMultiplier !== undefined) patch.no_show_fee_multiplier = input.noShowFeeMultiplier
   if (input.bookingHorizonDays !== undefined) patch.booking_horizon_days = input.bookingHorizonDays
   if (input.bookingCutoffMinutes !== undefined) patch.booking_cutoff_minutes = input.bookingCutoffMinutes
   if (input.singleLessonPriceCents !== undefined) patch.single_lesson_price_cents = input.singleLessonPriceCents
+  if (input.dropInFeeRands !== undefined) patch.drop_in_fee_cents = Math.round(input.dropInFeeRands * 100)
   const db = await createClient()
   const { data, error } = await db.rpc('update_lesson_booking_settings', { settings_patch: patch })
   return error || !data ? failed(error) : { success: true, data: mapSettings(data as SettingsRow) }

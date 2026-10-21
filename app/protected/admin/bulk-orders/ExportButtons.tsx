@@ -43,7 +43,7 @@ export function ExportButtons({ bulkOrderId }: { bulkOrderId: string }) {
           run("supplier");
         }}
         disabled={busy !== ""}
-        className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-40"
+        className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-40 dark:hover:bg-white/10"
       >
         {busy === "supplier" ? "Building..." : "Export for supplier"}
       </button>
@@ -53,12 +53,12 @@ export function ExportButtons({ bulkOrderId }: { bulkOrderId: string }) {
           run("distribution");
         }}
         disabled={busy !== ""}
-        className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-40"
+        className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-40 dark:hover:bg-white/10"
       >
         {busy === "distribution" ? "Building..." : "Export for distribution"}
       </button>
 
-      {error ? <p className="w-full text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="w-full text-sm text-red-600 dark:text-red-400">{error}</p> : null}
     </div>
   );
 }

@@ -5,7 +5,7 @@ const read = (relativePath: string) => readFileSync(new URL(`../${relativePath}`
 const compatibilityPage = read('app/book/page.tsx')
 const protectedPage = read('app/protected/book/page.tsx')
 const protectedCoachPage = read('app/protected/book/[coachId]/page.tsx')
-const publicNavigation = read('components/public-navigation.tsx')
+const siteNavigation = read('components/site-navigation.tsx')
 const signup = read('components/ui/sign-up.tsx')
 
 describe('protected booking routing', () => {
@@ -25,8 +25,9 @@ describe('protected booking routing', () => {
   })
 
   it('removes public booking navigation and carries booking through signup confirmation', () => {
-    expect(publicNavigation).not.toContain('href: "/book"')
-    expect(signup).toContain('/auth/confirm?next=')
-    expect(signup).toContain('encodeURIComponent(next)')
+    expect(siteNavigation).not.toContain('href: "/book"')
+    expect(siteNavigation).toContain('href: "/protected/book"')
+    // The URL itself is covered by emailConfirmRedirect's tests in auth-next.test.ts.
+    expect(signup).toContain('emailConfirmRedirect(window.location.origin, next)')
   })
 })

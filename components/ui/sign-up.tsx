@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { Lock, Mail, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { emailConfirmRedirect } from "@/lib/auth-next";
 import {
   AuthModal,
   type AuthModalState,
@@ -111,11 +112,11 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
     });
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(`/auth/login?confirmed=1&next=${encodeURIComponent(next)}`)}`,
+        emailRedirectTo: emailConfirmRedirect(window.location.origin, next),
         // Stored as raw_user_meta_data; the handle_new_user DB trigger
         // copies full_name onto the auto-created profiles row.
         data: { full_name: fullName.trim() },
@@ -128,6 +129,18 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
     }
 
     fireSideCannons();
+    // With email confirmation switched off, Supabase signs the user in at
+    // once, so "check your inbox" would be untrue.
+    if (data.session) {
+      setModal({
+        status: "success",
+        title: "Welcome to CFA!",
+        message: "Your account is ready. Next, complete your profile.",
+        actionLabel: "Continue",
+        onAction: () => router.push("/protected/complete-profile"),
+      });
+      return;
+    }
     setModal({
       status: "success",
       title: "Almost there!",
@@ -177,7 +190,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
               >
                 <BlurFade>
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
-                    Create your guest account
+                    Create your account
                   </h1>
                   <p className="mt-2 text-muted-foreground">What should we call you?</p>
                 </BlurFade>

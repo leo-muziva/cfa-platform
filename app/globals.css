@@ -4,6 +4,9 @@
 
 @layer base {
   :root {
+    /* Height of the main bar (components/site-navigation.tsx). Full-height
+       pages subtract it so they fit under the bar. */
+    --site-nav-height: 4rem;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -65,11 +68,10 @@
   body {
     @apply bg-background text-foreground;
   }
-  /* The homepage navbar is a fixed floating bar: give in-page #anchor jumps
-     clearance so section headings don't land underneath it. Smooth scrolling
-     only for users who haven't opted out of motion. */
+  /* The main bar is sticky, so in-page #anchor jumps stop just under it.
+     Smooth scrolling only for users who haven't opted out of motion. */
   html {
-    scroll-padding-top: 5.5rem;
+    scroll-padding-top: var(--site-nav-height);
   }
   @media (prefers-reduced-motion: no-preference) {
     html {
@@ -647,6 +649,25 @@ input:-webkit-autofill:active {
   }
 }
 
+/* Portal page loader (components/ui/crest-loader.tsx): the crest pulses
+   slowly. No pulse for reduced motion. */
+@keyframes cfa-crest-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.94);
+    opacity: 0.7;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cfa-crest-pulse {
+    animation: cfa-crest-pulse 2.4s ease-in-out infinite;
+  }
+}
+
 /*
  * ---------------------------------------------------------------------------
  * Portal glass forms (member portal, `.portal-glass` on the content panel).
@@ -661,6 +682,41 @@ input:-webkit-autofill:active {
   /* Native select popups and date pickers follow this, so options stay
      readable instead of white-on-white. */
   color-scheme: dark;
+}
+
+/* Light theme frosted glass: the smoke shows through the panel, so muted
+   text is darkened to keep 4.5:1 contrast on the tinted glass. */
+.portal-glass {
+  --muted-foreground: 257 14% 30%;
+}
+.dark .portal-glass {
+  --muted-foreground: 0 0% 63.9%;
+  /* The global dark tokens are neutral greys, which read as flat black/grey
+     slabs on the purple smoke. Inside the portal they take the smoke-purple
+     family instead, so `bg-card/80`, `bg-muted`, hover accents and borders
+     match the hand-tinted surfaces. */
+  --card: 257 64% 11%;
+  --muted: 257 40% 17%;
+  --accent: 257 40% 20%;
+  --secondary: 257 40% 20%;
+  --border: 257 30% 26%;
+}
+
+.portal-glass .cfa-light-card {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.68), rgb(255 255 255 / 0.5));
+  border-color: rgb(255 255 255 / 0.7);
+  box-shadow: 0 20px 50px rgb(20 10 46 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+/* Solid white page surfaces (cards, lists, empty states) get the same frost
+   in light theme only; dark theme keeps its existing surfaces. */
+:root:not(.dark) .portal-glass :is([class~="bg-white"], [class~="bg-card"], [class~="bg-slate-50"]):not(.cfa-light-card) {
+  background-color: rgb(255 255 255 / 0.6);
+  border-color: rgb(255 255 255 / 0.7);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
 }
 
 .portal-glass :is(
@@ -700,8 +756,28 @@ input:-webkit-autofill:active {
 
 /* Keep validation feedback visible even though the underline rule above
    outranks Tailwind's border utilities. */
+/* !important because the underline rules above use long :not() chains whose
+   specificity would otherwise win over this, in both themes. */
 .portal-glass [aria-invalid="true"] {
-  border-bottom-color: hsl(var(--destructive));
+  border-bottom-color: hsl(var(--destructive)) !important;
+  box-shadow: 0 2px 0 0 hsl(var(--destructive)) !important;
+  background-color: hsl(var(--destructive) / 0.06) !important;
+}
+
+.portal-glass input[type="checkbox"][aria-invalid="true"] {
+  outline: 2px solid hsl(var(--destructive));
+  outline-offset: 2px;
+}
+
+/* The dark theme's --destructive is too dim against the smoke background. */
+.dark .portal-glass [aria-invalid="true"] {
+  border-bottom-color: rgb(248 113 113) !important;
+  box-shadow: 0 2px 0 0 rgb(248 113 113) !important;
+  background-color: rgb(248 113 113 / 0.08) !important;
+}
+
+.dark .portal-glass input[type="checkbox"][aria-invalid="true"] {
+  outline-color: rgb(248 113 113);
 }
 
 /* Whole-class match (~=) so variants such as `hover:bg-primary` or
@@ -767,6 +843,21 @@ input:-webkit-autofill:active {
 .dark .portal-glass .cfa-light-card {
   background: rgb(20 10 46 / 0.55);
   border-color: rgb(255 255 255 / 0.15);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+/* Dark theme counterpart of the light frost rule above: plain token cards
+   (`bg-card` is near-black in dark) take the same smoke-purple surface as
+   .cfa-light-card so every portal page reads as one dark system. */
+.dark .portal-glass [class~="bg-card"]:not(.cfa-light-card) {
+  background-color: rgb(20 10 46 / 0.55);
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+/* The dark --destructive token is tuned for button fills and is only ~1.8:1
+   as text on the dark panel; error messages get a light red instead. */
+.dark .portal-glass .text-destructive {
+  color: #fca5a5;
 }
 
 /* Windows High Contrast drops background images and box shadows, so give
@@ -775,5 +866,106 @@ input:-webkit-autofill:active {
   .portal-glass :is(input, select, textarea):focus-visible {
     outline: 2px solid CanvasText;
     outline-offset: 2px;
+  }
+}
+
+/* Date picker calendar (react-day-picker). Rendered in a popover portal, so it
+   sits outside .portal-glass and needs its own theme. */
+.rdp-root.cfa-calendar {
+  --rdp-accent-color: hsl(var(--cfa-purple));
+  --rdp-accent-background-color: hsl(var(--cfa-purple) / 0.1);
+  --rdp-day-height: 2.5rem;
+  --rdp-day-width: 2.5rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-today-color: hsl(var(--cfa-purple));
+  font-size: 0.875rem;
+}
+
+.cfa-calendar .rdp-day_button:hover:not(:disabled) {
+  background-color: hsl(var(--cfa-purple) / 0.1);
+}
+
+.cfa-calendar .rdp-selected .rdp-day_button {
+  background-color: hsl(var(--cfa-purple));
+  border-color: hsl(var(--cfa-purple));
+  color: #fff;
+  font-weight: 600;
+}
+
+.cfa-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
+  font-weight: 700;
+}
+
+.cfa-calendar .rdp-day_button:focus-visible {
+  outline: 2px solid hsl(var(--cfa-purple));
+  outline-offset: 2px;
+}
+
+.cfa-calendar .rdp-dropdown_root {
+  border-radius: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background-color: hsl(var(--cfa-purple) / 0.08);
+}
+
+.cfa-calendar .rdp-dropdown_root:focus-within {
+  outline: 2px solid hsl(var(--cfa-purple));
+}
+
+.dark .rdp-root.cfa-calendar {
+  --rdp-accent-color: hsl(var(--cfa-purple-bright));
+  --rdp-today-color: hsl(var(--cfa-gold));
+}
+
+.dark .cfa-calendar .rdp-selected .rdp-day_button {
+  background-color: hsl(var(--cfa-purple-bright));
+  border-color: hsl(var(--cfa-purple-bright));
+  color: #140a2e;
+}
+
+.dark .cfa-calendar .rdp-day_button:hover:not(:disabled),
+.dark .cfa-calendar .rdp-dropdown_root {
+  background-color: rgb(255 255 255 / 0.1);
+}
+
+.dark .cfa-calendar .rdp-dropdown option {
+  background-color: #140a2e;
+  color: #fff;
+}
+
+.cfa-calendar .rdp-chevron {
+  fill: hsl(var(--cfa-purple));
+}
+
+.dark .cfa-calendar .rdp-chevron {
+  fill: #fff;
+}
+
+/* Shop bulk order bar: fills from 0 to its width on page load.
+   Skipped for reduced motion, they just see the final width. */
+@keyframes bulk-progress-fill {
+  from {
+    width: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bulk-progress-fill {
+    animation: bulk-progress-fill 1s ease-out both;
+  }
+}
+
+/* Hero scroll arrow: small slow bounce, off for reduced motion. */
+@keyframes hero-scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-scroll-bounce {
+    animation: hero-scroll-bounce 2.4s ease-in-out infinite;
   }
 }

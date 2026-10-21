@@ -1,6 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction, ValidatedForm } from '@/components/forms/form-state'
+import { PhoneInput } from '@/components/forms/phone-input'
+import { BirthDatePicker } from '@/components/forms/date-picker'
 import { adminUpdateMemberAction } from '@/app/actions/admin-members'
 import type { Profile } from '@/types/domain'
 import {
@@ -22,7 +24,7 @@ export function MemberEditForm({
 }: {
   profile: Profile
 }) {
-  const [state, formAction, isPending] = useActionState(adminUpdateMemberAction, {})
+  const [state, formAction, isPending] = useFormAction(adminUpdateMemberAction, {})
 
   return (
     <Card>
@@ -33,7 +35,7 @@ export function MemberEditForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="flex flex-col gap-4">
+        <ValidatedForm action={formAction} state={state} className="flex flex-col gap-4">
           <input type="hidden" name="member_id" value={profile.id} />
 
           <div className="grid gap-2">
@@ -51,22 +53,11 @@ export function MemberEditForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                defaultValue={profile.phone ?? ''}
-                placeholder="+27 00 000 0000"
-              />
+              <PhoneInput id="phone" name="phone" defaultValue={profile.phone} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="date_of_birth">Date of Birth</Label>
-              <Input
-                id="date_of_birth"
-                name="date_of_birth"
-                type="date"
-                defaultValue={profile.date_of_birth ?? ''}
-              />
+              <BirthDatePicker id="date_of_birth" name="date_of_birth" defaultValue={profile.date_of_birth} />
             </div>
           </div>
 
@@ -90,12 +81,12 @@ export function MemberEditForm({
           </p>
 
           {state.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
-          {state.success && <p className="text-sm text-green-600" role="status">{state.message}</p>}
+          {state.success && <p className="text-sm text-green-600 dark:text-green-400" role="status">{state.message}</p>}
 
           <Button type="submit" disabled={isPending} className="w-fit">
             {isPending ? 'Saving...' : 'Save Changes'}
           </Button>
-        </form>
+        </ValidatedForm>
       </CardContent>
     </Card>
   )

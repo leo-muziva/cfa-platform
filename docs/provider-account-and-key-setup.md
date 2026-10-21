@@ -99,6 +99,24 @@ Supabase Auth needs a custom SMTP provider for normal external email delivery;
 its default SMTP is intentionally restricted. See
 [Supabase custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
+### Membership payment emails
+
+When an admin approves a membership application, the app emails the payer a
+link to the portal so they can pay. Membership only becomes active once that
+payment is confirmed. These emails go through the Resend API, not SMTP:
+
+1. In the same Resend account, open **API Keys** and create a key with
+   **Sending access** only, restricted to the verified domain.
+2. Set `RESEND_API_KEY` to that key and `EMAIL_FROM` to a verified sender, for
+   example `Cape Fencing Academy <no-reply@auth.example.com>`, in Vercel
+   (server-side only, never `NEXT_PUBLIC_`) and in your local `.env.local`.
+3. Make sure `NEXT_PUBLIC_SITE_URL` is the public site address. The email
+   link points to `/protected/membership`, or to `/protected/billing` when a
+   guardian pays for a dependent.
+
+Without these settings approval still works. The admin page then shows
+"Email not configured", and staff let the payer know another way.
+
 ## 5. Meta WhatsApp test account
 
 1. Create a CFA-owned account at [Meta for Developers](https://developers.facebook.com/).

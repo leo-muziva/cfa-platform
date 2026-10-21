@@ -1,21 +1,6 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { BackButton } from "@/components/back-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { HeroAuth } from "@/components/hero-auth";
-import { PublicNavigation } from "@/components/public-navigation";
 import { PUBLIC_CONTACT_LINKS, PUBLIC_LEGAL_LINKS } from "@/lib/public-site";
-import { hasEnvVars } from "@/lib/utils";
-
-function PublicAuthSlot() {
-  return hasEnvVars ? (
-    <Suspense>
-      <HeroAuth />
-    </Suspense>
-  ) : (
-    <EnvVarWarning />
-  );
-}
 
 export function PublicPageShell({
   eyebrow = "Cape Fencing Academy",
@@ -30,13 +15,11 @@ export function PublicPageShell({
 }) {
   return (
     <main className="min-h-screen bg-background text-primary">
-      <PublicNavigation authSlot={<PublicAuthSlot />} />
-
       {/* Header stays permanently dark, same "hero-adjacent" treatment as
           the homepage hero — visual consistency between the two, and no
           unpredictable-background-brightness problem to solve here since
           it's a flat colour, not a video. */}
-      <header className="relative overflow-hidden bg-black px-4 pb-20 pt-28 text-white sm:px-6 md:px-12 md:pb-24 md:pt-36">
+      <header className="relative overflow-hidden bg-black px-4 pb-20 pt-12 text-white sm:px-6 md:px-12 md:pb-24 md:pt-16">
         <div className="pointer-events-none absolute -left-32 top-4 h-80 w-80 rounded-full bg-[#2d176b]/60 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-[#ffd21c]/15 blur-3xl" />
         <div className="relative mx-auto max-w-6xl">

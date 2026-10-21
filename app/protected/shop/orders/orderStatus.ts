@@ -1,8 +1,9 @@
 // Turns the words stored in the database into something a customer
 // understands, plus a colour and a line explaining what happens next.
 //
-// The order itself is 'submitted'. What the customer actually cares
-// about is the bulk order it joined, so that's what drives this.
+// Orders are paid up front. Before payment is confirmed the order status
+// drives the label; once paid, what the customer cares about is the bulk
+// order it joined, so that drives it instead.
 
 export type StatusView = {
   label: string;
@@ -12,6 +13,8 @@ export type StatusView = {
   note: string;
   // Which filter group this order belongs to.
   group: "progress" | "ready";
+  // The page adds a link to the cart so the customer can finish paying.
+  linkToCart?: boolean;
 };
 
 export function statusView(
@@ -28,23 +31,66 @@ export function statusView(
     };
   }
 
-  // Submitted but not yet attached to a bulk order. Shouldn't normally
-  // happen, since the database attaches it automatically, but worth
-  // handling rather than showing a blank.
-  if (!bulkStatus) {
+  // The whole payment went back to the customer, whatever the bulk order did.
+  if (orderStatus === "refunded") {
     return {
-      label: "Received",
+      label: "Refunded",
       tone: "bg-muted text-muted-foreground",
-      note: "Your order has been received.",
+      note: "Your payment has been refunded.",
       group: "progress",
     };
   }
 
+  // Checkout started but PayFast has not confirmed payment yet.
+  if (orderStatus === "pending_payment") {
+    return {
+      label: "Awaiting payment",
+      tone: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+      note: "This order joins the next bulk order once payment is confirmed.",
+      group: "progress",
+      linkToCart: true,
+    };
+  }
+
+  // Placed before online payment existed, so never paid online. Say so
+  // rather than implying it was. Those that already joined a bulk order
+  // keep showing its stage, with the same caveat.
+  if (orderStatus === "submitted") {
+    if (!bulkStatus) {
+      return {
+        label: "Received (unpaid)",
+        tone: "bg-muted text-muted-foreground",
+        note: "Ordered before online payment was available. Contact CFA about payment.",
+        group: "progress",
+      };
+    }
+    const stage = bulkStageView(bulkStatus);
+    const legacyNote = "Ordered before online payment was available.";
+    return { ...stage, note: stage.note ? stage.note + " " + legacyNote : legacyNote };
+  }
+
+  // Paid but not yet attached to a bulk order. Shouldn't normally
+  // happen, since the database attaches it on payment, but worth
+  // handling rather than showing a blank.
+  if (!bulkStatus) {
+    return {
+      label: "Paid",
+      tone: "bg-muted text-muted-foreground",
+      note: "Your payment has been received. Ships once the next bulk order is placed.",
+      group: "progress",
+    };
+  }
+
+  return bulkStageView(bulkStatus);
+}
+
+// The stage of the bulk order a paid order joined.
+function bulkStageView(bulkStatus: string): StatusView {
   if (bulkStatus === "collecting") {
     return {
-      label: "Waiting for next bulk order",
+      label: "Waiting for threshold",
       tone: "bg-muted text-muted-foreground",
-      note: "CFA places the order with the supplier once enough orders have come in.",
+      note: "Ships once the next bulk order is placed.",
       group: "progress",
     };
   }

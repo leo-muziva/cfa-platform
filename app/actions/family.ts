@@ -7,6 +7,7 @@ function refresh() {
   revalidatePath("/protected/family");
   revalidatePath("/protected/family/changes");
   revalidatePath("/protected/family/review");
+  revalidatePath("/protected/admin/family-requests");
 }
 export async function requestFamilyChangeAction(_state: ActionState, form: FormData): Promise<ActionState> {
   const result = await service.requestFamilyChange({ linkId: form.get("link_id"), kind: form.get("kind"), newPayerEmail: form.get("new_payer_email") || "", reason: form.get("reason") });

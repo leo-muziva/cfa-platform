@@ -27,7 +27,7 @@ export default async function FamilyChangesPage() {
     </CardContent></Card>)}
     <h2 className="text-xl font-semibold">Requests</h2>
     {data.requests.length === 0 && <p>No responsibility changes requested.</p>}
-    {data.requests.map((request) => <Card key={request.id}><CardContent className="space-y-3 pt-6"><p className="font-medium">{request.kind} - {request.status.replaceAll("_", " ")}</p><p>{request.reason}</p>{request.review_note && <p>Staff response: {request.review_note}</p>}
+    {data.requests.map((request) => <Card key={request.id}><CardContent className="space-y-3 pt-6"><p className="font-medium">{request.kind === "unlink" ? "Unlink" : "Transfer"} - {request.status === "pending_review" ? "waiting for staff review" : request.status === "awaiting_acceptance" ? "waiting for the new payer to accept" : request.status}</p><p>{request.reason}</p>{request.review_note && <p>Staff response: {request.review_note}</p>}
       {request.status === "awaiting_acceptance" && request.new_guardian_id === data.profile.id && <ActionForm action={acceptFamilyTransferAction} submitLabel="Send response"><input type="hidden" name="request_id" value={request.id} /><Label htmlFor={`accept-${request.id}`}>Accept future payer responsibility, subject to staff approval?</Label><select id={`accept-${request.id}`} name="response" className="block rounded border bg-background p-2"><option value="decline">Decline</option><option value="accept">Accept responsibility</option></select></ActionForm>}
     </CardContent></Card>)}
   </div>;

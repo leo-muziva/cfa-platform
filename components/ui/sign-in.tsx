@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer
 import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { SupabaseConfigError } from "@/lib/supabase/config";
+import { emailConfirmRedirect } from "@/lib/auth-next";
 import {
   AuthModal,
   type AuthModalState,
@@ -81,6 +82,26 @@ export function SignInFlow({
         email,
         password,
       });
+
+      if (error?.code === "email_not_confirmed") {
+        // The first link may have expired or landed in spam, so send a fresh
+        // one rather than leaving the person stuck.
+        const { error: resendError } = await supabase.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: emailConfirmRedirect(window.location.origin, next) },
+        });
+        setModal(resendError
+          ? { status: "error", message: "Your email is not confirmed yet, and a new link could not be sent. Try again in a minute." }
+          : {
+              status: "success",
+              title: "Confirm your email first",
+              message: `We've sent a new confirmation link to ${email}. Check your inbox and spam folder, then log in again.`,
+              actionLabel: "OK",
+              onAction: closeModal,
+            });
+        return;
+      }
 
       if (error) {
         setModal({ status: "error", message: error.message });
@@ -245,7 +266,7 @@ export function SignInFlow({
           <p className="text-center text-sm text-muted-foreground">
             New to CFA?{" "}
             <Link href={`/auth/sign-up?next=${encodeURIComponent(next)}`} className="font-medium text-foreground underline underline-offset-4">
-              Create a guest account
+              Create an account
             </Link>
           </p>
         </fieldset>

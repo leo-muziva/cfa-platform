@@ -10,7 +10,7 @@ import { capeTownDateKey } from "@/lib/booking-calendar";
 
 export const MAX_LESSON_PARTICIPANTS = 2;
 export const BOOKING_CONTENTION_MESSAGE =
-  "That time has just been taken. Pick another available time.";
+  "Someone has just booked that time. Please pick another.";
 
 export function toggleLessonParticipant(selected: string[], participantId: string): string[] {
   if (selected.includes(participantId)) {
@@ -55,16 +55,29 @@ export function formatLessonQuote(quote: LessonQuote): string {
 export function lessonBillingCopy({
   canSeeQuote,
   quote,
+  participantCount = 1,
 }: {
   canSeeQuote: boolean;
   quote: LessonQuote | null;
+  participantCount?: number;
 }): string {
   if (!canSeeQuote) return "Your payer will be billed";
-  return quote ? formatLessonQuote(quote) + " will be added to your account" : "Choose a payment option";
+  if (participantCount === 2) return "Shared lesson for two fencers";
+  return quote ? formatLessonQuote(quote) + " for this lesson" : "Choose a payment option";
 }
 
-export function lessonBillingDetailCopy(canSeeQuote: boolean): string | null {
-  return canSeeQuote ? "Pay later on your invoice, or hold the lesson while you pay now." : null;
+export function lessonBillingDetailCopy(canSeeQuote: boolean, paymentsAvailable = true): string | null {
+  if (!canSeeQuote) return null;
+  return paymentsAvailable
+    ? "Pay later on your monthly invoice, or pay now with secure checkout."
+    : "Lessons are added to your monthly invoice.";
+}
+
+// Guests pay the drop-in fee once per day on top of the lesson. Nothing to
+// say when the fee is switched off.
+export function dropInFeeCopy(feeCents: number): string | null {
+  if (!(feeCents > 0)) return null;
+  return `Guests also pay a ${formatZar(feeCents)} drop-in fee, once per day.`;
 }
 
 export function splitMemberLessons(

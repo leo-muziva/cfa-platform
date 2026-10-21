@@ -1,5 +1,8 @@
 import 'server-only'
 import { getPaymentGateway } from '@/lib/payments/registry'
+import { membershipPaymentEmail, plainEmail, type MembershipPaymentEmail, type SendEmailResult } from '@/lib/providers/resend-email'
+import { getEmailTransport, sendEmail } from '@/lib/providers/email-transport'
+import { formatRandsWithCents } from '@/lib/money'
 
 export interface PaymentLinkRequest {
   invoiceId: string
@@ -24,6 +27,7 @@ export interface EmailProvider {
   readonly name: string
   sendInvoice(input: { to: string; invoiceNumber: string; amount: number; paymentLink: string | null }): Promise<void>
   sendReceipt(input: { to: string; receiptNumber: string; amount: number }): Promise<void>
+  sendMembershipPaymentRequest(input: MembershipPaymentEmail): Promise<SendEmailResult>
 }
 
 export class ProviderUnavailableError extends Error {
@@ -39,5 +43,21 @@ export function getPaymentProvider(): PaymentProvider | null {
 }
 
 export function getEmailProvider(): EmailProvider | null {
-  return null
+  const transport = getEmailTransport()
+  if (!transport) return null
+  const send = async (to: string, subject: string, paragraphs: string[]) => {
+    const result = await sendEmail(transport, plainEmail(to, subject, paragraphs))
+    if (!result.ok) throw new Error(result.error)
+  }
+  return {
+    name: transport.kind,
+    sendInvoice: ({ to, invoiceNumber, amount, paymentLink }) => send(to, `CFA invoice ${invoiceNumber}`, [
+      `Your Cape Fencing Academy invoice ${invoiceNumber} for ${formatRandsWithCents(amount)} is ready.`,
+      ...(paymentLink ? [`Pay here: ${paymentLink}`] : []),
+    ]),
+    sendReceipt: ({ to, receiptNumber, amount }) => send(to, `CFA receipt ${receiptNumber}`, [
+      `Thank you. Cape Fencing Academy received your payment of ${formatRandsWithCents(amount)} (receipt ${receiptNumber}).`,
+    ]),
+    sendMembershipPaymentRequest: (input) => sendEmail(transport, membershipPaymentEmail(input)),
+  }
 }

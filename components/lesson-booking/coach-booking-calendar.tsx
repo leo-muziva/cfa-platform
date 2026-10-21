@@ -2,11 +2,13 @@
 
 import { CalendarDays, Check, Clock, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useFormAction, ValidatedForm } from "@/components/forms/form-state";
 import { Button } from "@/components/ui/button";
 import { GlassButton } from "@/components/ui/glass-auth";
 import { GlassDialog } from "@/components/ui/glass-dialog";
 import {
+  capeTownDateKey,
   formatCapeTownCompactDate,
   formatCapeTownDate,
   formatCapeTownLessonDate,
@@ -17,14 +19,14 @@ import {
   isValidLessonParticipantSelection,
   lessonBillingCopy,
   lessonBillingDetailCopy,
+  dropInFeeCopy,
   firstAvailableLessonTime,
-  lessonDateHasAvailableTime,
   lessonDates,
-  timesForLessonDate,
   toggleLessonParticipant,
 } from "@/lib/lesson-booking-ui";
-import { CheckoutButton } from "@/components/payments/checkout-button";
+import Link from "next/link";
 import type {
+  FormFieldState,
   LessonTimeOption,
   LessonBookingErrorCode,
   LessonCoachSummary,
@@ -33,9 +35,8 @@ import type {
   Weapon,
 } from "@/types/domain";
 
-export interface LessonMemberActionState {
+export interface LessonMemberActionState extends FormFieldState {
   success?: string;
-  error?: string;
   errorCode?: LessonBookingErrorCode;
   bookingId?: string;
   checkoutRequired?: boolean;
@@ -50,7 +51,7 @@ const initialActionState: LessonMemberActionState = {};
 
 const weaponLabels: Record<Weapon, string> = {
   foil: "Foil",
-  epee: "Epee",
+  epee: "Épée",
   sabre: "Sabre",
 };
 
@@ -60,6 +61,8 @@ export function CoachBookingCalendar({
   participants,
   quotes,
   canSeeQuote,
+  paymentsAvailable,
+  dropInFeeCents,
   createAction,
 }: {
   coach: LessonCoachSummary;
@@ -67,11 +70,27 @@ export function CoachBookingCalendar({
   participants: LessonParticipant[];
   quotes: LessonQuote[];
   canSeeQuote: boolean;
+  paymentsAvailable: boolean;
+  dropInFeeCents: number;
   createAction: LessonMemberFormAction;
 }) {
   const router = useRouter();
   const availableDates = useMemo(() => lessonDates(times), [times]);
-  const initialDate = availableDates.find((date) => lessonDateHasAvailableTime(times, date)) ?? availableDates[0] ?? "";
+  // Group once: the date strip and time list would otherwise rescan every
+  // time for every date on each render.
+  const timesByDate = useMemo(() => {
+    const grouped = new Map<string, LessonTimeOption[]>();
+    for (const time of times) {
+      const key = capeTownDateKey(time.startsAt);
+      grouped.set(key, [...(grouped.get(key) ?? []), time]);
+    }
+    return grouped;
+  }, [times]);
+  const datesWithOpenTimes = useMemo(
+    () => new Set([...timesByDate].filter(([, dayTimes]) => dayTimes.some((time) => time.isAvailable)).map(([date]) => date)),
+    [timesByDate],
+  );
+  const initialDate = availableDates.find((date) => datesWithOpenTimes.has(date)) ?? availableDates[0] ?? "";
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [selectedTime, setSelectedTime] = useState(() => firstAvailableLessonTime(times, initialDate)?.startsAt ?? "");
   const [selectedWeapon, setSelectedWeapon] = useState<Weapon>(coach.weapons[0]);
@@ -80,15 +99,24 @@ export function CoachBookingCalendar({
     defaultParticipant ? [defaultParticipant.id] : [],
   );
   const [attemptedSlot, setAttemptedSlot] = useState<LessonTimeOption | null>(null);
-  const [state, formAction, pending] = useActionState(createAction, initialActionState);
+  const [paymentChoice, setPaymentChoice] = useState<"pay_now" | "pay_later">("pay_later");
+  const [state, formAction, pending] = useFormAction(createAction, initialActionState);
 
-  const timesForDate = timesForLessonDate(times, selectedDate);
+  const timesForDate = timesByDate.get(selectedDate) ?? [];
   const hasAvailableTimes = times.some((time) => time.isAvailable);
   const selected = times.find((time) => time.startsAt === selectedTime && time.isAvailable) ?? null;
   const quote = quotes.find(
     (item) => item.participantCount === selectedParticipants.length,
   ) ?? null;
   const requiresPayNow = selectedParticipants.some((participantId) => participants.find((participant) => participant.id === participantId)?.membershipStatus === "guest");
+  // Guest lessons can only be booked by the payer through online payment.
+  const payNowBlockedReason = !requiresPayNow
+    ? null
+    : !canSeeQuote
+      ? "Guest lessons must be paid when booking. Ask your account payer to book this lesson."
+      : !paymentsAvailable
+        ? "Guest lessons must be paid when booking, and online payments are not available right now."
+        : null;
 
   useEffect(() => {
     if (selectedTime && !times.some((time) => time.startsAt === selectedTime)) {
@@ -113,9 +141,9 @@ export function CoachBookingCalendar({
 
   if (times.length === 0 && !attemptedSlot) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
-        <h2 className="font-serif text-2xl text-slate-950">No scheduled times right now</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8 dark:border-white/10 dark:bg-white/5">
+        <h2 className="font-serif text-2xl text-slate-950 dark:text-white">No scheduled times right now</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-white/75">
           {coach.fullName} has no scheduled 30-minute lessons in the next four weeks.
           Check again later or choose another coach.
         </p>
@@ -128,9 +156,7 @@ export function CoachBookingCalendar({
       <GlassDialog open={attemptedSlot !== null} onClose={() => setAttemptedSlot(null)} labelledBy="slot-unavailable-heading">
         <h2 id="slot-unavailable-heading" className="text-xl font-semibold text-foreground">Time no longer available</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {attemptedSlot
-            ? `${coach.fullName} isn't available at ${formatCapeTownLessonDate(attemptedSlot.startsAt)} anymore. Pick another time.`
-            : BOOKING_CONTENTION_MESSAGE}
+          {BOOKING_CONTENTION_MESSAGE}
         </p>
         <GlassButton type="button" className="mt-6" onClick={() => setAttemptedSlot(null)}>
           Choose another time
@@ -138,19 +164,18 @@ export function CoachBookingCalendar({
       </GlassDialog>
 
       <div className="space-y-6">
-        <section aria-labelledby="lesson-weapon-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
+        <section aria-labelledby="lesson-weapon-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7 dark:border-white/15 dark:bg-[#140a2e]/55">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
+            <ShieldCheck className="mt-1 h-5 w-5 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <div>
-              <h2 id="lesson-weapon-heading" className="font-serif text-2xl text-slate-950">Choose a weapon</h2>
-              <p className="mt-1 text-sm text-slate-600">Only weapons offered by this coach are shown.</p>
+              <h2 id="lesson-weapon-heading" className="font-serif text-2xl text-slate-950 dark:text-white">Choose a weapon</h2>
             </div>
           </div>
           <fieldset className="mt-5">
             <legend className="sr-only">Lesson weapon</legend>
             <div className="flex flex-wrap gap-2">
               {coach.weapons.map((weapon) => (
-                <label key={weapon} className={"cursor-pointer rounded-full border px-5 py-2.5 text-sm font-medium transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#2d176b] " + (selectedWeapon === weapon ? "border-[#2d176b] bg-[#2d176b] text-white" : "border-[#2d176b]/15 bg-white text-[#423368] hover:border-[#2d176b]/40")}>
+                <label key={weapon} className={"cursor-pointer rounded-full border px-5 py-2.5 text-sm font-medium transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#2d176b] dark:has-[:focus-visible]:outline-violet-300 " + (selectedWeapon === weapon ? "border-[#2d176b] bg-[#2d176b] text-white dark:border-violet-300 dark:bg-violet-600" : "border-[#2d176b]/15 bg-white text-[#423368] hover:border-[#2d176b]/40 dark:border-white/15 dark:bg-white/5 dark:text-violet-100 dark:hover:border-white/40")}>
                   <input type="radio" name="visible-weapon" value={weapon} checked={selectedWeapon === weapon} onChange={() => setSelectedWeapon(weapon)} className="sr-only" />
                   {weaponLabels[weapon]}
                 </label>
@@ -159,20 +184,20 @@ export function CoachBookingCalendar({
           </fieldset>
         </section>
 
-        <section aria-labelledby="lesson-date-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
+        <section aria-labelledby="lesson-date-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7 dark:border-white/15 dark:bg-[#140a2e]/55">
           <div className="flex items-start gap-3">
-            <CalendarDays className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
+            <CalendarDays className="mt-1 h-5 w-5 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <div>
-              <h2 id="lesson-date-heading" className="font-serif text-2xl text-slate-950">Choose a date</h2>
-              <p className="mt-1 text-sm text-slate-600">All dates and times use Cape Town time.</p>
+              <h2 id="lesson-date-heading" className="font-serif text-2xl text-slate-950 dark:text-white">Choose a date</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-white/75">All dates and times use Cape Town time.</p>
             </div>
           </div>
           <div className="mt-5 flex flex-wrap gap-2" aria-label="Dates with scheduled lesson times">
             {availableDates.map((date) => {
-              const isAvailable = lessonDateHasAvailableTime(times, date);
+              const isAvailable = datesWithOpenTimes.has(date);
               const isSelected = selectedDate === date;
               return (
-                <button key={date} type="button" onClick={() => chooseDate(date)} disabled={!isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownCompactDate(date)}${isAvailable ? "" : ", unavailable"}`} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] " + (isSelected ? "bg-[#2d176b] text-white" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40") + (!isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70" : "")}>
+                <button key={date} type="button" onClick={() => chooseDate(date)} disabled={!isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownCompactDate(date)}${isAvailable ? "" : ", unavailable"}`} className={"min-h-11 rounded-full px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d176b] dark:focus-visible:outline-violet-300 " + (isSelected ? "bg-[#2d176b] text-white dark:bg-violet-600" : "border border-[#2d176b]/15 text-slate-700 hover:border-[#2d176b]/40 dark:enabled:border-white/15 dark:enabled:text-white/75 dark:enabled:hover:border-white/40") + (!isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-white/40" : "")}>
                   {formatCapeTownCompactDate(date)}
                 </button>
               );
@@ -180,28 +205,28 @@ export function CoachBookingCalendar({
           </div>
         </section>
 
-        <section aria-labelledby="lesson-time-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
+        <section aria-labelledby="lesson-time-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7 dark:border-white/15 dark:bg-[#140a2e]/55">
           <div className="flex items-start gap-3">
-            <Clock className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
+            <Clock className="mt-1 h-5 w-5 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <div>
-              <h2 id="lesson-time-heading" className="font-serif text-2xl text-slate-950">Choose a time</h2>
-              <p className="mt-1 text-sm text-slate-600">{selectedDate ? formatCapeTownDate(selectedDate) : "Choose a date first"}</p>
+              <h2 id="lesson-time-heading" className="font-serif text-2xl text-slate-950 dark:text-white">Choose a time</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-white/75">{selectedDate ? formatCapeTownDate(selectedDate) : "Choose a date first"}</p>
             </div>
           </div>
           {!hasAvailableTimes && (
-            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600" role="status">
+            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-white/5 dark:text-white/75" role="status">
               No bookable times are currently available. Scheduled times are shown below.
             </p>
           )}
           {timesForDate.length === 0 ? (
-            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">There are no scheduled times on this date.</p>
+            <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-white/5 dark:text-white/75">There are no scheduled times on this date.</p>
           ) : (
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Scheduled lesson times">
               {timesForDate.map((time) => {
                 const isSelected = selectedTime === time.startsAt;
                 return (
-                  <button key={time.startsAt} type="button" onClick={() => time.isAvailable && setSelectedTime(time.startsAt)} disabled={!time.isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownTime(time.startsAt)}${time.isAvailable ? "" : ", unavailable"}`} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308]" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35") + (!time.isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70" : "")}>
-                    <span>{formatCapeTownTime(time.startsAt)}</span>
+                  <button key={time.startsAt} type="button" onClick={() => time.isAvailable && setSelectedTime(time.startsAt)} disabled={!time.isAvailable} aria-pressed={isSelected} aria-label={`${formatCapeTownTime(time.startsAt)}${time.membersOnly ? ", members only" : ""}${time.isAvailable ? "" : ", unavailable"}`} className={"flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2d176b] dark:focus-visible:outline-violet-300 " + (isSelected ? "border-[#8a6810] bg-amber-50 text-[#5b4308] dark:border-cfa-gold dark:bg-cfa-gold/15 dark:text-amber-100" : "border-[#2d176b]/10 bg-white text-slate-800 hover:border-[#2d176b]/35 dark:enabled:border-white/15 dark:enabled:bg-white/5 dark:enabled:text-white/75 dark:enabled:hover:border-white/40") + (!time.isAvailable ? " cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-white/40" : "")}>
+                    <span>{formatCapeTownTime(time.startsAt)}{time.membersOnly && <span className="block text-[0.65rem] font-semibold uppercase tracking-wide opacity-70">Members only</span>}</span>
                     {time.isAvailable ? (isSelected && <Check className="h-4 w-4" aria-hidden="true" />) : <span className="text-xs font-semibold uppercase tracking-wide">Unavailable</span>}
                   </button>
                 );
@@ -210,12 +235,12 @@ export function CoachBookingCalendar({
           )}
         </section>
 
-        <section aria-labelledby="lesson-participants-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7">
+        <section aria-labelledby="lesson-participants-heading" className="rounded-3xl border border-[#2d176b]/10 bg-white p-5 shadow-sm sm:p-7 dark:border-white/15 dark:bg-[#140a2e]/55">
           <div className="flex items-start gap-3">
-            <Users className="mt-1 h-5 w-5 text-[#2d176b]" aria-hidden="true" />
+            <Users className="mt-1 h-5 w-5 text-[#2d176b] dark:text-violet-300" aria-hidden="true" />
             <div>
-              <h2 id="lesson-participants-heading" className="font-serif text-2xl text-slate-950">Choose one or two fencers</h2>
-              <p className="mt-1 text-sm text-slate-600">A double lesson keeps both fencers with the same coach for one 30-minute time.</p>
+              <h2 id="lesson-participants-heading" className="font-serif text-2xl text-slate-950 dark:text-white">Choose one or two fencers</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-white/75">Two fencers can share one 30-minute lesson with the same coach.</p>
             </div>
           </div>
           <fieldset className="mt-5">
@@ -225,15 +250,15 @@ export function CoachBookingCalendar({
                 const checked = selectedParticipants.includes(participant.id);
                 const disabled = !checked && selectedParticipants.length >= 2;
                 return (
-                  <label key={participant.id} className={"flex min-h-14 items-center gap-3 rounded-2xl border px-4 py-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#2d176b] " + (checked ? "border-[#2d176b] bg-violet-50" : "border-slate-200 bg-white") + (disabled ? " cursor-not-allowed opacity-50" : " cursor-pointer")}>
-                    <input type="checkbox" checked={checked} disabled={disabled} onChange={() => setSelectedParticipants((current) => toggleLessonParticipant(current, participant.id))} className="h-5 w-5 accent-[#2d176b]" />
-                    <span className="font-medium text-slate-900">{participant.fullName}{participant.isSelf ? " (you)" : ""}</span>
+                  <label key={participant.id} className={"flex min-h-14 items-center gap-3 rounded-2xl border px-4 py-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#2d176b] dark:has-[:focus-visible]:outline-violet-300 " + (checked ? "border-[#2d176b] bg-violet-50 dark:border-violet-300 dark:bg-violet-500/15" : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/5") + (disabled ? " cursor-not-allowed opacity-50" : " cursor-pointer")}>
+                    <input type="checkbox" checked={checked} disabled={disabled} onChange={() => setSelectedParticipants((current) => toggleLessonParticipant(current, participant.id))} className="h-5 w-5 accent-[#2d176b] dark:accent-violet-400" />
+                    <span className="font-medium text-slate-900 dark:text-white">{participant.fullName}{participant.isSelf ? " (you)" : ""}</span>
                   </label>
                 );
               })}
             </div>
           </fieldset>
-          <p className="mt-3 text-sm text-slate-600" role="status" aria-live="polite">{selectedParticipants.length} of 2 fencers selected</p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-white/75" role="status" aria-live="polite">{selectedParticipants.length} of 2 fencers selected</p>
         </section>
       </div>
 
@@ -249,39 +274,63 @@ export function CoachBookingCalendar({
           <p className="mt-4 text-sm text-white/70">Choose an available time to continue.</p>
         )}
         <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4">
-          <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null })}</p>
-          {lessonBillingDetailCopy(canSeeQuote) && (
-            <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote)}</p>
+          <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null, participantCount: selectedParticipants.length })}</p>
+          {lessonBillingDetailCopy(canSeeQuote, paymentsAvailable) && (
+            <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable)}</p>
+          )}
+          {requiresPayNow && dropInFeeCopy(dropInFeeCents) && (
+            <p className="mt-1 text-xs text-white/65">{dropInFeeCopy(dropInFeeCents)}</p>
           )}
         </div>
-        <form action={formAction} className="mt-6 space-y-4">
+        <ValidatedForm action={formAction} state={state} className="mt-6 space-y-4">
           <input type="hidden" name="coachId" value={coach.coachId} />
           <input type="hidden" name="startsAt" value={selectedTime} />
           <input type="hidden" name="weapon" value={selectedWeapon} />
           {selectedParticipants.map((participantId) => <input key={participantId} type="hidden" name="participantIds" value={participantId} />)}
-          {canSeeQuote && (requiresPayNow ? (
+          {payNowBlockedReason ? (
+            <p role="note" className="rounded-xl bg-amber-950/40 p-3 text-sm text-amber-50">{payNowBlockedReason}</p>
+          ) : canSeeQuote && (requiresPayNow ? (
             <>
               <input type="hidden" name="paymentOption" value="pay_now" />
-              <p className="text-sm text-white/85">Guest lessons are held while you complete payment now.</p>
+              <p className="text-sm text-white/85">Guest lessons are paid when you book.</p>
             </>
+          ) : paymentsAvailable ? (
+            <fieldset className="space-y-2 text-sm">
+              <legend className="mb-2">How would you like to pay?</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {([["pay_now", "Pay now", "Secure checkout with PayFast"], ["pay_later", "Pay later", "Added to my monthly invoice"]] as const).map(([option, label, hint]) => {
+                  const chosen = paymentChoice === option;
+                  return (
+                    <label key={option} className={"group relative flex cursor-pointer select-none items-start gap-3 overflow-hidden rounded-2xl border-2 px-3 py-3 shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm motion-reduce:transform-none motion-reduce:transition-none has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-white " + (chosen ? "border-white bg-[#ffffff] text-[#25145c] ring-2 ring-[#f0c71b]/70" : "border-white/45 bg-white/10 text-white hover:border-white/80 hover:bg-white/15")}>
+                      <input type="radio" name="paymentOption" value={option} checked={chosen} onChange={() => setPaymentChoice(option)} className="sr-only" />
+                      <span aria-hidden="true" className={"mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors " + (chosen ? "border-[#25145c] bg-[#25145c] text-white" : "border-white/70")}>
+                        {chosen && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                      <span>
+                        <span className="block font-semibold">{label}</span>
+                        <span className={"block text-xs " + (chosen ? "text-[#25145c]/75" : "text-white/75")}>{hint}</span>
+                      </span>
+                      {/* A light sweeps across on hover so the card reads as pressable.
+                          bg-[#ffffff] rather than bg-white: the portal glass theme
+                          frosts bg-white, which made these controls look disabled. */}
+                      <span aria-hidden="true" className={"pointer-events-none absolute inset-y-0 -left-2/3 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-transparent transition-[left] duration-700 ease-out group-hover:left-[130%] motion-reduce:hidden " + (chosen ? "via-[#7c5cff]/20" : "via-white/35")} />
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
           ) : (
-            <label className="block space-y-2 text-sm">
-              <span>Payment option</span>
-              <select name="paymentOption" defaultValue="pay_later" className="min-h-12 w-full rounded-xl border border-white/30 bg-[#25145c] px-3 text-white">
-                <option value="pay_later">Pay later on my invoice</option>
-                <option value="pay_now">Hold my lesson and pay now</option>
-              </select>
-            </label>
+            <input type="hidden" name="paymentOption" value="pay_later" />
           ))}
-          {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}</p>}
+          {state.error && state.errorCode !== "slot_taken" && <p role="alert" className="rounded-xl bg-red-950/40 p-3 text-sm text-red-50">{state.error}{state.errorCode === "account_incomplete" && <> <Link className="underline" href="/protected/complete-profile">Complete your profile</Link></>}</p>}
           {state.success && <p role="status" className="rounded-xl bg-emerald-950/40 p-3 text-sm text-emerald-50">{state.success}</p>}
-          <Button type="submit" disabled={pending || !selected || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-white text-[#25145c] hover:bg-slate-100">
-            {pending ? "Booking…" : "Confirm booking"}
+          {state.checkoutRequired && (
+            <Link href="/protected/lessons" className="block text-sm font-medium text-[#f0c71b] underline underline-offset-4">Go to My lessons to pay</Link>
+          )}
+          <Button type="submit" disabled={pending || !selected || Boolean(payNowBlockedReason) || !isValidLessonParticipantSelection(selectedParticipants)} className="min-h-12 w-full rounded-full bg-[#ffffff] text-base font-semibold text-[#25145c] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffffff] hover:shadow-lg active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-none">
+            {pending ? "Booking…" : "Book"}
           </Button>
-        </form>
-        {state.checkoutRequired && state.bookingId && quote && (
-          <CheckoutButton bookingId={state.bookingId} />
-        )}
+        </ValidatedForm>
       </aside>
     </div>
   );

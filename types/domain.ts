@@ -1,12 +1,15 @@
 export type MembershipStatus = 'guest' | 'member'
 export type MembershipLifecycleStatus = 'active' | 'suspended' | 'expired' | 'cancelled'
-export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'rejected' | 'approved'
+export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'awaiting_payment' | 'rejected' | 'approved'
+export type MembershipPaymentEmailStatus = 'sent' | 'failed' | 'not_configured'
 export type MembershipReviewDecision = 'approve' | 'request_changes' | 'reject'
 export type MembershipOperationErrorCode =
   | 'request_failed'
   | 'review_failed'
   | 'resubmit_failed'
   | 'status_change_failed'
+  | 'payment_record_failed'
+  | 'withdraw_failed'
 export type FamilyLinkStatus = 'pending' | 'active' | 'rejected' | 'ended'
 export type LessonAccessRule = 'guest_allowed' | 'active_members_only'
 export type HouseholdRole = 'payer' | 'dependent'
@@ -16,7 +19,10 @@ export type PaymentOption = 'pay_now' | 'pay_later'
 export type ReminderPreference = 'email' | 'whatsapp' | 'both'
 export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
 export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
-export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee'
+export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee' | 'lesson_adjustment' | 'shop' | 'drop_in'
+// 'submitted' is historical: orders placed before pay-now checkout existed.
+export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'submitted' | 'cancelled' | 'refunded'
+export type Handedness = 'right' | 'left'
 export type FinancialStatus = 'unpaid' | 'paid' | 'overdue'
 
 export interface MembershipType {
@@ -91,8 +97,22 @@ export interface MembershipApplication {
   reviewer_id: string | null
   reviewed_at: string | null
   created_at: string
+  payment_email_status: MembershipPaymentEmailStatus | null
+  payment_email_at: string | null
   applicant?: Pick<Profile, 'id' | 'full_name' | 'email'>
   membership_type?: Pick<MembershipType, 'id' | 'name'>
+}
+
+/** An approved application the signed-in payer still has to pay. Payers only. */
+export interface MembershipPaymentDue {
+  applicationId: string
+  applicantId: string
+  applicantName: string
+  membershipName: string
+  membershipCents: string
+  joiningFeeCents: string
+  totalCents: string
+  approvedAt: string | null
 }
 
 export interface FamilyLink {
@@ -239,6 +259,7 @@ export interface Invoice {
   issued_at: string
   paid_at: string | null
   lines?: InvoiceLine[]
+  payer?: Pick<Profile, 'full_name' | 'email'> | null
 }
 
 export interface Receipt {
@@ -254,6 +275,7 @@ export interface PaymentAttempt {
   id: string
   payer_id: string
   invoice_id: string | null
+  order_id: string | null
   provider: string | null
   provider_reference: string | null
   status: 'pending' | 'succeeded' | 'failed'
@@ -378,6 +400,8 @@ export interface AvailableLessonTime {
 /** A coach-offered 30-minute occurrence, with availability intentionally reason-free. */
 export interface LessonTimeOption extends AvailableLessonTime {
   isAvailable: boolean
+  /** Coach marked these standing hours for active members only. */
+  membersOnly?: boolean
 }
 
 /** Pricing is deliberately isolated from availability and booking DTOs. */
@@ -426,6 +450,25 @@ export interface LessonBooking {
   cancellationReason: string | null
   rescheduledFromBookingId: string | null
   rescheduledToBookingId: string | null
+  /** True while a pay-now hold is live. Money-free, so dependents may see it. */
+  awaitingPayment?: boolean
+  holdExpiresAt?: string | null
+  /** After this time a cancellation costs partialFeePercent of the lesson. */
+  partialFeeDeadline?: string | null
+  partialFeePercent?: number | null
+  /** Fee share inside the partial window. Percentages only, never amounts. */
+  lateFeePercent?: number | null
+}
+
+/** Payer-only row for a pay-now lesson whose hold can still be paid. */
+export interface PayableLessonHold {
+  bookingId: string
+  coachName: string
+  startsAt: string
+  weapon: Weapon
+  participantNames: string[]
+  amountCents: string
+  holdExpiresAt: string
 }
 
 export interface CoachAvailabilityRule {
@@ -435,6 +478,7 @@ export interface CoachAvailabilityRule {
   startsAtLocal: string
   endsAtLocal: string
   isActive: boolean
+  accessRule: LessonAccessRule
 }
 
 export interface CoachAvailabilityException {
@@ -467,8 +511,11 @@ export interface LessonBookingSettings {
   cancellationWindowHours: number
   lateCancellationAction: 'allow'
   lateCancellationFeeMultiplier: number
+  cancellationPartialWindowHours: number
+  cancellationPartialFeeMultiplier: number
   noShowFeeMultiplier: number
   bookingHorizonDays: number
+  bookingHorizonCalendarMonths: number
   bookingCutoffMinutes: number
   paymentMode: 'invoice_only'
   arrearsBlockingEnabled: false
@@ -476,6 +523,7 @@ export interface LessonBookingSettings {
   coachAssignmentMode: 'any_matching_weapon'
   coachWeaponsMode: 'per_coach'
   singleLessonPriceCents: number
+  dropInFeeCents: number
   externalRemindersEnabled: boolean
   doubleLessonMultiplier: 2
   doubleLessonAtomic: true
@@ -522,9 +570,89 @@ export type LessonBookingErrorCode =
   | 'affected_bookings_require_confirmation'
   | 'invalid_closure'
   | 'waiver_reason_required'
+  | 'pay_now_required'
+  | 'members_only'
+  | 'entitlement_unavailable'
+  | 'invalid_product'
+  | 'checkout_unavailable'
+  | 'payments_unavailable'
   | 'not_found'
   | 'request_failed'
 
 export type LessonBookingResult<T> =
   | { success: true; data: T }
-  | { success: false; errorCode: LessonBookingErrorCode; error: string }
+  | { success: false; errorCode: LessonBookingErrorCode; error: string; fieldErrors?: Record<string, string> }
+
+export interface ShopCartLine {
+  id: string
+  productId: number
+  itemCode: string
+  name: string
+  imagePath: string | null
+  size: string | null
+  handedness: Handedness | null
+  quantity: number
+  unitPriceCents: number
+}
+
+export interface ShopCart {
+  orderId: string
+  status: Extract<OrderStatus, 'draft' | 'pending_payment'>
+  notes: string | null
+  lines: ShopCartLine[]
+  totalCents: number
+}
+
+export type RefundStatus = 'requested' | 'approved' | 'rejected' | 'processing' | 'processed' | 'failed'
+export type RefundMethod = 'manual_bank' | 'provider'
+export type PaymentKind = 'booking' | 'order' | 'membership' | 'invoice'
+
+// A settled payment and how much of it can still be refunded.
+export interface RefundablePayment {
+  attemptId: string
+  payerId: string
+  payerName: string
+  kind: PaymentKind
+  provider: string | null
+  amountCents: number
+  refundableCents: number
+  completedAt: string | null
+  receiptNumber: string | null
+  orderId: string | null
+  invoiceNumber: string | null
+}
+
+export interface RefundRequest {
+  id: string
+  refundNumber: string
+  paymentAttemptId: string
+  payerId: string
+  payerName: string
+  kind: PaymentKind
+  paymentAmountCents: number
+  refundableCents: number
+  amountCents: number
+  reason: string
+  status: RefundStatus
+  method: RefundMethod | null
+  decisionNote: string | null
+  externalReference: string | null
+  failureReason: string | null
+  provider: string | null
+  hasProviderPayment: boolean
+  createdAt: string
+  decidedAt: string | null
+  processedAt: string | null
+}
+
+/**
+ * Validation details a Server Action form state can carry. `fieldErrors` comes
+ * from the server; `values` and `submission` are filled in on the client after
+ * a failed submit so valid input survives React's form reset.
+ */
+export interface FormFieldState {
+  error?: string
+  fieldErrors?: Record<string, string>
+  values?: Record<string, string[]>
+  submission?: number
+}

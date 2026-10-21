@@ -1,13 +1,43 @@
 import { z } from 'zod'
+import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min'
 
-const phone = z.string().regex(/^\+?[\d\s\-()]{7,20}$/, 'Invalid phone number')
+const PHONE_MESSAGE = 'Enter a valid phone number for the selected country'
+// Numbers without a country code are read as South African.
+const DEFAULT_PHONE_COUNTRY = 'ZA'
+
+/** Valid for its country, stored as E.164 (+27821234567). Blank stays blank. */
+const optionalPhone = z.string().trim()
+  .refine((value) => value === '' || isValidPhoneNumber(value, DEFAULT_PHONE_COUNTRY), PHONE_MESSAGE)
+  .transform((value) => value === '' ? '' : parsePhoneNumberFromString(value, DEFAULT_PHONE_COUNTRY)?.number ?? value)
+
+const requiredPhone = z.string('Enter a phone number').trim().min(1, 'Enter a phone number')
+  .refine((value) => isValidPhoneNumber(value, DEFAULT_PHONE_COUNTRY), PHONE_MESSAGE)
+  .transform((value) => parsePhoneNumberFromString(value, DEFAULT_PHONE_COUNTRY)?.number ?? value)
+
+const EARLIEST_BIRTH_DATE = '1900-01-01'
+
+function isRealIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value)
+}
+
+function todayInCapeTown() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date())
+}
+
+/** ISO date of birth: a real date, not in the future, not before 1900. Blank stays blank. */
+const optionalBirthDate = z.string().trim()
+  .refine((value) => value === '' || isRealIsoDate(value), 'Enter a valid date')
+  .refine((value) => value === '' || !isRealIsoDate(value) || value <= todayInCapeTown(), 'Date of birth cannot be in the future')
+  .refine((value) => value === '' || !isRealIsoDate(value) || value >= EARLIEST_BIRTH_DATE, 'Enter a date of birth after 1900')
 
 export const profileUpdateSchema = z.object({
-  full_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
-  phone: phone.optional().or(z.literal('')),
-  date_of_birth: z.iso.date().optional().nullable().or(z.literal('')),
+  full_name: z.string('Enter your full name').trim().min(2, 'Name must be at least 2 characters').max(100),
+  phone: optionalPhone.optional(),
+  date_of_birth: optionalBirthDate.optional().nullable(),
   emergency_contact_name: z.string().trim().max(100).optional().nullable(),
-  emergency_contact_phone: phone.optional().nullable().or(z.literal('')),
+  emergency_contact_phone: optionalPhone.optional().nullable(),
   reminder_preference: z.enum(['email', 'whatsapp', 'both']).optional(),
 })
 
@@ -28,13 +58,19 @@ export const memberListFiltersSchema = z.object({
 })
 
 export const inviteMemberSchema = z.object({
-  email: z.email('Invalid email address').max(254),
+  email: z.email('Enter a valid email address').max(254),
   full_name: z.string().trim().min(2).max(100),
   is_staff: z.coerce.boolean().default(false),
   staff_type: z.enum(['admin', 'coach']).optional().nullable(),
 })
 
+// Profile completion needs every contact detail, not just what the browser's
+// `required` attribute asks for.
 export const registrationDetailsSchema = profileUpdateSchema.extend({
+  phone: requiredPhone,
+  date_of_birth: optionalBirthDate.refine((value) => value !== '', 'Enter your date of birth'),
+  emergency_contact_name: z.string('Enter an emergency contact').trim().min(2, 'Enter an emergency contact name').max(100),
+  emergency_contact_phone: requiredPhone,
   terms_accepted: z.literal(true, 'You must accept the Terms and Conditions'),
   privacy_accepted: z.literal(true, 'You must accept the privacy notice'),
   payer_consent: z.boolean().optional(),
@@ -72,10 +108,14 @@ export const membershipReviewSchema = z.object({
   visible_response: z.string().trim().max(2000).optional().nullable(),
   private_notes: z.string().trim().max(2000).optional().nullable(),
 })
+export const membershipApplicationSchema = z.object({ application_id: z.uuid() })
+export const membershipWithdrawalSchema = membershipApplicationSchema.extend({
+  visible_response: z.string().trim().max(2000).optional().nullable(),
+})
 export const membershipStatusChangeSchema = z.object({
   profile_id: z.uuid(), status: z.enum(['active', 'suspended', 'expired', 'cancelled']),
 })
-export const familyLinkRequestSchema = z.object({ email: z.email().max(254) })
+export const familyLinkRequestSchema = z.object({ email: z.email('Enter a valid email address').max(254) })
 export const familyLinkResponseSchema = z.object({ link_id: z.uuid(), response: z.enum(['accept', 'reject']) })
 export const familyLinkEndSchema = z.object({ link_id: z.uuid() })
 

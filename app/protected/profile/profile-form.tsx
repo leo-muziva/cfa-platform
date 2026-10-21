@@ -1,6 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction, ValidatedForm } from '@/components/forms/form-state'
+import { PhoneInput } from '@/components/forms/phone-input'
+import { BirthDatePicker } from '@/components/forms/date-picker'
 import { updateProfileAction } from '@/app/actions/profile'
 import type { Profile } from '@/types/domain'
 import {
@@ -16,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 export function ProfileForm({ profile }: { profile: Profile }) {
-  const [state, formAction, isPending] = useActionState(updateProfileAction, {})
+  const [state, formAction, isPending] = useFormAction(updateProfileAction, {})
 
   return (
     <div className="flex w-full flex-col gap-6 text-left">
@@ -51,7 +53,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           <CardDescription>Update your personal information</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="flex flex-col gap-4">
+          <ValidatedForm action={formAction} state={state} className="flex flex-col gap-4">
             <div className="grid gap-2">
               <Label htmlFor="full_name">Full Name</Label>
               <Input
@@ -66,22 +68,11 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                defaultValue={profile.phone ?? ''}
-                placeholder="+27 00 000 0000"
-              />
+              <PhoneInput id="phone" name="phone" defaultValue={profile.phone} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="date_of_birth">Date of Birth</Label>
-              <Input
-                id="date_of_birth"
-                name="date_of_birth"
-                type="date"
-                defaultValue={profile.date_of_birth ?? ''}
-              />
+              <BirthDatePicker id="date_of_birth" name="date_of_birth" defaultValue={profile.date_of_birth} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="reminder_preference">Lesson reminders</Label>
@@ -99,16 +90,16 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             </div>
 
             {state.error && (
-              <p className="text-sm text-destructive">{state.error}</p>
+              <p role="alert" className="text-sm text-destructive">{state.error}</p>
             )}
             {state.success && (
-              <p className="text-sm text-green-600">{state.message}</p>
+              <p className="text-sm text-green-600 dark:text-green-400">{state.message}</p>
             )}
 
             <Button type="submit" disabled={isPending} className="w-fit">
               {isPending ? 'Saving...' : 'Save Changes'}
             </Button>
-          </form>
+          </ValidatedForm>
         </CardContent>
       </Card>
     </div>

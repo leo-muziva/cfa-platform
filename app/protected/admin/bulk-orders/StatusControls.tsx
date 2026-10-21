@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { advanceStatus, setEstimatedArrival } from "./actions";
-
-// The order statuses move through, in sequence.
-const FLOW = ["collecting", "placed", "shipping", "arrived", "distributed"];
+import { advanceStatus, cancelBulkOrder, setEstimatedArrival } from "./actions";
+import {
+  NEXT_BULK_ORDER_STATUS,
+  bulkOrderStatusSchema,
+} from "@/lib/validations/bulk-order.schema";
 
 export function StatusControls({
   bulkOrderId,
@@ -17,24 +19,55 @@ export function StatusControls({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [date, setDate] = useState(estimatedArrival ?? "");
 
-  // Work out what comes next in the sequence.
-  const currentIndex = FLOW.indexOf(status);
-  const nextStatus =
-    currentIndex >= 0 && currentIndex < FLOW.length - 1
-      ? FLOW[currentIndex + 1]
-      : null;
+  // Work out what comes next. The server checks the same rules.
+  const parsedStatus = bulkOrderStatusSchema.safeParse(status);
+  const nextStatus = parsedStatus.success
+    ? NEXT_BULK_ORDER_STATUS[parsedStatus.data]
+    : null;
+  const cancelled = parsedStatus.success && parsedStatus.data === "cancelled";
 
-  async function advance() {
-    if (!nextStatus) {
+  async function move(target: string) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const result = await advanceStatus(bulkOrderId, target);
+    if (result.error) {
+      setError(result.error);
+    }
+    setBusy(false);
+  }
+
+  function advance() {
+    if (nextStatus) {
+      move(nextStatus);
+    }
+  }
+
+  async function cancel() {
+    if (
+      !window.confirm(
+        "Cancel this bulk order? Every paid order in it gets a full refund request in the Refunds queue."
+      )
+    ) {
       return;
     }
     setBusy(true);
     setError("");
-    const result = await advanceStatus(bulkOrderId, nextStatus);
+    setMessage("");
+    const result = await cancelBulkOrder(bulkOrderId);
     if (result.error) {
       setError(result.error);
+    } else {
+      const count = result.refundsRequested ?? 0;
+      setMessage(
+        "Bulk order cancelled. " +
+          (count === 1
+            ? "1 refund request was added to the Refunds queue."
+            : count + " refund requests were added to the Refunds queue.")
+      );
     }
     setBusy(false);
   }
@@ -42,6 +75,7 @@ export function StatusControls({
   async function saveDate() {
     setBusy(true);
     setError("");
+    setMessage("");
     const result = await setEstimatedArrival(bulkOrderId, date);
     if (result.error) {
       setError(result.error);
@@ -52,23 +86,38 @@ export function StatusControls({
   return (
     <div className="mt-4 border-t pt-4">
       {nextStatus ? (
-        <button
-          onClick={advance}
-          disabled={busy}
-          className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:bg-gray-400"
-        >
-          {busy ? "Saving..." : "Mark as " + nextStatus}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={advance}
+            disabled={busy}
+            className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20"
+          >
+            {busy ? "Saving..." : "Mark as " + nextStatus}
+          </button>
+          <button
+            onClick={cancel}
+            disabled={busy}
+            className="rounded-lg border px-4 py-2 text-sm text-red-600 disabled:opacity-40 dark:text-red-400"
+          >
+            Cancel bulk order
+          </button>
+        </div>
       ) : (
-        <p className="text-sm text-gray-500">This bulk order is complete.</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">
+          {cancelled ? "This bulk order was cancelled." : "This bulk order is complete."}
+        </p>
       )}
 
       <div className="mt-4 flex items-end gap-2">
         <div>
-          <label className="mb-1 block text-xs text-gray-600">
+          <label
+            htmlFor={"arrival-" + bulkOrderId}
+            className="mb-1 block text-xs text-gray-600 dark:text-white/75"
+          >
             Estimated arrival
           </label>
           <input
+            id={"arrival-" + bulkOrderId}
             type="date"
             value={date}
             onChange={function (e) {
@@ -86,7 +135,15 @@ export function StatusControls({
         </button>
       </div>
 
-      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      {error ? <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+      {message ? (
+        <p role="status" className="mt-2 text-sm text-green-700 dark:text-green-400">
+          {message}{" "}
+          <Link href="/protected/admin/refunds?status=requested" className="underline underline-offset-4">
+            Open the Refunds queue
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

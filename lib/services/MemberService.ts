@@ -1,9 +1,23 @@
 import 'server-only'
+import { cache } from 'react'
+import { validationFailure, type ValidationFailure } from '@/lib/validations/form-errors'
+
+// Field names as the profile forms label them, for validation messages.
+const PROFILE_FIELD_LABELS: Record<string, string> = {
+  full_name: 'Full name',
+  phone: 'Phone',
+  date_of_birth: 'Date of birth',
+  emergency_contact_name: 'Emergency contact',
+  emergency_contact_phone: 'Emergency phone',
+  terms_accepted: 'Terms and Conditions',
+  privacy_accepted: 'Privacy notice',
+  payer_consent: 'Payer consent',
+}
 import { createClient } from '@/lib/supabase/server'
 import {
   getProfileById, updateProfile, getProfilesPage, adminUpdateProfile,
   getMemberStatsRows, getMembershipTypes, inviteMemberByEmail,
-  getHouseholdMembership, getHouseholdMembers, completeProfile, attachDependent,
+  getHouseholdMembership, getHouseholdMembers, completeProfile,
   getActiveBillingPayer,
 } from '@/lib/repositories/MemberRepository'
 import { getMembership } from '@/lib/repositories/PlatformRepository'
@@ -15,11 +29,14 @@ import type {
   Capabilities, HouseholdMember,
 } from '@/types/domain'
 
-export async function getCurrentProfile(): Promise<Profile | null> {
+// The layout, header and page each ask who is signed in. cache() makes that
+// one Supabase Auth round trip and one profile query per request; outside a
+// server render (Server Actions, route handlers) it simply runs each time.
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user ? getProfileById(user.id) : null
-}
+})
 
 export async function requireAdmin(): Promise<{ profile: Profile } | { error: string }> {
   const profile = await getCurrentProfile()
@@ -45,19 +62,22 @@ export function deriveCapabilities(profile: Profile, household: HouseholdMember,
   }
 }
 
-export async function getCurrentAccountContext(): Promise<
+export const getCurrentAccountContext = cache(async (): Promise<
   { profile: Profile; household: HouseholdMember; householdMembers: HouseholdMember[]; capabilities: Capabilities } |
   { error: string }
-> {
+> => {
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
-  const household = await getHouseholdMembership(profile.id)
+  // Household and payer are independent lookups, so fetch them together.
+  const [household, effectivePayerId] = await Promise.all([
+    getHouseholdMembership(profile.id),
+    getActiveBillingPayer(profile.id),
+  ])
   if (!household) return { error: 'Household setup is incomplete' }
-  const effectivePayerId = await getActiveBillingPayer(profile.id)
   if (!effectivePayerId) return { error: 'Billing responsibility is unavailable' }
   const householdMembers = await getHouseholdMembers(household.household_id)
   return { profile, household, householdMembers, capabilities: deriveCapabilities(profile, household, effectivePayerId) }
-}
+})
 
 export async function requireStaff(): Promise<{ profile: Profile } | { error: string }> {
   const profile = await getCurrentProfile()
@@ -66,18 +86,18 @@ export async function requireStaff(): Promise<{ profile: Profile } | { error: st
   return { profile }
 }
 
-export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
+export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = profileUpdateSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   const updated = await updateProfile(profile.id, parsed.data)
   return updated ? { profile: updated } : { error: 'Failed to update profile' }
 }
 
-export async function completeCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
+export async function completeCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = registrationDetailsSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   const details = {
@@ -118,9 +138,9 @@ export async function getMemberEditDataForAdmin(targetId: string): Promise<
   return profile ? { profile, membershipTypes: await getMembershipTypes(), membership: await getMembership(targetId) } : { error: 'Member not found' }
 }
 
-export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<{ profile: Profile } | { error: string }> {
+export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = adminProfileUpdateSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const profile = await adminUpdateProfile(targetId, parsed.data)
@@ -129,7 +149,7 @@ export async function adminUpdateMember(targetId: string, rawData: unknown): Pro
 
 export async function inviteMemberForAdmin(rawData: unknown): Promise<{ success: true } | { error: string }> {
   const parsed = inviteMemberSchema.safeParse(rawData)
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  if (!parsed.success) return validationFailure(parsed.error)
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const invited = await inviteMemberByEmail(
@@ -168,7 +188,3 @@ export async function getHouseholdAdminData() {
   return { profiles, memberships: await getHouseholdMembers() }
 }
 
-export async function attachDependentForAdmin(profileId: string, payerId: string) {
-  const guard = await requireAdmin()
-  return 'error' in guard ? guard : attachDependent(profileId, payerId)
-}

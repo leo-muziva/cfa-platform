@@ -53,7 +53,7 @@ Use existing database settings as runtime authority. Do not introduce a competin
 
 Source defaults include R300 per single lesson, R550 month-to-month dues, a 24-hour cancellation window and 100% late-cancellation/no-show multipliers. They remain provisional. Original examples of R250/R450 and 50% late cancellation do not override the database. Other product prices and joining fees are also not newly confirmed by this reconciliation.
 
-The six-month discount is confirmed at 10%. The seeded R3050 six-month price does not implement 10% off six R550 dues (R2970, illustrative only). The [public membership section](../components/landing/membership-section.tsx) also hardcodes R3050 and a 7.5% saving, so public display must be reconciled with the authoritative database and confirmed discount. Correct this through future implementation and configuration work; this document does not change prices or database rows.
+The six-month discount is confirmed at 10%. Migration `0036_six_month_discount.sql` sets the six-month price from the stored month-to-month price (6 x R550 x 0.9 = R2970), replacing the seeded R3050. The public membership section reads prices from the database and shows the 10% note only when the stored price matches.
 
 | ID | Pending sponsor decision or external dependency | Interim treatment |
 | --- | --- | --- |

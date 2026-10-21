@@ -1,7 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/services/MemberService";
+import { productIdSchema, productInputSchema } from "@/lib/validations/product.schema";
 import { revalidatePath } from "next/cache";
+import type { ZodError } from "zod";
+import { validationFailure } from "@/lib/validations/form-errors";
 
 // Everything a product form sends us.
 export type ProductInput = {
@@ -11,57 +15,39 @@ export type ProductInput = {
   price: string;
   category: string;
   sizes: string;
+  section?: string;
+  weapon?: string;
+  kind?: string;
+  level?: string;
   is_active: boolean;
 };
 
+type ActionResult = { success: true; error?: undefined } | { error: string; success?: undefined };
+
+// Staff capability comes from is_staff/staff_type, not the legacy role column.
 async function requireAdminClient() {
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", auth.user.id)
-    .single();
-
-  return profile?.role === "admin" ? supabase : null;
+  const admin = await requireAdmin();
+  if ("error" in admin) return null;
+  return createClient();
 }
 
-// Shared checks so create and update behave the same way.
-function validate(input: ProductInput) {
-  if (!input.item_code.trim()) return "Item code is required.";
-  if (!input.name.trim()) return "Product name is required.";
-
-  const price = Number(input.price);
-  if (Number.isNaN(price) || price < 0) {
-    return "Price must be a number of 0 or more.";
-  }
-  return null;
+function firstIssue(error: ZodError) {
+  return validationFailure(error).error;
 }
 
-// Turns the form's text fields into the shape the database expects.
-// Empty optional fields become null rather than empty strings.
-function toRow(input: ProductInput) {
-  return {
-    item_code: input.item_code.trim().toUpperCase(),
-    name: input.name.trim(),
-    description: input.description.trim() || null,
-    price: Number(input.price),
-    category: input.category.trim() || null,
-    sizes: input.sizes.trim() || null,
-    is_active: input.is_active,
-  };
+function refreshShop() {
+  revalidatePath("/protected/admin/products");
+  revalidatePath("/protected/shop");
 }
 
-export async function createProduct(input: ProductInput) {
+export async function createProduct(input: ProductInput): Promise<ActionResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };
 
-  const problem = validate(input);
-  if (problem) return { error: problem };
+  const parsed = productInputSchema.safeParse(input);
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
 
-  const { error } = await supabase.from("products").insert(toRow(input));
+  const { error } = await supabase.from("products").insert(parsed.data);
 
   if (error) {
     // 23505 is Postgres's unique-violation code.
@@ -71,22 +57,23 @@ export async function createProduct(input: ProductInput) {
     return { error: "Could not add the product: " + error.message };
   }
 
-  revalidatePath("/protected/admin/products");
-  revalidatePath("/protected/shop");
+  refreshShop();
   return { success: true };
 }
 
-export async function updateProduct(id: number, input: ProductInput) {
+export async function updateProduct(id: number, input: ProductInput): Promise<ActionResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };
 
-  const problem = validate(input);
-  if (problem) return { error: problem };
+  if (!productIdSchema.safeParse(id).success) return { error: "Invalid product." };
+  const parsed = productInputSchema.safeParse(input);
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("products")
-    .update(toRow(input))
-    .eq("id", id);
+    .update(parsed.data)
+    .eq("id", id)
+    .select("id");
 
   if (error) {
     if (error.code === "23505") {
@@ -94,34 +81,46 @@ export async function updateProduct(id: number, input: ProductInput) {
     }
     return { error: "Could not save: " + error.message };
   }
+  // RLS or a missing row makes the update match nothing without an error.
+  if (!data || data.length === 0) {
+    return { error: "Could not save: the product was not found or you cannot edit it." };
+  }
 
-  revalidatePath("/protected/admin/products");
-  revalidatePath("/protected/shop");
+  refreshShop();
   return { success: true };
 }
 
 // Hides a product from the shop without touching order history.
-export async function setProductActive(id: number, active: boolean) {
+export async function setProductActive(id: number, active: boolean): Promise<ActionResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };
 
-  const { error } = await supabase
+  if (!productIdSchema.safeParse(id).success || typeof active !== "boolean") {
+    return { error: "Invalid product." };
+  }
+
+  const { data, error } = await supabase
     .from("products")
     .update({ is_active: active })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
   if (error) return { error: "Could not update: " + error.message };
+  if (!data || data.length === 0) {
+    return { error: "Could not update: the product was not found or you cannot edit it." };
+  }
 
-  revalidatePath("/protected/admin/products");
-  revalidatePath("/protected/shop");
+  refreshShop();
   return { success: true };
 }
 
-// Permanent removal. Only works for products nobody has ordered —
+// Permanent removal. Only works for products nobody has ordered -
 // the database refuses to break an existing order line.
-export async function deleteProduct(id: number) {
+export async function deleteProduct(id: number): Promise<ActionResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };
+
+  if (!productIdSchema.safeParse(id).success) return { error: "Invalid product." };
 
   const { data: used } = await supabase
     .from("order_items")
@@ -136,11 +135,17 @@ export async function deleteProduct(id: number) {
     };
   }
 
-  const { error } = await supabase.from("products").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id)
+    .select("id");
 
   if (error) return { error: "Could not delete: " + error.message };
+  if (!data || data.length === 0) {
+    return { error: "Could not delete: the product was not found or you cannot delete it." };
+  }
 
-  revalidatePath("/protected/admin/products");
-  revalidatePath("/protected/shop");
+  refreshShop();
   return { success: true };
 }

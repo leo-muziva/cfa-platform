@@ -1,4 +1,8 @@
 import 'server-only'
+import type { ZodError } from 'zod'
+import { validationFailure } from '@/lib/validations/form-errors'
+import { releaseExpiredLessonHolds } from '@/lib/services/scheduled-jobs-service'
+import { onlinePaymentsAvailable } from '@/lib/services/payment-service'
 import { getCurrentAccountContext, getCurrentProfile, requireAdmin } from '@/lib/services/MemberService'
 import {
   cancelClubClosureRecord,
@@ -10,6 +14,7 @@ import {
   deleteCoachAvailabilityExceptionRecord,
   deleteCoachAvailabilityRuleRecord,
   getLessonQuote,
+  getDropInFeeCents,
   getLessonSettings,
   insertLessonBooking,
   lessonBookingError,
@@ -25,6 +30,7 @@ import {
   listLessonCoaches,
   listLessonTimeOptions,
   listMemberLessonBookings,
+  listPayableLessonHolds,
   previewClubClosure,
   previewCoachAvailabilityException,
   recordLessonOutcomeRecord,
@@ -53,12 +59,14 @@ import {
   rescheduleLessonBookingSchema,
   waiveLessonChargesSchema,
 } from '@/lib/validations/lesson.schema'
-import type { LessonBookingErrorCode, LessonBookingResult, LessonParticipant, Profile } from '@/types/domain'
+import type { LessonBookingErrorCode, LessonBookingResult, LessonParticipant, PayableLessonHold, Profile } from '@/types/domain'
 
 type PageError = { error: string; errorCode: LessonBookingErrorCode }
 
-function invalid(): LessonBookingResult<never> {
-  return lessonBookingError('invalid_input')
+/** Names the invalid fields when a schema failure is passed in. */
+function invalid(error?: ZodError): LessonBookingResult<never> {
+  if (!error) return lessonBookingError('invalid_input')
+  return { success: false, errorCode: 'invalid_input', ...validationFailure(error) }
 }
 
 function pageError(result: { success: false; errorCode: LessonBookingErrorCode; error: string }): PageError {
@@ -79,11 +87,17 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
     ...context,
     errorCode: context.error === 'Not authenticated' ? 'not_authenticated' as const : 'forbidden' as const,
   }
-  const coachesResult = await listLessonCoaches()
+  // These three do not depend on each other. Lapsed pay-now holds still
+  // occupy their slot until released, so that finishes before times load.
+  const [coachesResult, participantsResult, , dropInFee] = await Promise.all([
+    listLessonCoaches(),
+    listEligibleLessonParticipants(context.profile.id, context.capabilities.isAdmin),
+    releaseExpiredLessonHolds(),
+    getDropInFeeCents(),
+  ])
   if (!coachesResult.success) return pageError(coachesResult)
   const coach = coachesResult.data.find((item) => item.coachId === coachId)
   if (!coach) return { error: 'Coach not found', errorCode: 'not_found' as const }
-  const participantsResult = await listEligibleLessonParticipants(context.profile.id, context.capabilities.isAdmin)
   if (!participantsResult.success) return pageError(participantsResult)
   const filtersResult = lessonAvailabilitySchema.safeParse({ coachId, weapon: coach.weapons[0], ...rawFilters as object })
   if (!filtersResult.success) return { error: 'Check the lesson filters and try again.', errorCode: 'invalid_input' as const }
@@ -92,6 +106,9 @@ export async function getLessonBookingPageData(coachId: string, rawFilters: unkn
   return {
     profile: context.profile,
     capabilities: context.capabilities,
+    paymentsAvailable: onlinePaymentsAvailable(),
+    // Only shown as a note; the booking itself reads the fee from settings.
+    dropInFeeCents: dropInFee.success ? dropInFee.data : 0,
     coach,
     participants: eligibleParticipantsForActor(participantsResult.data, context.profile.id, context.capabilities.isDependent),
     timeOptions: optionsResult.data,
@@ -110,7 +127,7 @@ export async function getLessonTimeOptions(raw: unknown) {
 
 export async function quoteLesson(raw: unknown) {
   const parsed = lessonParticipantsSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const profile = await getCurrentProfile()
   if (!profile) return lessonBookingError('not_authenticated')
   if (profile.is_staff && profile.staff_type === 'admin') return getLessonQuote(parsed.data.participantIds)
@@ -122,21 +139,37 @@ export async function quoteLesson(raw: unknown) {
 
 export async function createLessonBooking(raw: unknown) {
   const parsed = createLessonBookingSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   if (!await getCurrentProfile()) return lessonBookingError('not_authenticated')
+  // A hold that can never be paid would only block the slot until it expires.
+  if (parsed.data.paymentOption === 'pay_now' && !onlinePaymentsAvailable()) return lessonBookingError('payments_unavailable')
   return insertLessonBooking(parsed.data)
 }
 
 export async function getMemberLessonsPageData() {
   const context = await getCurrentAccountContext()
   if ('error' in context) return context
+  await releaseExpiredLessonHolds()
   const lessons = await listMemberLessonBookings()
-  return lessons.success ? { profile: context.profile, capabilities: context.capabilities, lessons: lessons.data } : pageError(lessons)
+  return lessons.success ? {
+    profile: context.profile,
+    capabilities: context.capabilities,
+    paymentsAvailable: onlinePaymentsAvailable(),
+    lessons: lessons.data,
+  } : pageError(lessons)
+}
+
+/** Live pay-now holds the current payer can still pay. Empty for anyone who cannot see household money. */
+export async function getPayableLessonHolds(): Promise<LessonBookingResult<PayableLessonHold[]>> {
+  const context = await getCurrentAccountContext()
+  if ('error' in context) return lessonBookingError('not_authenticated')
+  if (!context.capabilities.canSeeHouseholdMoney) return { success: true, data: [] }
+  return listPayableLessonHolds()
 }
 
 export async function cancelLessonBooking(raw: unknown) {
   const parsed = cancelLessonBookingSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const profile = await getCurrentProfile()
   if (!profile) return lessonBookingError('not_authenticated')
   // Personal lesson changes follow the household policy, including for staff.
@@ -149,7 +182,7 @@ export async function cancelLessonBooking(raw: unknown) {
 
 export async function rescheduleLessonBooking(raw: unknown) {
   const parsed = rescheduleLessonBookingSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   if (!await getCurrentProfile()) return lessonBookingError('not_authenticated')
   return rescheduleLessonBookingRecord(parsed.data.bookingId, parsed.data.startsAt)
 }
@@ -180,7 +213,7 @@ export async function getCoachAvailabilityPageData() {
 // of trusting the caller's session-derived profile.id.
 export async function previewCoachAvailabilityExceptionForCoach(raw: unknown) {
   const parsed = coachAvailabilityExceptionPreviewWithCoachSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireCoachOrAdmin(parsed.data.coachId)
   return guard.allowed
     ? previewCoachAvailabilityException(parsed.data.coachId, parsed.data.startsAt, parsed.data.endsAt)
@@ -189,7 +222,7 @@ export async function previewCoachAvailabilityExceptionForCoach(raw: unknown) {
 
 export async function recordLessonOutcome(raw: unknown) {
   const parsed = lessonOutcomeSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const profile = await getCurrentProfile()
   if (!profile) return lessonBookingError('not_authenticated')
   if (!profile.is_staff || !['coach', 'admin'].includes(profile.staff_type ?? '')) return lessonBookingError('forbidden')
@@ -209,28 +242,28 @@ async function requireCoachOrAdmin(targetCoachId?: string): Promise<CoachAdminGu
 
 export async function createCoachAvailabilityRule(raw: unknown): Promise<LessonBookingResult<{ ruleId: string }>> {
   const parsed = coachAvailabilityRuleSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireCoachOrAdmin(parsed.data.coachId)
   return guard.allowed ? createCoachAvailabilityRuleRecord(parsed.data) : guard.result
 }
 
 export async function deleteCoachAvailabilityRule(raw: unknown): Promise<LessonBookingResult<null>> {
   const parsed = deleteAvailabilityRuleSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireCoachOrAdmin()
   return guard.allowed ? deleteCoachAvailabilityRuleRecord(parsed.data.ruleId) : guard.result
 }
 
 export async function createCoachAvailabilityException(raw: unknown): Promise<LessonBookingResult<{ exceptionId: string }>> {
   const parsed = coachAvailabilityExceptionSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireCoachOrAdmin(parsed.data.coachId)
   return guard.allowed ? createCoachAvailabilityExceptionRecord(parsed.data) : guard.result
 }
 
 export async function deleteCoachAvailabilityException(raw: unknown): Promise<LessonBookingResult<null>> {
   const parsed = deleteAvailabilityExceptionSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireCoachOrAdmin()
   return guard.allowed ? deleteCoachAvailabilityExceptionRecord(parsed.data.exceptionId) : guard.result
 }
@@ -270,49 +303,49 @@ export async function getLessonSettingsForAdmin() {
 
 export async function updateLessonSettingsForAdmin(raw: unknown) {
   const parsed = lessonSettingsPatchSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : updateLessonSettingsRecord(parsed.data)
 }
 
 export async function setCoachLessonProfileForAdmin(raw: unknown) {
   const parsed = coachLessonProfileSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : setCoachLessonProfileRecord(parsed.data)
 }
 
 export async function previewClubClosureForAdmin(raw: unknown) {
   const parsed = clubClosurePreviewSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : previewClubClosure(parsed.data.startsOn, parsed.data.endsOn)
 }
 
 export async function createClubClosureForAdmin(raw: unknown) {
   const parsed = clubClosureSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : createClubClosureRecord(parsed.data)
 }
 
 export async function cancelClubClosureForAdmin(raw: unknown) {
   const parsed = cancelClubClosureSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : cancelClubClosureRecord(parsed.data.closureId)
 }
 
 export async function cancelCoachFutureBookingsForAdmin(raw: unknown) {
   const parsed = cancelCoachFutureBookingsSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : cancelCoachFutureBookingsRecord(parsed.data.coachId, parsed.data.reason)
 }
 
 export async function waiveLessonChargesForAdmin(raw: unknown) {
   const parsed = waiveLessonChargesSchema.safeParse(raw)
-  if (!parsed.success) return invalid()
+  if (!parsed.success) return invalid(parsed.error)
   const guard = await requireAdmin()
   return 'error' in guard ? lessonBookingError('forbidden') : waiveLessonChargesRecord(parsed.data.bookingId, parsed.data.reason)
 }

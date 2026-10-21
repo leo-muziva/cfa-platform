@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { NavigationHistoryTracker } from "@/components/navigation-history";
+import { Suspense } from "react";
+import { SiteNavigation } from "@/components/site-navigation";
+import { SiteAuth } from "@/components/site-auth";
+import { EnvVarWarning } from "@/components/env-var-warning";
+import { hasEnvVars } from "@/lib/utils";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -37,6 +42,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <NavigationHistoryTracker />
+          <SiteNavigation
+            authSlot={
+              hasEnvVars ? (
+                <Suspense>
+                  <SiteAuth />
+                </Suspense>
+              ) : (
+                <EnvVarWarning />
+              )
+            }
+          />
           {children}
         </ThemeProvider>
       </body>

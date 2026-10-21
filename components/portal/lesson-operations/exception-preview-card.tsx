@@ -60,7 +60,7 @@ export function ExceptionPreviewCard({
   };
 
   return (
-    <Card className="h-fit border-teal-200 bg-teal-50/40">
+    <Card className="h-fit border-teal-200 bg-teal-50/40 dark:border-teal-400/30 dark:bg-teal-950/40">
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><CirclePlus className="h-5 w-5" aria-hidden="true" />Add exception</CardTitle>
         <CardDescription>A blocking range may overlap booked lessons.</CardDescription>

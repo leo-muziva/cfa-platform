@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { startPayment } from '@/lib/services/payment-service'
 import {
   cancelClubClosureForAdmin,
   cancelCoachFutureBookingsForAdmin,
@@ -19,21 +21,20 @@ import {
   updateLessonSettingsForAdmin,
   waiveLessonChargesForAdmin,
 } from '@/lib/services/LessonBookingService'
-import type { ClosureAffectedBooking, LessonBookingErrorCode } from '@/types/domain'
+import type { ClosureAffectedBooking, FormFieldState, LessonBookingErrorCode } from '@/types/domain'
 import { capeTownDateTimeToIso } from '@/lib/cape-town-time'
 
-export type LessonActionState = {
-  error?: string
+export type LessonActionState = FormFieldState & {
   errorCode?: LessonBookingErrorCode
   success?: string
   bookingId?: string
   checkoutRequired?: boolean
 }
 
-type OperationResult = { success: true; data: unknown } | { success: false; error: string; errorCode: LessonBookingErrorCode }
+type OperationResult = { success: true; data: unknown } | { success: false; error: string; errorCode: LessonBookingErrorCode; fieldErrors?: Record<string, string> }
 
 function actionResult(result: OperationResult, success: string): LessonActionState {
-  return result.success ? { success } : { error: result.error, errorCode: result.errorCode }
+  return result.success ? { success } : { error: result.error, errorCode: result.errorCode, fieldErrors: result.fieldErrors }
 }
 
 // Preview actions return the affected-bookings list itself, not a status
@@ -83,11 +84,20 @@ export async function createLessonBookingAction(_: LessonActionState, formData: 
   if (!result.success) return actionResult(result, '')
   revalidatePath('/protected/book')
   revalidatePath('/protected/lessons')
-  const checkoutRequired = formData.get('paymentOption') === 'pay_now'
+  revalidatePath('/protected/billing')
+  const bookingId = result.data.bookingId
+  if (formData.get('paymentOption') !== 'pay_now') {
+    return { success: 'Lesson booked successfully.', bookingId }
+  }
+  // The hold exists now, so go straight to checkout. If checkout cannot
+  // start, the hold stays payable from My lessons and Billing until expiry.
+  const payment = await startPayment({ bookingId })
+  if (payment.ok) redirect(`/api/payments/checkout?attempt=${encodeURIComponent(payment.attemptId)}`)
   return {
-    success: checkoutRequired ? 'Lesson held. Complete payment before the hold expires.' : 'Lesson booked successfully.',
-    bookingId: result.data.bookingId,
-    checkoutRequired,
+    success: 'Lesson held. Pay for it from My lessons or Billing before the hold expires.',
+    error: payment.error,
+    bookingId,
+    checkoutRequired: true,
   }
 }
 
@@ -125,9 +135,11 @@ export async function updateLessonSettingsAction(_: LessonActionState, formData:
     cancellationWindowHours: optionalValue(formData, 'cancellationWindowHours', 'cancellation_window_hours'),
     lateCancellationFeeMultiplier: optionalValue(formData, 'lateCancellationFeeMultiplier', 'late_cancellation_fee_multiplier'),
     noShowFeeMultiplier: optionalValue(formData, 'noShowFeeMultiplier', 'no_show_fee_multiplier'),
-    bookingHorizonDays: optionalValue(formData, 'bookingHorizonDays', 'booking_horizon_days'),
+    cancellationPartialWindowHours: optionalValue(formData, 'cancellationPartialWindowHours', 'cancellation_partial_window_hours'),
+    cancellationPartialFeeMultiplier: optionalValue(formData, 'cancellationPartialFeeMultiplier', 'cancellation_partial_fee_multiplier'),
+    bookingHorizonCalendarMonths: optionalValue(formData, 'bookingHorizonCalendarMonths', 'booking_horizon_calendar_months'),
     bookingCutoffMinutes: optionalValue(formData, 'bookingCutoffMinutes', 'booking_cutoff_minutes'),
-    singleLessonPriceCents: optionalValue(formData, 'singleLessonPriceCents', 'single_lesson_price_cents'),
+    dropInFeeRands: optionalValue(formData, 'dropInFeeRands', 'drop_in_fee_rands'),
   })
   if (!result.success) return actionResult(result, '')
   revalidatePath('/protected/admin/lessons')
@@ -153,6 +165,7 @@ export async function createCoachAvailabilityRuleAction(_: LessonActionState, fo
     isoWeekday: value(formData, 'isoWeekday', 'iso_weekday'),
     startsAtLocal: value(formData, 'startsAtLocal', 'starts_at_local'),
     endsAtLocal: value(formData, 'endsAtLocal', 'ends_at_local'),
+    accessRule: formData.get('membersOnly') === 'on' ? 'active_members_only' : 'guest_allowed',
   })
   if (!result.success) return actionResult(result, '')
   revalidateAvailabilityPaths()

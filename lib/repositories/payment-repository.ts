@@ -16,21 +16,64 @@ export interface CheckoutRow {
 export interface PaymentStatusRow {
   attempt_id: string;
   status: "pending" | "succeeded" | "failed";
-  kind: "booking" | "invoice";
+  kind: "booking" | "invoice" | "order" | "membership";
   credited: boolean;
   amount_cents: string;
+  receipt_number: string | null;
 }
 
-export async function preparePayment(target: PaymentTarget, provider: string) {
+export interface PreparedPaymentRow {
+  attempt_id: string;
+  provider_reference: string;
+  amount_cents: string;
+  prices_changed: boolean;
+}
+
+export type PreparePaymentErrorCode = "forbidden" | "empty_order" | "product_unavailable" | "checkout_unavailable" | "unknown";
+
+export type PreparePaymentResult =
+  | { ok: true; attempt: PreparedPaymentRow }
+  | { ok: false; code: PreparePaymentErrorCode };
+
+const KNOWN_PREPARE_CODES: readonly PreparePaymentErrorCode[] = ["forbidden", "empty_order", "product_unavailable", "checkout_unavailable"];
+
+// The checkout RPCs raise bare codes (raise exception 'forbidden'), so the
+// Postgres message is the code. Anything else is reported as unknown.
+function toPrepareCode(message: string | undefined): PreparePaymentErrorCode {
+  const code = message?.trim() ?? "";
+  return (KNOWN_PREPARE_CODES as readonly string[]).includes(code) ? code as PreparePaymentErrorCode : "unknown";
+}
+
+export async function preparePayment(target: PaymentTarget, provider: string): Promise<PreparePaymentResult> {
   const db = await createClient();
-  const { data, error } = await db.rpc("prepare_payment_checkout", {
-    target_booking: target.bookingId ?? null,
-    target_invoice: target.invoiceId ?? null,
-    target_provider: provider,
-  });
-  if (error) return null;
-  const row = Array.isArray(data) ? data[0] : data;
-  return row as { attempt_id: string; provider_reference: string; amount_cents: string } | null;
+  const { data, error } = target.orderId
+    ? await db.rpc("prepare_order_checkout", {
+      target_order: target.orderId,
+      target_provider: provider,
+      target_notes: target.notes ?? null,
+    })
+    : target.membershipApplicationId
+      ? await db.rpc("prepare_membership_checkout", {
+        target_application: target.membershipApplicationId,
+        target_provider: provider,
+      })
+      : await db.rpc("prepare_payment_checkout", {
+      target_booking: target.bookingId ?? null,
+      target_invoice: target.invoiceId ?? null,
+      target_provider: provider,
+    });
+  if (error) return { ok: false, code: toPrepareCode(error.message) };
+  const row = (Array.isArray(data) ? data[0] : data) as Partial<PreparedPaymentRow> | null | undefined;
+  if (!row?.attempt_id || !row.provider_reference || !row.amount_cents) return { ok: false, code: "unknown" };
+  return {
+    ok: true,
+    attempt: {
+      attempt_id: row.attempt_id,
+      provider_reference: row.provider_reference,
+      amount_cents: row.amount_cents,
+      prices_changed: row.prices_changed === true,
+    },
+  };
 }
 
 export async function findCheckout(attemptId: string): Promise<CheckoutRow | null> {
@@ -43,6 +86,30 @@ export async function findPaymentStatus(attemptId: string): Promise<PaymentStatu
   const db = await createClient();
   const { data, error } = await db.rpc("get_payment_status", { target_attempt: attemptId });
   return error ? null : (Array.isArray(data) ? data[0] ?? null : data) as PaymentStatusRow | null;
+}
+
+export interface ShopOrderConfirmationRow {
+  order_id: string;
+  recipient_email: string;
+  recipient_name: string;
+  items: Array<{ name: string; quantity: number; size: string | null; handedness: "right" | "left" | null; lineCents: number | string }>;
+  total_cents: number | string;
+}
+
+// Claims the one confirmation email for a settled order. Empty when the
+// payment is not a paid shop order or the email was already claimed.
+export async function claimShopOrderConfirmation(provider: string, reference: string): Promise<ShopOrderConfirmationRow | null> {
+  const db = createAdminClient();
+  if (!db) return null;
+  const { data, error } = await db.rpc("claim_shop_order_confirmation", { target_provider: provider, target_reference: reference });
+  if (error) return null;
+  return ((data ?? []) as ShopOrderConfirmationRow[])[0] ?? null;
+}
+
+export async function releaseShopOrderConfirmation(orderId: string): Promise<void> {
+  const db = createAdminClient();
+  if (!db) return;
+  await db.rpc("release_shop_order_confirmation", { target_order: orderId });
 }
 
 export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<boolean> {
@@ -58,4 +125,31 @@ export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<b
     target_currency: event.currency,
   });
   return !error;
+}
+
+export interface PaymentReceiptRow {
+  attempt_id: string;
+  kind: "membership" | "booking" | "invoice";
+  recipient_email: string;
+  recipient_name: string;
+  amount_cents: number | string;
+  receipt_number: string | null;
+  description: string;
+  credited: boolean;
+}
+
+// Claims the one receipt email for a settled payment. Empty for shop orders,
+// which get their own confirmation, and when the email was already claimed.
+export async function claimPaymentReceipt(provider: string, reference: string): Promise<PaymentReceiptRow | null> {
+  const db = createAdminClient();
+  if (!db) return null;
+  const { data, error } = await db.rpc("claim_payment_receipt", { target_provider: provider, target_reference: reference });
+  if (error) return null;
+  return ((data ?? []) as PaymentReceiptRow[])[0] ?? null;
+}
+
+export async function releasePaymentReceipt(attemptId: string): Promise<void> {
+  const db = createAdminClient();
+  if (!db) return;
+  await db.rpc("release_payment_receipt", { target_attempt: attemptId });
 }

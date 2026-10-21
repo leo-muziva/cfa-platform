@@ -10,6 +10,10 @@ export async function updateSession(request: NextRequest) {
   if (request.nextUrl.pathname === "/api/payments/payfast/webhook") {
     return NextResponse.next({ request });
   }
+  // Scheduled jobs have no browser session; each route checks CRON_SECRET.
+  if (request.nextUrl.pathname.startsWith("/api/cron/")) {
+    return NextResponse.next({ request });
+  }
   let authCookiesToClear: string[] = [];
   let supabaseResponse = NextResponse.next({
     request,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction, ValidatedForm } from '@/components/forms/form-state'
 import { inviteMemberAction } from '@/app/actions/admin-members'
 import {
   Card,
@@ -17,7 +17,7 @@ const selectClasses =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 export function InviteMemberForm() {
-  const [state, formAction, isPending] = useActionState(inviteMemberAction, {})
+  const [state, formAction, isPending] = useFormAction(inviteMemberAction, {})
 
   return (
     <Card>
@@ -29,7 +29,7 @@ export function InviteMemberForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="flex flex-col gap-4">
+        <ValidatedForm action={formAction} state={state} className="flex flex-col gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -57,12 +57,12 @@ export function InviteMemberForm() {
           <div className="grid gap-4 sm:grid-cols-2"><div className="flex items-center gap-2"><input id="is_staff" name="is_staff" type="checkbox" className="h-4 w-4 rounded border-input accent-primary"/><Label htmlFor="is_staff">Staff account</Label></div><div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue="" className={selectClasses}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div></div>
 
           {state.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
-          {state.success && <p className="text-sm text-green-600" role="status">{state.message}</p>}
+          {state.success && <p className="text-sm text-green-600 dark:text-green-400" role="status">{state.message}</p>}
 
           <Button type="submit" disabled={isPending} className="w-fit">
             {isPending ? 'Sending invite...' : 'Send invite'}
           </Button>
-        </form>
+        </ValidatedForm>
       </CardContent>
     </Card>
   )
