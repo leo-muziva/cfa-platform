@@ -6,6 +6,7 @@ import Image from "next/image";
 import { productImageUrl } from "@/lib/productImage";
 import { formatRands } from "@/lib/money";
 import { GENERAL, GENERAL_LABEL, WEAPON_LABELS, findSection, isShopWeapon } from "@/lib/shop/browse";
+import { sizeGuideHref } from "../size-guide/sizeGuide";
 
 export default async function ProductPage({
   params,
@@ -26,6 +27,8 @@ export default async function ProductPage({
     notFound();
   }
    const imageUrl = productImageUrl(product.image_path);
+   // Only show the size guide link where the product actually has sizes.
+  const guideHref = product.sizes ? sizeGuideHref(product.name) : null;
 
   // Breadcrumbs back up the same steps the shop browse uses, so a member can
   // go back to the section or weapon this product sits in.
@@ -86,6 +89,16 @@ export default async function ProductPage({
           <p className="mt-4 whitespace-pre-line text-gray-700 dark:text-white/75">
             {product.description}
           </p>
+
+
+           {guideHref ? (
+            <Link
+              href={guideHref}
+              className="mt-4 inline-block text-sm underline underline-offset-4"
+            >
+              Size guide
+            </Link>
+          ) : null}
 
           <AddToCartButton productId={product.id} sizes={product.sizes}  needsHandedness={product.needs_handedness} />
         </div>
