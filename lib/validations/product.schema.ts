@@ -51,3 +51,13 @@ export const productInputSchema = z.object({
 export type ProductRowInput = z.output<typeof productInputSchema>
 
 export const productIdSchema = z.number().int().positive()
+
+// Matches the bucket limit in migration 0056 and stays under Vercel's 4.5 MB
+// request limit. The file's real type is checked from its bytes in the
+// service, because the browser-reported type can be anything.
+export const PRODUCT_PHOTO_MAX_BYTES = 4 * 1024 * 1024
+
+export const productPhotoSchema = z
+  .instanceof(File, { message: 'Choose a photo to upload.' })
+  .refine((file) => file.size > 0, 'That photo is empty.')
+  .refine((file) => file.size <= PRODUCT_PHOTO_MAX_BYTES, 'Photos must be 4 MB or smaller.')

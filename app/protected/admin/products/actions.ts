@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/services/MemberService";
+import { replaceProductPhoto } from "@/lib/services/product-photo-service";
 import { productIdSchema, productInputSchema } from "@/lib/validations/product.schema";
 import { revalidatePath } from "next/cache";
 import type { ZodError } from "zod";
@@ -23,6 +24,7 @@ export type ProductInput = {
 };
 
 type ActionResult = { success: true; error?: undefined } | { error: string; success?: undefined };
+type CreateResult = { success: true; id: number; error?: undefined } | { error: string; success?: undefined };
 
 // Staff capability comes from is_staff/staff_type, not the legacy role column.
 async function requireAdminClient() {
@@ -40,14 +42,15 @@ function refreshShop() {
   revalidatePath("/protected/shop");
 }
 
-export async function createProduct(input: ProductInput): Promise<ActionResult> {
+// Returns the new id so the form can attach a photo straight after.
+export async function createProduct(input: ProductInput): Promise<CreateResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };
 
   const parsed = productInputSchema.safeParse(input);
   if (!parsed.success) return { error: firstIssue(parsed.error) };
 
-  const { error } = await supabase.from("products").insert(parsed.data);
+  const { data, error } = await supabase.from("products").insert(parsed.data).select("id").single();
 
   if (error) {
     // 23505 is Postgres's unique-violation code.
@@ -58,6 +61,16 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   }
 
   refreshShop();
+  return { success: true, id: data.id };
+}
+
+// Adds or replaces the product's photo. The form sends the file as FormData.
+export async function setProductPhoto(id: number, formData: FormData): Promise<ActionResult> {
+  const result = await replaceProductPhoto(id, formData.get("photo"));
+  if (!result.ok) return { error: result.error };
+
+  refreshShop();
+  revalidatePath("/protected/admin/products/" + id);
   return { success: true };
 }
 

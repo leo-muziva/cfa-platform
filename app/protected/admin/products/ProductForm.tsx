@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KIND_LABELS, LEVEL_LABELS, SECTIONS, WEAPON_LABELS } from "@/lib/shop/browse";
+import { productImageUrl } from "@/lib/productImage";
+import { PRODUCT_PHOTO_MAX_BYTES } from "@/lib/validations/product.schema";
 import {
   createProduct,
   updateProduct,
   deleteProduct,
+  setProductPhoto,
   type ProductInput,
 } from "./actions";
+
+const PHOTO_TYPES = "image/jpeg,image/png,image/webp";
 
 export type ProductRow = {
   id: number;
@@ -26,6 +32,7 @@ export type ProductRow = {
   kind?: string | null;
   level?: string | null;
   is_active: boolean;
+  image_path?: string | null;
 };
 
 export function ProductForm({
@@ -55,11 +62,34 @@ export function ProductForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // The photo is only uploaded when the form is saved.
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const currentPhotoUrl = productImageUrl(product?.image_path ?? null);
+  const shownPhoto = photoPreview ?? currentPhotoUrl;
+
+  // Free the preview's memory when it changes or the form closes.
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
   // Updates one field without disturbing the rest.
   function set(field: keyof ProductInput, value: string | boolean) {
     setForm(function (f) {
       return { ...f, [field]: value };
     });
+  }
+
+  function choosePhoto(file: File | null) {
+    setError("");
+    if (file && file.size > PRODUCT_PHOTO_MAX_BYTES) {
+      setError("Photos must be 4 MB or smaller.");
+      return;
+    }
+    setPhoto(file);
+    setPhotoPreview(file ? URL.createObjectURL(file) : null);
   }
 
   async function save() {
@@ -70,12 +100,31 @@ export function ProductForm({
       ? await updateProduct(product!.id, form)
       : await createProduct(form);
 
-    setBusy(false);
-
     if (result.error) {
+      setBusy(false);
       setError(result.error);
       return;
     }
+
+    let productId: number | undefined = product?.id;
+    if (!product && "id" in result && typeof result.id === "number") productId = result.id;
+    if (photo && productId) {
+      const upload = new FormData();
+      upload.append("photo", photo);
+      const photoResult = await setProductPhoto(productId, upload);
+      if (photoResult.error) {
+        setBusy(false);
+        if (editing) {
+          setError("Details saved, but the photo didn't upload: " + photoResult.error);
+          return;
+        }
+        // The product exists now, so saving this form again would duplicate it.
+        router.push("/protected/admin/products/" + productId + "?photo=failed");
+        return;
+      }
+    }
+
+    setBusy(false);
     router.push("/protected/admin/products");
     router.refresh();
   }
@@ -236,6 +285,55 @@ export function ProductForm({
           Comma separated. Leave empty for one-size items — those can be added
           straight from the catalogue without opening the product page.
         </p>
+      </div>
+
+      <div className="grid gap-2 sm:col-span-2">
+        <Label htmlFor="photo">Photo</Label>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-input bg-white">
+            {shownPhoto ? (
+              <Image
+                src={shownPhoto}
+                alt={photoPreview ? "New photo, not saved yet" : "Current photo of " + (product?.name ?? "this product")}
+                fill
+                unoptimized
+                sizes="128px"
+                className="object-contain p-2"
+              />
+            ) : (
+              <span className="px-2 text-center text-xs text-muted-foreground">No photo yet</span>
+            )}
+          </div>
+          <div className="grid min-w-0 gap-2">
+            <input
+              id="photo"
+              type="file"
+              accept={PHOTO_TYPES}
+              disabled={busy}
+              onChange={function (e) {
+                choosePhoto(e.target.files?.[0] ?? null);
+              }}
+              className="text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium"
+            />
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG or WebP, up to 4 MB. {editing ? "Choosing a new photo replaces the current one when you save." : "Shown on the shop card and product page."}
+            </p>
+            {photo ? (
+              <button
+                type="button"
+                onClick={function () {
+                  choosePhoto(null);
+                  const input = document.getElementById("photo") as HTMLInputElement | null;
+                  if (input) input.value = "";
+                }}
+                disabled={busy}
+                className="w-fit text-xs underline underline-offset-4"
+              >
+                {editing ? "Keep the current photo" : "Remove this photo"}
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 sm:col-span-2">
