@@ -10,7 +10,9 @@ export function LogoutButton() {
   const logout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Refresh so the root layout's main bar drops the Member Portal button.
     router.push("/");
+    router.refresh();
   };
 
   return (
