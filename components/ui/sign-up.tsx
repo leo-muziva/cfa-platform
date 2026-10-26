@@ -137,7 +137,10 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
         title: "Welcome to CFA!",
         message: "Your account is ready. Next, complete your profile.",
         actionLabel: "Continue",
-        onAction: () => router.push("/protected/complete-profile"),
+        onAction: () => {
+          router.push("/protected/complete-profile");
+          router.refresh();
+        },
       });
       return;
     }
@@ -188,7 +191,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 variants={stepVariants}
                 transition={stepTransition}
               >
-                <BlurFade>
+                <BlurFade className="text-center">
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
                     Create your account
                   </h1>
@@ -222,7 +225,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 variants={stepVariants}
                 transition={stepTransition}
               >
-                <BlurFade>
+                <BlurFade className="text-center">
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
                     Your email
                   </h1>
@@ -272,7 +275,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="mt-4 text-sm text-muted-foreground hover:text-foreground"
+                  className="mx-auto mt-4 block text-sm text-muted-foreground hover:text-foreground"
                 >
                   Go back
                 </button>
@@ -288,7 +291,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 variants={stepVariants}
                 transition={stepTransition}
               >
-                <BlurFade>
+                <BlurFade className="text-center">
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
                     Create your password
                   </h1>
@@ -315,7 +318,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="mt-4 text-sm text-muted-foreground hover:text-foreground"
+                  className="mx-auto mt-4 block text-sm text-muted-foreground hover:text-foreground"
                 >
                   Go back
                 </button>
@@ -331,7 +334,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 variants={stepVariants}
                 transition={stepTransition}
               >
-                <BlurFade>
+                <BlurFade className="text-center">
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
                     One last step
                   </h1>
@@ -359,7 +362,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="mt-4 text-sm text-muted-foreground hover:text-foreground"
+                  className="mx-auto mt-4 block text-sm text-muted-foreground hover:text-foreground"
                 >
                   Go back
                 </button>

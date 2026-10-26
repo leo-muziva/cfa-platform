@@ -109,7 +109,10 @@ export function SignInFlow({
       }
 
       // No confetti here — members logging in want speed, not a flourish.
+      // The main bar's login status is rendered by the root layout, which a
+      // client navigation keeps cached, so refresh it too.
       router.push(next);
+      router.refresh();
     } catch (error: unknown) {
       const message =
         error instanceof SupabaseConfigError
@@ -154,7 +157,7 @@ export function SignInFlow({
                 variants={stepVariants}
                 transition={stepTransition}
               >
-                <BlurFade>
+                <BlurFade className="text-center">
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
                     Welcome back
                   </h1>
@@ -222,7 +225,7 @@ export function SignInFlow({
                 variants={stepVariants}
                 transition={stepTransition}
               >
-                <BlurFade>
+                <BlurFade className="text-center">
                   <h1 className="font-serif text-4xl font-light tracking-tight sm:text-5xl">
                     Your password
                   </h1>
@@ -255,7 +258,7 @@ export function SignInFlow({
                 <button
                   type="button"
                   onClick={goBack}
-                  className="mt-4 text-sm text-muted-foreground hover:text-foreground"
+                  className="mx-auto mt-4 block text-sm text-muted-foreground hover:text-foreground"
                 >
                   Go back
                 </button>

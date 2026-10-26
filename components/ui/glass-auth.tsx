@@ -367,20 +367,17 @@ export function GlassAuthShell({ children }: { children: React.ReactNode }) {
         <GradientBackground />
       </div>
 
-      <div className="fixed top-6 left-6 z-20 flex items-center gap-2 md:left-1/2 md:-translate-x-1/2">
-        {/* Adjacent text repeats the crest's meaning, so the image is
-            decorative to assistive tech (empty alt avoids double-announcing). */}
+      {/* The crest sits in the flow above the form. A fixed chip used to hide
+          under the sticky main bar. */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-6 p-6">
         <Image
           src="/media/brand/cfa-crest.png"
-          alt=""
-          width={32}
-          height={32}
-          className="h-8 w-8 rounded-full"
+          alt="Cape Fencing Academy"
+          width={72}
+          height={72}
+          priority
+          className="h-[72px] w-[72px] rounded-full object-cover"
         />
-        <span className="font-bold text-foreground">Cape Fencing Academy</span>
-      </div>
-
-      <div className="relative z-10 flex flex-1 items-center justify-center p-6">
         {children}
       </div>
     </div>
@@ -485,7 +482,9 @@ export function GlassField({
             onKeyDown={onKeyDown}
             autoComplete={autoComplete}
             aria-label={ariaLabel ?? label}
-            className="all-unset w-full flex-1 bg-transparent py-2 text-base text-foreground outline-none placeholder:text-muted-foreground/70"
+            // No all-unset here: it is unlayered CSS, so it beat flex-1 and the
+            // input shrank, leaving the arrow in the middle of the field.
+            className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground/70"
           />
 
           <AnimatePresence>
