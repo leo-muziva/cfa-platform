@@ -17,7 +17,8 @@ export function CrestLoader() {
         alt=""
         width={499}
         height={500}
-        priority
+        // no priority: it preloaded the crest on every page change, even when
+        // the loader never showed, which filled the console with warnings
         className="cfa-crest-pulse h-auto w-28 sm:w-32"
       />
     </div>

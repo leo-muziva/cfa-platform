@@ -44,7 +44,7 @@ export default async function ProductPage({
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
+    <div className="mx-auto max-w-3xl p-8">
            <div className="flex items-center justify-between">
         <nav aria-label="Breadcrumb" className="text-sm text-gray-500 dark:text-white/60">
           <Link href="/protected/shop" className="underline-offset-4 hover:underline">Shop</Link>
@@ -90,6 +90,6 @@ export default async function ProductPage({
           <AddToCartButton productId={product.id} sizes={product.sizes}  needsHandedness={product.needs_handedness} />
         </div>
       </div>
-    </main>
+    </div>
   );
 }
