@@ -22,6 +22,7 @@ export type BookingResult = { bookingId: string } | { errorCode: BookingErrorCod
 const membershipErrorMessages: Record<MembershipOperationErrorCode, string> = {
   request_failed: 'Unable to submit the membership request. Please try again.',
   review_failed: 'Unable to update this membership request. Please try again.',
+  already_reviewed: 'This application has already been decided, so nothing was changed or sent again. Refresh to see its status.',
   resubmit_failed: 'Unable to resubmit the membership request. Please try again.',
   status_change_failed: 'Unable to change the membership status. Please try again.',
   payment_record_failed: 'Unable to record the payment. Check the application is still awaiting payment.',

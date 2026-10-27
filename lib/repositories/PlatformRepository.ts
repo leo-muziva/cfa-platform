@@ -93,6 +93,8 @@ export async function reviewMembershipRequest(requestId: string, decision: 'appr
   const { error } = await db.rpc('review_membership_application', {
     application_id: requestId, decision, visible_response: visibleResponse ?? null, private_notes: privateNotes ?? null,
   })
+  // the database only reviews a pending application, so a second click lands here
+  if (error?.message?.includes('pending application not found')) return { errorCode: 'already_reviewed' } as const
   return membershipOperationResult(error, 'review_failed')
 }
 

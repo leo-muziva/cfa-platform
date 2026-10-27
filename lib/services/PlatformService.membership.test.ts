@@ -91,6 +91,19 @@ describe('decideMembershipRequest', () => {
     expect(sendMembershipPaymentRequest).not.toHaveBeenCalled()
   })
 
+  it('sends one payment email when approve is clicked twice', async () => {
+    // the database only approves a pending application once
+    repo.reviewMembershipRequest.mockResolvedValueOnce({ success: true }).mockResolvedValueOnce({ errorCode: 'already_reviewed' })
+    const [first, second] = await Promise.all([
+      decideMembershipRequest({ application_id: applicationId, decision: 'approve' }),
+      decideMembershipRequest({ application_id: applicationId, decision: 'approve' }),
+    ])
+    expect(first).toEqual({ success: true, emailStatus: 'sent' })
+    expect(second).toEqual({ error: expect.stringContaining('already been decided') })
+    expect(sendMembershipPaymentRequest).toHaveBeenCalledOnce()
+    expect(repo.recordMembershipPaymentEmail).toHaveBeenCalledOnce()
+  })
+
   it('refuses non-admins before reviewing', async () => {
     requireAdmin.mockResolvedValue({ error: 'Forbidden' })
     expect(await decideMembershipRequest({ application_id: applicationId, decision: 'approve' })).toEqual({ error: 'Forbidden' })

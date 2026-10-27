@@ -6,6 +6,7 @@ export type MembershipReviewDecision = 'approve' | 'request_changes' | 'reject'
 export type MembershipOperationErrorCode =
   | 'request_failed'
   | 'review_failed'
+  | 'already_reviewed'
   | 'resubmit_failed'
   | 'status_change_failed'
   | 'payment_record_failed'

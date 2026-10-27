@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useFormAction, ValidatedForm } from '@/components/forms/form-state'
 import { decideMembershipRequestAction } from '@/app/actions/platform'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,8 @@ export function MembershipDecisionForm({ applicationId, privateNotes }: {
   privateNotes: string | null
 }) {
   const [state, formAction, pending] = useFormAction(decideMembershipRequestAction, {})
+  // which button was pressed, so only that one says it is working
+  const [clicked, setClicked] = useState('')
 
   return (
     <ValidatedForm action={formAction} state={state} className="space-y-4">
@@ -25,9 +28,9 @@ export function MembershipDecisionForm({ applicationId, privateNotes }: {
       {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
       {state.success && <p role="status" className="text-sm text-green-600 dark:text-green-400">{state.success}</p>}
       <div className="flex flex-wrap gap-2">
-        <Button name="decision" value="approve" disabled={pending}>Approve and request payment</Button>
-        <Button name="decision" value="request_changes" variant="outline" disabled={pending}>Request changes</Button>
-        <Button name="decision" value="reject" variant="outline" disabled={pending}>Reject</Button>
+        <Button name="decision" value="approve" disabled={pending} aria-busy={pending && clicked === 'approve'} onClick={() => setClicked('approve')}>{pending && clicked === 'approve' ? 'Approving and sending email…' : 'Approve and request payment'}</Button>
+        <Button name="decision" value="request_changes" variant="outline" disabled={pending} onClick={() => setClicked('request_changes')}>{pending && clicked === 'request_changes' ? 'Saving…' : 'Request changes'}</Button>
+        <Button name="decision" value="reject" variant="outline" disabled={pending} onClick={() => setClicked('reject')}>{pending && clicked === 'reject' ? 'Saving…' : 'Reject'}</Button>
       </div>
     </ValidatedForm>
   )
