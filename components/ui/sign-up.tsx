@@ -21,6 +21,13 @@ import {
 
 type Step = "name" | "email" | "password" | "confirm";
 const STEPS: Step[] = ["name", "email", "password", "confirm"];
+
+// shown under the field when Enter is pressed before the step is valid
+const STEP_HINTS: Record<Exclude<Step, "confirm">, string> = {
+  name: "Enter your name (at least 2 characters).",
+  email: "Enter a valid email address.",
+  password: "Your password needs at least 6 characters.",
+};
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
 export function SignUpFlow({ next = "/" }: { next?: string }) {
@@ -33,6 +40,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [modal, setModal] = useState<AuthModalState>({ status: "idle" });
+  const [stepError, setStepError] = useState("");
 
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -58,19 +66,35 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
   const isPasswordValid = password.length >= 6;
   const isConfirmValid = confirmPassword.length >= 6;
 
-  const goTo = useCallback((next: Step) => setStep(next), []);
+  const goTo = useCallback((next: Step) => {
+    setStepError("");
+    setStep(next);
+  }, []);
   const goBack = useCallback(() => {
     const index = STEPS.indexOf(step);
+    setStepError("");
     if (index > 0) setStep(STEPS[index - 1]);
   }, [step]);
 
+  // Enter never submits the whole form from an earlier step. If the step
+  // isn't valid yet, stay here and say why.
   const advanceOnEnter =
-    (isValid: boolean, next: Step) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && isValid) {
-        e.preventDefault();
-        goTo(next);
-      }
+    (isValid: boolean, current: Exclude<Step, "confirm">, next: Step) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      if (isValid) goTo(next);
+      else setStepError(STEP_HINTS[current]);
     };
+
+  // typing again clears the hint
+  const edit = (setter: (value: string) => void) => (value: string) => {
+    setter(value);
+    setStepError("");
+  };
+
+  const stepErrorText = stepError ? (
+    <p role="alert" className="mt-2 text-sm text-destructive">{stepError}</p>
+  ) : null;
 
   // Google OAuth is a real Supabase call; until the provider is enabled in
   // the Supabase dashboard this will surface "provider is not enabled" —
@@ -100,6 +124,15 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // check every step before comparing passwords, in case the form was
+    // submitted early
+    const invalidStep = !isNameValid ? "name" : !isEmailValid ? "email" : !isPasswordValid ? "password" : null;
+    if (invalidStep) {
+      setStep(invalidStep);
+      setStepError(STEP_HINTS[invalidStep]);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setModal({ status: "error", message: "Passwords do not match" });
@@ -203,8 +236,8 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                     id="full-name"
                     label="Full name"
                     value={fullName}
-                    onChange={setFullName}
-                    onKeyDown={advanceOnEnter(isNameValid, "email")}
+                    onChange={edit(setFullName)}
+                    onKeyDown={advanceOnEnter(isNameValid, "name", "email")}
                     autoComplete="name"
                     leadingIcon={<User className="h-4 w-4" />}
                     isValid={isNameValid}
@@ -212,6 +245,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                     advanceAriaLabel="Continue to email"
                     inputRef={nameRef}
                   />
+                  {stepErrorText}
                 </div>
               </motion.div>
             )}
@@ -262,8 +296,8 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                   label="Email address"
                   type="email"
                   value={email}
-                  onChange={setEmail}
-                  onKeyDown={advanceOnEnter(isEmailValid, "password")}
+                  onChange={edit(setEmail)}
+                  onKeyDown={advanceOnEnter(isEmailValid, "email", "password")}
                   autoComplete="email"
                   leadingIcon={<Mail className="h-4 w-4" />}
                   isValid={isEmailValid}
@@ -271,6 +305,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                   advanceAriaLabel="Continue to password"
                   inputRef={emailRef}
                 />
+                {stepErrorText}
 
                 <button
                   type="button"
@@ -304,8 +339,8 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                     label="Password"
                     type="password"
                     value={password}
-                    onChange={setPassword}
-                    onKeyDown={advanceOnEnter(isPasswordValid, "confirm")}
+                    onChange={edit(setPassword)}
+                    onKeyDown={advanceOnEnter(isPasswordValid, "password", "confirm")}
                     autoComplete="new-password"
                     leadingIcon={<Lock className="h-4 w-4" />}
                     isValid={isPasswordValid}
@@ -313,6 +348,7 @@ export function SignUpFlow({ next = "/" }: { next?: string }) {
                     advanceAriaLabel="Continue to confirm password"
                     inputRef={passwordRef}
                   />
+                  {stepErrorText}
                 </div>
 
                 <button
