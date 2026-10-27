@@ -20,7 +20,7 @@ import {
   getHouseholdMembership, getHouseholdMembers, completeProfile,
   getActiveBillingPayer,
 } from '@/lib/repositories/MemberRepository'
-import { getMembership } from '@/lib/repositories/PlatformRepository'
+import { getMembership, listActiveFamilyLinksForProfile } from '@/lib/repositories/PlatformRepository'
 import {
   profileUpdateSchema, adminProfileUpdateSchema, memberListFiltersSchema, inviteMemberSchema, registrationDetailsSchema,
   reminderPreferenceAllowed,
@@ -28,7 +28,7 @@ import {
 import { whatsAppRemindersAvailable } from '@/lib/providers/notification-providers'
 import type {
   Profile, MemberStats, MemberStatsRow, MemberListFilters, MembershipType, Paged,
-  Capabilities, HouseholdMember,
+  Capabilities, HouseholdMember, FamilyLink,
 } from '@/types/domain'
 
 // The layout, header and page each ask who is signed in. cache() makes that
@@ -135,12 +135,33 @@ export async function getInviteFormDataForAdmin(): Promise<{ membershipTypes: Me
 }
 
 export async function getMemberEditDataForAdmin(targetId: string): Promise<
-  { profile: Profile; membershipTypes: MembershipType[]; membership: Awaited<ReturnType<typeof getMembership>> } | { error: string }
+  { profile: Profile; membershipTypes: MembershipType[]; membership: Awaited<ReturnType<typeof getMembership>>; familyLinks: FamilyLink[]; isOwnRecord: boolean } | { error: string }
 > {
   const guard = await requireAdmin()
   if ('error' in guard) return guard
   const profile = await getProfileById(targetId)
-  return profile ? { profile, membershipTypes: await getMembershipTypes(), membership: await getMembership(targetId) } : { error: 'Member not found' }
+  if (!profile) return { error: 'Member not found' }
+  const [membershipTypes, membership, familyLinks] = await Promise.all([
+    getMembershipTypes(), getMembership(targetId), listActiveFamilyLinksForProfile(targetId),
+  ])
+  return { profile, membershipTypes, membership, familyLinks, isOwnRecord: guard.profile.id === targetId }
+}
+
+export const OWN_STAFF_ACCESS_MESSAGE = "You can't change your own staff access or deactivate your own account."
+
+// An admin must not remove (or change) their own staff access, or deactivate
+// themselves, or they could lock themselves out. Another admin can still do it.
+export function changesOwnStaffAccess(
+  actor: Pick<Profile, 'id' | 'is_staff' | 'staff_type' | 'is_active'>,
+  targetId: string,
+  input: { is_staff?: boolean; staff_type?: string | null; is_active?: boolean },
+): boolean {
+  if (actor.id !== targetId) return false
+  // a field that wasn't sent isn't a change
+  const isStaff = input.is_staff ?? actor.is_staff
+  const staffType = input.staff_type === undefined ? actor.staff_type : input.staff_type
+  const isActive = input.is_active ?? actor.is_active
+  return isStaff !== actor.is_staff || staffType !== actor.staff_type || isActive !== actor.is_active
 }
 
 export async function adminUpdateMember(targetId: string, rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
@@ -148,6 +169,7 @@ export async function adminUpdateMember(targetId: string, rawData: unknown): Pro
   if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
   const guard = await requireAdmin()
   if ('error' in guard) return guard
+  if (changesOwnStaffAccess(guard.profile, targetId, parsed.data)) return { error: OWN_STAFF_ACCESS_MESSAGE }
   const profile = await adminUpdateProfile(targetId, parsed.data)
   return profile ? { profile } : { error: 'Failed to update member' }
 }

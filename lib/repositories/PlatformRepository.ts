@@ -204,6 +204,18 @@ export async function listFamilyLinks(): Promise<FamilyLink[]> {
   return withCounterparts(data as unknown as FamilyLink[], (counterparts.data ?? []) as FamilyLinkCounterpartRow[])
 }
 
+// Active family links where this member is the guardian or the dependent.
+// For the admin member page; admins can read every link and profile.
+export async function listActiveFamilyLinksForProfile(profileId: string): Promise<FamilyLink[]> {
+  const db = await createClient()
+  const { data, error } = await db.from('family_links')
+    .select(`*,guardian:profiles!family_links_guardian_id_fkey(id,full_name,email),dependent:profiles!family_links_dependent_id_fkey(id,full_name,email)`)
+    .or(`guardian_id.eq.${profileId},dependent_id.eq.${profileId}`)
+    .eq('status', 'active')
+    .order('accepted_at', { ascending: true })
+  return error ? [] : data as unknown as FamilyLink[]
+}
+
 interface FamilyLinkCounterpartRow {
   link_id: string
   counterpart_id: string

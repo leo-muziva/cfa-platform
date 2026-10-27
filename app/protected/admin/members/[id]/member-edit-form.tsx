@@ -21,8 +21,10 @@ const selectClasses =
 
 export function MemberEditForm({
   profile,
+  isOwnRecord = false,
 }: {
   profile: Profile
+  isOwnRecord?: boolean
 }) {
   const [state, formAction, isPending] = useFormAction(adminUpdateMemberAction, {})
 
@@ -62,9 +64,18 @@ export function MemberEditForm({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center gap-2 py-1"><input id="is_staff" name="is_staff" type="checkbox" defaultChecked={profile.is_staff} className="h-4 w-4 rounded border-input accent-primary"/><Label htmlFor="is_staff">Staff account</Label></div>
-            <div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue={profile.staff_type ?? ''} className={selectClasses}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div>
+            <div className="flex items-center gap-2 py-1"><input id="is_staff" name="is_staff" type="checkbox" defaultChecked={profile.is_staff} disabled={isOwnRecord} aria-describedby={isOwnRecord ? 'own-staff-note' : undefined} className="h-4 w-4 rounded border-input accent-primary disabled:opacity-60"/><Label htmlFor="is_staff">Staff account</Label></div>
+            <div className="grid gap-2"><Label htmlFor="staff_type">Staff type</Label><select id="staff_type" name="staff_type" defaultValue={profile.staff_type ?? ''} disabled={isOwnRecord} aria-describedby={isOwnRecord ? 'own-staff-note' : undefined} className={selectClasses + ' disabled:opacity-60'}><option value="">None</option><option value="coach">Coach</option><option value="admin">Admin</option></select></div>
           </div>
+          {/* disabled fields aren't sent, so send the current values unchanged */}
+          {isOwnRecord && (
+            <>
+              {profile.is_staff && <input type="hidden" name="is_staff" value="on" />}
+              {profile.is_active && <input type="hidden" name="is_active" value="on" />}
+              <input type="hidden" name="staff_type" value={profile.staff_type ?? ''} />
+              <p id="own-staff-note" className="text-xs text-muted-foreground -mt-2">You can&apos;t change your own staff access or deactivate your own account.</p>
+            </>
+          )}
 
           <div className="flex items-center gap-2 py-1">
             <input
@@ -72,6 +83,8 @@ export function MemberEditForm({
               name="is_active"
               type="checkbox"
               defaultChecked={profile.is_active}
+              disabled={isOwnRecord}
+              aria-describedby={isOwnRecord ? 'own-staff-note' : undefined}
               className="h-4 w-4 rounded border-input accent-primary"
             />
             <Label htmlFor="is_active">Active member</Label>
