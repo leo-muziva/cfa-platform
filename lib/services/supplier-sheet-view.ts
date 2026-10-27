@@ -31,6 +31,8 @@ export interface SheetView {
   modelUsed: string | null;
   approvedAt: string | null;
   sentAt: string | null;
+  // paid orders changed after the sheet was built, so the proof no longer applies
+  stale: boolean;
 }
 
 function label(line: Pick<SupplierLine, "itemCode" | "size" | "hand">): string {
@@ -39,7 +41,7 @@ function label(line: Pick<SupplierLine, "itemCode" | "size" | "hand">): string {
 
 const MAX_DIFF_ROWS = 20;
 
-export function toSheetView(sheet: SheetRecord): SheetView {
+export function toSheetView(sheet: SheetRecord, stale = false): SheetView {
   const diff = sheet.lastCheck?.diff;
   const diffRows: SheetDiffRowView[] = diff
     ? [
@@ -70,5 +72,6 @@ export function toSheetView(sheet: SheetRecord): SheetView {
     modelUsed: sheet.modelUsed,
     approvedAt: sheet.approvedAt,
     sentAt: sheet.sentAt,
+    stale,
   };
 }

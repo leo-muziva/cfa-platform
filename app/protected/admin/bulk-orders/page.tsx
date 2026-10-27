@@ -4,6 +4,7 @@ import { ExportButtons } from "./ExportButtons";
 import { SupplierSheetPanel } from "./SupplierSheetPanel";
 import { getSheetsForBulkOrders } from "@/lib/repositories/supplier-sheet-repository";
 import { toSheetView } from "@/lib/services/supplier-sheet-view";
+import { sheetIsStale } from "@/lib/services/supplier-sheet-service";
 import { formatRandsWithCents } from "@/lib/money";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -51,6 +52,13 @@ export default async function BulkOrdersPage() {
 
   const list = bulkOrders ?? [];
   const sheets = await getSheetsForBulkOrders(list.map((bulk) => bulk.id));
+  // a sent sheet is final, so only check the ones still being worked on
+  const staleSheets = new Set<string>();
+  await Promise.all(
+    [...sheets].map(async ([bulkId, sheet]) => {
+      if (sheet.status !== "sent" && (await sheetIsStale(bulkId, sheet))) staleSheets.add(bulkId);
+    })
+  );
 
   const cards = list.map(function (bulk) {
     const orders = bulk.orders ?? [];
@@ -177,7 +185,7 @@ export default async function BulkOrdersPage() {
           bulkOrderId={bulk.id}
           bulkStatus={bulk.status}
           thresholdReached={total >= threshold}
-          sheet={sheets.has(bulk.id) ? toSheetView(sheets.get(bulk.id)!) : null}
+          sheet={sheets.has(bulk.id) ? toSheetView(sheets.get(bulk.id)!, staleSheets.has(bulk.id)) : null}
         />
 
         <StatusControls

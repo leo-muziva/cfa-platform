@@ -41,6 +41,7 @@ const MESSAGES: Record<SheetErrorCode, string> = {
   gmail_not_connected: "Gmail is not connected yet. Ask the site admin to set up the ordering mailbox.",
   supplier_email_missing: "The supplier's email address has not been set up yet.",
   gmail_failed: "Gmail did not accept the draft.",
+  stale: "Paid orders changed since the spreadsheet was made. Regenerate the spreadsheet and run the AI proof again.",
   changed: "Someone else changed this spreadsheet. Refresh the page and try again.",
 };
 

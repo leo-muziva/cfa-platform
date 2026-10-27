@@ -30,6 +30,7 @@ import * as repo from "@/lib/repositories/supplier-sheet-repository";
 import type { SheetRecord } from "@/lib/repositories/supplier-sheet-repository";
 import type { ExportOrder } from "./bulk-order-export";
 import { groupSupplierLines } from "./bulk-order-export";
+import { supplierLinesHash } from "./supplier-sheet";
 import { buildSupplierWorkbook } from "./supplier-sheet-workbook";
 import {
   approveAndCreateDraft,
@@ -221,11 +222,20 @@ describe("approveAndCreateDraft", () => {
 });
 
 describe("markSheetSent", () => {
+  const freshHash = supplierLinesHash(groupSupplierLines(orders(2)));
+
   it("only marks an approved sheet as sent", async () => {
-    mocked.getSheet.mockResolvedValue(sheet({ status: "proofed" }));
+    mocked.getSheet.mockResolvedValue(sheet({ status: "proofed", linesHash: freshHash }));
     expect(await markSheetSent(BULK.id)).toMatchObject({ ok: false, code: "not_approved" });
-    mocked.getSheet.mockResolvedValue(sheet({ status: "approved" }));
+    mocked.getSheet.mockResolvedValue(sheet({ status: "approved", linesHash: freshHash }));
     expect(await markSheetSent(BULK.id)).toMatchObject({ ok: true });
+  });
+
+  it("refuses when a paid order joined after the draft was made", async () => {
+    mocked.getSheet.mockResolvedValue(sheet({ status: "approved", linesHash: freshHash }));
+    mocked.getBulkOrderLines.mockResolvedValue({ orders: [...orders(2), ...orders(1)], paidOrderIds: ["order-1", "order-2"] });
+    expect(await markSheetSent(BULK.id)).toMatchObject({ ok: false, code: "stale" });
+    expect(mocked.updateSheet).not.toHaveBeenCalled();
   });
 });
 

@@ -25,6 +25,15 @@ export function supplierLinesHash(lines: SupplierLine[]): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+// The saved sheet is out of date when the paid orders have changed since it
+// was built: a new or removed paid order, or different lines.
+export function isSheetStale(
+  saved: { linesHash: string; paidOrderCount: number },
+  current: { lines: SupplierLine[]; paidOrderCount: number }
+): boolean {
+  return saved.paidOrderCount !== current.paidOrderCount || saved.linesHash !== supplierLinesHash(current.lines);
+}
+
 export interface QuantityChange {
   key: string;
   itemCode: string;

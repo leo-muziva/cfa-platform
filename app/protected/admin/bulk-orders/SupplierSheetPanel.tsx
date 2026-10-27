@@ -92,6 +92,8 @@ export function SupplierSheetPanel({
   const sent = status === "sent";
   const canProof = status === "generated" || status === "proofed" || status === "approved";
   const proofed = status === "proofed" || status === "approved" || sent;
+  // paid orders changed after the sheet was built, so the proof and draft are out of date
+  const stale = sheet?.stale === true && !sent;
 
   return (
     <section aria-labelledby={"sheet-" + bulkOrderId} className="mt-4 rounded-lg border border-border p-4">
@@ -103,7 +105,7 @@ export function SupplierSheetPanel({
       ) : null}
 
       <ol className="mt-4 grid gap-5">
-        <Step number={1} title="Generate orders spreadsheet" done={sheet !== null}>
+        <Step number={1} title="Generate orders spreadsheet" done={sheet !== null && !stale}>
           {sheet ? (
             <p className="text-sm text-muted-foreground">
               Saved {dateTime.format(new Date(sheet.generatedAt))} &middot; {sheet.rowCount} row{sheet.rowCount === 1 ? "" : "s"} &middot;{" "}
@@ -113,6 +115,11 @@ export function SupplierSheetPanel({
           ) : (
             <p className="text-sm text-muted-foreground">Builds the Excel file from every paid order in this bulk order.</p>
           )}
+          {stale ? (
+            <p role="status" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-500/40 dark:bg-amber-500/10">
+              Out of date: paid orders have changed since this spreadsheet was saved. Regenerate it, then run the AI proof again before sending anything to the supplier.
+            </p>
+          ) : null}
           <div className="mt-2 flex flex-wrap gap-2">
             {!sent ? (
               <button
@@ -140,7 +147,7 @@ export function SupplierSheetPanel({
           </div>
         </Step>
 
-        <Step number={2} title="AI proof" done={proofed}>
+        <Step number={2} title="AI proof" done={proofed && !stale}>
           <p className="text-sm text-muted-foreground">
             Checks the spreadsheet against the database, then the AI reviews it and drafts the supplier email.
           </p>
@@ -187,11 +194,15 @@ export function SupplierSheetPanel({
             <p className="mt-1 text-xs text-muted-foreground">Reviewed by: {sheet.modelUsed}</p>
           ) : null}
 
-          {sheet && sheet.checkMatches && proofed ? (
+          {stale && proofed ? (
+            <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">This proof was made for the earlier orders and is out of date.</p>
+          ) : null}
+
+          {sheet && sheet.checkMatches && proofed && !stale ? (
             <p className="mt-2 text-sm text-green-700 dark:text-green-400">{sheet.checkDescription}</p>
           ) : null}
 
-          {sheet?.aiSummary && proofed ? (
+          {sheet?.aiSummary && proofed && !stale ? (
             <div className="mt-3 rounded-lg bg-muted/50 p-3">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Briefing {sheet.modelUsed === "basic checks only" ? "(basic checks only)" : "(written by AI, check before sending)"}
@@ -216,7 +227,7 @@ export function SupplierSheetPanel({
           ) : null}
         </Step>
 
-        <Step number={3} title="Approve and create Gmail draft" done={status === "approved" || sent}>
+        <Step number={3} title="Approve and create Gmail draft" done={(status === "approved" || sent) && !stale}>
           {proofed ? (
             <>
               <label htmlFor={"email-" + bulkOrderId} className="mb-1 block text-xs text-muted-foreground">
@@ -234,13 +245,17 @@ export function SupplierSheetPanel({
               {status === "proofed" ? (
                 <button
                   onClick={() => run("draft", () => approveAndCreateDraftAction(bulkOrderId, email))}
-                  disabled={busy !== "" || email.trim() === ""}
+                  disabled={busy !== "" || email.trim() === "" || stale}
                   className={primaryButton + " mt-2"}
                 >
                   {busy === "draft" ? "Creating draft..." : "Approve and create Gmail draft"}
                 </button>
               ) : null}
-              {sheet?.approvedAt ? (
+              {stale && status === "approved" ? (
+                <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
+                  The Gmail draft is out of date. Don&apos;t send it. Delete it in Gmail and make a new one after the new AI proof.
+                </p>
+              ) : sheet?.approvedAt ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Draft created {dateTime.format(new Date(sheet.approvedAt))} with the spreadsheet attached. Open Gmail Drafts, check it and press Send.
                 </p>
@@ -259,7 +274,7 @@ export function SupplierSheetPanel({
               <p className="text-sm text-muted-foreground">After you press Send in Gmail. This moves the bulk order to &quot;placed&quot;.</p>
               <button
                 onClick={() => run("sent", () => markSpreadsheetSentAction(bulkOrderId))}
-                disabled={busy !== "" || status !== "approved"}
+                disabled={busy !== "" || status !== "approved" || stale}
                 className={secondaryButton + " mt-2"}
               >
                 {busy === "sent" ? "Saving..." : "Mark as sent"}

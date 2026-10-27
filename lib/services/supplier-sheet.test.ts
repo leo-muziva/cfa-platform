@@ -3,6 +3,7 @@ import type { SupplierLine } from "./bulk-order-export";
 import {
   compareSupplierLines,
   describeSheetDiff,
+  isSheetStale,
   lineKey,
   parseSizes,
   runSupplierRules,
@@ -191,5 +192,23 @@ describe("sortFindings", () => {
       { severity: "medium" as const, n: 3 },
     ]);
     expect(sorted.map((f) => f.n)).toEqual([2, 3, 1]);
+  });
+});
+
+describe("isSheetStale", () => {
+  const savedLines = [line({ quantity: 2 }), line({ itemCode: "EF101", name: "Plug pin", size: "", hand: "", quantity: 1, unitPriceCents: 2750 })];
+  const saved = { linesHash: supplierLinesHash(savedLines), paidOrderCount: 1 };
+
+  it("is fresh when the paid orders are the same", () => {
+    expect(isSheetStale(saved, { lines: [...savedLines].reverse(), paidOrderCount: 1 })).toBe(false);
+  });
+
+  it("is stale when another paid order joined", () => {
+    const more = [line({ quantity: 3 }), savedLines[1]];
+    expect(isSheetStale(saved, { lines: more, paidOrderCount: 2 })).toBe(true);
+  });
+
+  it("is stale when the order count changed even if the lines look the same", () => {
+    expect(isSheetStale(saved, { lines: savedLines, paidOrderCount: 2 })).toBe(true);
   });
 });

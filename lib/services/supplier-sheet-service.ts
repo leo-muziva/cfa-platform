@@ -4,6 +4,7 @@ import { groupSupplierLines, type SupplierLine } from "@/lib/services/bulk-order
 import {
   compareSupplierLines,
   describeSheetDiff,
+  isSheetStale,
   parseSizes,
   runSupplierRules,
   supplierLinesHash,
@@ -40,6 +41,7 @@ export type SheetErrorCode =
   | "gmail_not_connected"
   | "supplier_email_missing"
   | "gmail_failed"
+  | "stale"
   | "changed";
 
 export type SheetResult<T> = { ok: true; data: T } | { ok: false; code: SheetErrorCode; message?: string };
@@ -77,6 +79,15 @@ async function loadDatabaseLines(bulkOrderId: string) {
   const loaded = await repo.getBulkOrderLines(bulkOrderId);
   if (!loaded) return null;
   return { lines: groupSupplierLines(loaded.orders), paidOrderIds: loaded.paidOrderIds };
+}
+
+// Quick check for the page and "Mark as sent": have the paid orders changed
+// since the saved sheet was built? Unlike the AI proof check it does not
+// download the file, it compares the saved fingerprint.
+export async function sheetIsStale(bulkOrderId: string, sheet: Pick<SheetRecord, "linesHash" | "paidOrderCount">): Promise<boolean> {
+  const db = await loadDatabaseLines(bulkOrderId);
+  if (!db) return false;
+  return isSheetStale(sheet, { lines: db.lines, paidOrderCount: db.paidOrderIds.length });
 }
 
 function makeCheck(dbLines: SupplierLine[], fileLines: SupplierLine[]): SheetCheck {
@@ -408,6 +419,8 @@ export async function markSheetSent(bulkOrderId: string): Promise<SheetResult<Sh
   const sheet = await repo.getSheet(bulkOrderId);
   if (!sheet) return fail("no_sheet");
   if (sheet.status !== "approved") return fail("not_approved");
+  // orders that came in after the draft would be missed by the supplier
+  if (await sheetIsStale(bulkOrderId, sheet)) return fail("stale");
 
   const updated = await repo.updateSheet(sheet.id, ["approved"], { status: "sent", sent_at: new Date().toISOString() });
   if (!updated) return fail("changed");
