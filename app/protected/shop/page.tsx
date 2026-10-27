@@ -45,11 +45,18 @@ export default async function ShopPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const cartCount = await getCartCount();
+  // these don't depend on each other, so load them at the same time
+  // (this page re-renders after every add to cart)
+  const [cartCount, { data: auth }, { data: tagRows }] = await Promise.all([
+    getCartCount(),
+    supabase.auth.getUser(),
+    // One light query for the section and weapon of every product. It feeds
+    // the counts on the browse cards, the sidebar and the total.
+    supabase.from("products").select("section, weapon"),
+  ]);
 
   // Fetch this member's saved products so each card knows whether to show
   // a filled heart. One query for the page rather than one per product.
-  const { data: auth } = await supabase.auth.getUser();
   const { data: favRows } = auth?.user
     ? await supabase
         .from("favourites")
@@ -70,9 +77,6 @@ export default async function ShopPage({
   const requestedPage = Number(sp.page);
   const page = Number.isInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
 
-  // One light query for the section and weapon of every product. It feeds
-  // the counts on the browse cards, the sidebar and the total.
-  const { data: tagRows } = await supabase.from("products").select("section, weapon");
   const rows = tagRows ?? [];
   const totalCount = rows.length;
   const sectionCount = (key: string) => rows.filter((r) => r.section === key).length;

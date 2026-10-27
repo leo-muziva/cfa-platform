@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addToCart } from "../actions/cart";
 
 export function AddToCartButton({
@@ -23,8 +23,11 @@ export function AddToCartButton({
   const [hand, setHand] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  // blocks a second click before React has re-rendered the disabled button
+  const busyRef = useRef(false);
 
   async function handleClick() {
+    if (busyRef.current) return;
     // Both choices are required where the product needs them —
     // the supplier can't fulfil a jacket without knowing the hand.
     if (sizeOptions.length > 0 && !selectedSize) {
@@ -36,17 +39,24 @@ export function AddToCartButton({
       return;
     }
 
+    busyRef.current = true;
     setBusy(true);
     setStatus("");
 
-    const result = await addToCart(
-      productId,
-      selectedSize || null,
-      hand || null
-    );
-
-    setBusy(false);
-    setStatus("error" in result ? result.error : "Added to your cart.");
+    try {
+      const result = await addToCart(
+        productId,
+        selectedSize || null,
+        hand || null
+      );
+      setStatus("error" in result ? result.error : "Added to your cart.");
+    } catch {
+      setStatus("Could not add that to your cart. Please try again.");
+    } finally {
+      // always clear "Adding...", even if the request failed
+      busyRef.current = false;
+      setBusy(false);
+    }
   }
 
   return (

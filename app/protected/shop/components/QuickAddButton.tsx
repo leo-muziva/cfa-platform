@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ShoppingCart, Check } from "lucide-react";
 import { addToCart } from "../actions/cart";
 
@@ -10,20 +10,31 @@ import { addToCart } from "../actions/cart";
 export function QuickAddButton({ productId }: { productId: number }) {
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState("");
+  // blocks a second click before React has re-rendered the disabled button
+  const busyRef = useRef(false);
 
   async function handleClick() {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setState("busy");
     setError("");
-    const result = await addToCart(productId, null, null);
-    if ("error" in result) {
-      setError(result.error);
-    }
-    setState("error" in result ? "idle" : "done");
-    // Return to the normal icon after a moment.
-    if (!("error" in result)) {
+    try {
+      const result = await addToCart(productId, null, null);
+      if ("error" in result) {
+        setError(result.error);
+        setState("idle");
+        return;
+      }
+      setState("done");
+      // Return to the normal icon after a moment.
       setTimeout(function () {
         setState("idle");
       }, 1500);
+    } catch {
+      setError("Could not add that to your cart. Please try again.");
+      setState("idle");
+    } finally {
+      busyRef.current = false;
     }
   }
 
