@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { orderPlacedAt } from "@/lib/shop/order-date";
 import type { Handedness, OrderStatus, ShopCart, ShopCartLine } from "@/types/domain";
 
 // All customer shop data access. RLS limits every query to the signed-in
@@ -54,6 +55,8 @@ export interface ShopOrderSummary {
   status: Exclude<OrderStatus, "draft">;
   notes: string | null;
   createdAt: string;
+  // when it was paid, or created_at if there is no payment
+  placedAt: string;
   bulkStatus: string | null;
   estimatedArrival: string | null;
   lines: ShopOrderLineSummary[];
@@ -287,6 +290,7 @@ interface OrderListRow {
   status: string;
   notes: string | null;
   created_at: string;
+  payment_attempts: { status: string; completed_at: string | null }[] | null;
   bulk_orders:
     | { status: string; estimated_arrival: string | null }
     | { status: string; estimated_arrival: string | null }[]
@@ -303,13 +307,13 @@ export async function listCustomerOrders(userId: string): Promise<ShopOrderSumma
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, status, notes, created_at, bulk_orders (status, estimated_arrival), order_items (id, quantity, size, handedness, unit_price, products (item_code, name))"
+      "id, status, notes, created_at, payment_attempts (status, completed_at), bulk_orders (status, estimated_arrival), order_items (id, quantity, size, handedness, unit_price, products (item_code, name))"
     )
     .eq("user_id", userId)
     .neq("status", "draft")
     .order("created_at", { ascending: false });
 
-  return ((data ?? []) as OrderListRow[]).map(function (row) {
+  const rows = ((data ?? []) as OrderListRow[]).map(function (row) {
     const bulk = one(row.bulk_orders);
     const lines: ShopOrderLineSummary[] = (row.order_items ?? []).map(function (item) {
       const product = one(item.products);
@@ -332,10 +336,13 @@ export async function listCustomerOrders(userId: string): Promise<ShopOrderSumma
       status: row.status as ShopOrderSummary["status"],
       notes: row.notes,
       createdAt: row.created_at,
+      placedAt: orderPlacedAt(row.created_at, row.payment_attempts),
       bulkStatus: bulk?.status ?? null,
       estimatedArrival: bulk?.estimated_arrival ?? null,
       lines,
       totalCents,
     };
   });
+  // newest first by the date the customer sees
+  return rows.sort((a, b) => b.placedAt.localeCompare(a.placedAt));
 }

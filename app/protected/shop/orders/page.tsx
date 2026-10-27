@@ -4,6 +4,7 @@ import { listOrders } from "@/lib/services/shop-order-service";
 import { listMyRefundablePayments } from "@/lib/services/refund-service";
 import { statusView } from "./orderStatus";
 import { formatZarWithCents } from "@/lib/money";
+import { formatOrderDate } from "@/lib/shop/order-date";
 
 
 
@@ -63,11 +64,7 @@ export default async function OrdersPage({
   const cards = list.map(function (d) {
     const { order, view } = d;
 
-    const date = new Date(order.createdAt).toLocaleDateString("en-ZA", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    const date = formatOrderDate(order.placedAt);
 
     const refundAttempt =
       order.status === "paid" ? refundAttemptByOrder.get(order.id) : undefined;
