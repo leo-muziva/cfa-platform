@@ -5,10 +5,11 @@ vi.mock("@/lib/services/MemberService", () => ({ getCurrentProfile: vi.fn() }));
 vi.mock("@/lib/repositories/FamilyRepository", () => ({
   listFamilyChanges: vi.fn(), requestFamilyChange: vi.fn(),
   acceptFamilyTransfer: vi.fn(), reviewFamilyChange: vi.fn(),
+  getLinkDependentBirthDates: vi.fn(),
 }));
 import { getCurrentProfile } from "@/lib/services/MemberService";
 import * as repository from "@/lib/repositories/FamilyRepository";
-import { getFamilyChanges, requestFamilyChange, acceptFamilyTransfer, reviewFamilyChange } from "./FamilyService";
+import { getFamilyChanges, requestFamilyChange, acceptFamilyTransfer, reviewFamilyChange, MINOR_UNLINK_MESSAGE } from "./FamilyService";
 import type { Profile } from "@/types/domain";
 
 const requestId = "92000000-0000-4000-8000-000000000001";
@@ -50,6 +51,7 @@ describe("family responsibility service", () => {
   });
   it("confirms an unlink without mentioning a new payer", async () => {
     vi.mocked(repository.requestFamilyChange).mockResolvedValue({ error: null } as Awaited<ReturnType<typeof repository.requestFamilyChange>>);
+    vi.mocked(repository.getLinkDependentBirthDates).mockResolvedValue(new Map([[requestId, "2000-01-01"]]));
     const result = await requestFamilyChange({ linkId: requestId, kind: "unlink", reason: "I am an adult now" });
     expect(result).toEqual({ success: expect.stringContaining("Unlink requested") });
     expect(JSON.stringify(result)).not.toContain("new payer");
@@ -58,5 +60,31 @@ describe("family responsibility service", () => {
     vi.mocked(repository.requestFamilyChange).mockResolvedValue({ error: null } as Awaited<ReturnType<typeof repository.requestFamilyChange>>);
     const result = await requestFamilyChange({ linkId: requestId, kind: "transfer", newPayerEmail: "new@cfa.test", reason: "Moving house" });
     expect(result).toEqual({ success: expect.stringContaining("new payer must accept") });
+  });
+});
+
+describe("unlink is for adult dependents only", () => {
+  const linkId = "92000000-0000-4000-8000-000000000002";
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(getCurrentProfile).mockResolvedValue({ id: requestId, is_staff: false } as Profile);
+    vi.mocked(repository.requestFamilyChange).mockResolvedValue({ error: null } as never);
+  });
+
+  it("rejects a forged unlink request for a minor", async () => {
+    vi.mocked(repository.getLinkDependentBirthDates).mockResolvedValue(new Map([[linkId, "2015-06-01"]]));
+    expect(await requestFamilyChange({ linkId, kind: "unlink", reason: "Moving out" })).toEqual({ error: MINOR_UNLINK_MESSAGE });
+    expect(repository.requestFamilyChange).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unlink when the date of birth is unknown", async () => {
+    vi.mocked(repository.getLinkDependentBirthDates).mockResolvedValue(new Map([[linkId, null]]));
+    expect(await requestFamilyChange({ linkId, kind: "unlink", reason: "Moving out" })).toEqual({ error: MINOR_UNLINK_MESSAGE });
+  });
+
+  it("still sends an unlink for an adult dependent", async () => {
+    vi.mocked(repository.getLinkDependentBirthDates).mockResolvedValue(new Map([[linkId, "1990-01-01"]]));
+    expect(await requestFamilyChange({ linkId, kind: "unlink", reason: "Moving out" })).toHaveProperty("success");
+    expect(repository.requestFamilyChange).toHaveBeenCalledOnce();
   });
 });

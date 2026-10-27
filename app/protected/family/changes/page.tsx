@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getFamilyChanges } from "@/lib/services/FamilyService";
+import { getFamilyChanges, unlinkAllowed } from "@/lib/services/FamilyService";
 import { getFamilyAccountsPageData } from "@/lib/services/PlatformService";
 import { ActionForm } from "@/components/portal/action-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,8 @@ export default async function FamilyChangesPage() {
   const [data, family] = await Promise.all([getFamilyChanges(), getFamilyAccountsPageData()]);
   if ("error" in data || "error" in family) redirect("/auth/login");
   const active = family.links.filter((link) => link.status === "active" && (link.dependent_id === data.profile.id || link.guardian_id === data.profile.id));
+  // only an adult dependent can be unlinked; a minor can only be transferred
+  const canUnlink = await unlinkAllowed(active.map((link) => link.id));
   return <div className="space-y-6">
     <h1 className="text-3xl font-bold">Family responsibility changes</h1>
     <p>Staff must approve every unlink or transfer. Transfers also require acceptance by the new adult payer. Existing charges stay with their original payer. Minors require a transfer to another adult payer.</p>
@@ -20,7 +22,7 @@ export default async function FamilyChangesPage() {
     {active.map((link) => <Card key={link.id}><CardHeader><CardTitle>{link.dependent?.full_name || "Dependent"} - {link.guardian?.full_name || "Guardian"}</CardTitle></CardHeader><CardContent>
       <ActionForm action={requestFamilyChangeAction} submitLabel="Request change">
         <input type="hidden" name="link_id" value={link.id} />
-        <div><Label htmlFor={`kind-${link.id}`}>Change type</Label><select className="block w-full rounded border bg-background p-2" id={`kind-${link.id}`} name="kind"><option value="transfer">Transfer to another payer</option><option value="unlink">Unlink adult dependent</option></select></div>
+        <div><Label htmlFor={`kind-${link.id}`}>Change type</Label><select className="block w-full rounded border bg-background p-2" id={`kind-${link.id}`} name="kind"><option value="transfer">Transfer to another payer</option>{canUnlink.get(link.id) && <option value="unlink">Unlink adult dependent</option>}</select></div>
         <div><Label htmlFor={`email-${link.id}`}>New payer account email (transfer only)</Label><Input id={`email-${link.id}`} name="new_payer_email" type="email" /></div>
         <div><Label htmlFor={`reason-${link.id}`}>Reason (visible to the parties and staff)</Label><Input id={`reason-${link.id}`} name="reason" minLength={3} maxLength={1000} required /></div>
       </ActionForm>

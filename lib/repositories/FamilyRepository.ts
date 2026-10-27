@@ -10,6 +10,18 @@ export async function listFamilyChanges(profileId: string, staffScope: boolean):
   if (error) throw new Error("Family change requests are unavailable.");
   return (data ?? []) as unknown as FamilyChangeRequest[];
 }
+// Date of birth of the dependent on each link, for the adult-only unlink rule.
+export async function getLinkDependentBirthDates(linkIds: string[]): Promise<Map<string, string | null>> {
+  const result = new Map<string, string | null>();
+  if (linkIds.length === 0) return result;
+  const db = await createClient();
+  const { data } = await db.from("family_links").select("id,dependent:profiles!family_links_dependent_id_fkey(date_of_birth)").in("id", linkIds);
+  for (const row of (data ?? []) as unknown as { id: string; dependent: { date_of_birth: string | null } | { date_of_birth: string | null }[] | null }[]) {
+    const dependent = Array.isArray(row.dependent) ? row.dependent[0] : row.dependent;
+    result.set(row.id, dependent?.date_of_birth ?? null);
+  }
+  return result;
+}
 export async function requestFamilyChange(input: { linkId: string; kind: string; newPayerEmail: string; reason: string }) {
   const db = await createClient();
   return db.rpc("request_family_change", { target_link: input.linkId, change_kind: input.kind, new_payer_email: input.newPayerEmail || null, request_reason: input.reason });
