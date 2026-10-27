@@ -64,6 +64,12 @@ reset role;
 select is((select payment_state from public.bookings where id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2'),'expired','late success does not resurrect booking');
 select is((select amount_cents from public.ledger_credits where booking_id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2'),60000::bigint,'late payment credited fully');
 
+-- Invoice checkout now spends unused credit first (0070). Mark the late-payment
+-- credit above as already spent, so this invoice is still paid by the provider.
+insert into public.charges(id,fencer_id,payer_id,type,amount_cents,status,period,description,lifecycle_state)
+values('cc250000-0000-4000-8000-0000000000c1','44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','membership',60000,'unpaid','2091-01-01','Synthetic charge the credit paid','finalized');
+insert into public.credit_consumptions(ledger_credit_id,charge_id,amount_cents)
+select id,'cc250000-0000-4000-8000-0000000000c1',60000 from public.ledger_credits where booking_id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2';
 insert into public.charges(id,fencer_id,payer_id,type,amount_cents,status,period,description,lifecycle_state)
 values('cc250000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','membership',55000,'unpaid','2090-01-01','Synthetic invoice charge','finalized');
 insert into public.invoices(id,payer_id,period,total) values('aa250000-0000-4000-8000-000000000001','44444444-4444-4444-8444-444444444444','2090-01-01',550);
@@ -107,6 +113,12 @@ select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111'
 update public.profiles set date_of_birth=null where id='44444444-4444-4444-8444-444444444444';
 select set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',true);
 
+-- The overlap credit above is spent elsewhere too, so staff still record this one (0070).
+insert into public.charges(id,fencer_id,payer_id,type,amount_cents,status,period,description,lifecycle_state)
+values('cc250000-0000-4000-8000-0000000000c2','44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','membership',55000,'unpaid','2091-02-01','Synthetic charge the overlap credit paid','finalized');
+insert into public.credit_consumptions(ledger_credit_id,charge_id,amount_cents)
+select c.id,'cc250000-0000-4000-8000-0000000000c2',55000 from public.ledger_credits c
+  join public.payment_attempts a on a.id=c.payment_attempt_id where a.provider_reference=current_setting('test.second_reference');
 insert into public.charges(id,fencer_id,payer_id,type,amount_cents,status,period,description,lifecycle_state)
 values('cc250000-0000-4000-8000-000000000002','44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','membership',55000,'unpaid','2090-02-01','Manual overlap','finalized');
 insert into public.invoices(id,payer_id,period,total) values('aa250000-0000-4000-8000-000000000002','44444444-4444-4444-8444-444444444444','2090-02-01',550);

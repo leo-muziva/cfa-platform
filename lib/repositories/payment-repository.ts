@@ -29,7 +29,7 @@ export interface PreparedPaymentRow {
   prices_changed: boolean;
 }
 
-export type PreparePaymentErrorCode = "forbidden" | "empty_order" | "product_unavailable" | "checkout_unavailable" | "unknown";
+export type PreparePaymentErrorCode = "forbidden" | "empty_order" | "product_unavailable" | "checkout_unavailable" | "paid_by_credit" | "unknown";
 
 export type PreparePaymentResult =
   | { ok: true; attempt: PreparedPaymentRow }
@@ -63,6 +63,8 @@ export async function preparePayment(target: PaymentTarget, provider: string): P
       target_provider: provider,
     });
   if (error) return { ok: false, code: toPrepareCode(error.message) };
+  // an invoice checkout returns no row when account credit paid all of it
+  if (target.invoiceId && Array.isArray(data) && data.length === 0) return { ok: false, code: "paid_by_credit" };
   const row = (Array.isArray(data) ? data[0] : data) as Partial<PreparedPaymentRow> | null | undefined;
   if (!row?.attempt_id || !row.provider_reference || !row.amount_cents) return { ok: false, code: "unknown" };
   return {

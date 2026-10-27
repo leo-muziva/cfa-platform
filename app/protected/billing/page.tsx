@@ -7,6 +7,7 @@ import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
 import { CheckoutButton } from '@/components/payments/checkout-button'
 import { listMyRefundablePayments, listMyRefundRequests } from '@/lib/services/refund-service'
 import { receiptRefundState } from '@/lib/refund-amounts'
+import { invoiceCreditNote } from '@/lib/invoice-credit'
 import { getPayableLessonHolds } from '@/lib/services/LessonBookingService'
 import { formatCapeTownTime } from '@/lib/booking-calendar'
 import { formatRandsWithCents, formatZarWithCents } from '@/lib/money'
@@ -43,6 +44,12 @@ export default async function BillingPage() {
     const state = receiptRefundState(paymentByReceipt.get(receiptNumber), refundRequests.ok ? refundRequests.data : [])
     return state?.kind === 'note' && !refundRequests.ok ? null : state
   }
+  // explains credit on an unpaid invoice, so its total and the amount to pay don't look different for no reason
+  const creditNoteFor = (invoice: { id: string; total: number | string; status: string }) => {
+    if (invoice.status === 'paid') return null
+    const totalCents = Math.round(Number(invoice.total) * 100)
+    return invoiceCreditNote(totalCents, billing.invoiceDueCents[invoice.id] ?? totalCents, Math.round(billing.creditTotal * 100))
+  }
 
   return (
     <div className="space-y-6">
@@ -58,6 +65,7 @@ export default async function BillingPage() {
         <CardContent>
           <p className="text-2xl font-semibold">{formatRandsWithCents(billing.balance)}</p>
           <p className="mt-2 text-sm text-muted-foreground">This is the total currently owed. It does not take payment automatically.</p>
+          {billing.creditTotal > 0 && <p className="mt-1 text-sm text-muted-foreground">Your unused credit of {formatRandsWithCents(billing.creditTotal)} is already taken off this total. It is applied to your invoice when you pay.</p>}
         </CardContent>
       </Card>
 
@@ -128,7 +136,7 @@ export default async function BillingPage() {
 
       <section className="space-y-3">
         <div><h2 className="text-xl font-semibold">Invoices</h2><p className="text-sm text-muted-foreground">An invoice is a statement of your outstanding items, not an additional charge.</p></div>
-        {billing.invoices.length === 0 ? <p>No invoices yet.</p> : billing.invoices.map((invoice) => <Card key={invoice.id}><CardHeader><CardTitle className="flex justify-between"><span>{invoice.invoice_number}</span><Badge>{invoice.status}</Badge></CardTitle></CardHeader><CardContent><p>{formatRandsWithCents(invoice.total)}</p><ul className="mt-3 space-y-1 text-sm text-muted-foreground">{invoice.lines?.map((line) => <li key={line.id}>{line.participant?.full_name || 'Participant'} - {line.description}: {formatRandsWithCents(line.amount)}</li>)}</ul>{billing.providerAvailable && invoice.status !== 'paid' && <CheckoutButton invoiceId={invoice.id} />}</CardContent></Card>)}
+        {billing.invoices.length === 0 ? <p>No invoices yet.</p> : billing.invoices.map((invoice) => <Card key={invoice.id}><CardHeader><CardTitle className="flex justify-between"><span>{invoice.invoice_number}</span><Badge>{invoice.status}</Badge></CardTitle></CardHeader><CardContent><p>{formatRandsWithCents(invoice.total)}</p>{creditNoteFor(invoice) && <p className="mt-1 text-sm text-muted-foreground">{creditNoteFor(invoice)}</p>}<ul className="mt-3 space-y-1 text-sm text-muted-foreground">{invoice.lines?.map((line) => <li key={line.id}>{line.participant?.full_name || 'Participant'} - {line.description}: {formatRandsWithCents(line.amount)}</li>)}</ul>{billing.providerAvailable && invoice.status !== 'paid' && <CheckoutButton invoiceId={invoice.id} />}</CardContent></Card>)}
       </section>
 
       <section className="space-y-3"><h2 className="text-xl font-semibold">Receipts</h2>{billing.receipts.length === 0 ? <p>No receipts yet.</p> : billing.receipts.map((receipt) => { const refundState = refundStateFor(receipt.receipt_number); return <Card key={receipt.id}><CardHeader><CardTitle>{receipt.receipt_number}</CardTitle></CardHeader><CardContent className="flex flex-wrap items-center justify-between gap-2"><span>{formatRandsWithCents(receipt.amount)}</span>{refundState?.kind === 'link' && <Link className="text-sm underline underline-offset-4" href={`/protected/refunds/new?attempt=${encodeURIComponent(refundState.attemptId)}`}>Request refund<span className="sr-only"> for receipt {receipt.receipt_number}</span></Link>}{refundState?.kind === 'note' && <span className="text-sm text-muted-foreground">{refundState.text}</span>}</CardContent></Card> })}</section>

@@ -38,7 +38,7 @@ vi.mock("@/lib/providers/email-transport", () => ({
   sendEmail: (...args: unknown[]) => sendEmail(...args),
 }));
 
-import { onlinePaymentsAvailable, receivePaymentNotification, startPayment } from "./payment-service";
+import { onlinePaymentsAvailable, PAID_BY_CREDIT_MESSAGE, receivePaymentNotification, startPayment } from "./payment-service";
 
 const orderId = "33333333-3333-4333-8333-333333333333";
 const gateway = { name: "payfast_sandbox", createCheckout: vi.fn(), verifyWebhook: vi.fn() };
@@ -87,6 +87,12 @@ describe("startPayment", () => {
     expect(result).toEqual({ ok: true, attemptId: "attempt-1", pricesChanged: true });
     expect(preparePayment).toHaveBeenCalledWith({ orderId, notes: "Size M" }, "payfast_sandbox");
     expect(onlinePaymentsAvailable()).toBe(true);
+  });
+
+  it("tells the payer when account credit paid the whole invoice", async () => {
+    preparePayment.mockResolvedValue({ ok: false, code: "paid_by_credit" });
+    const result = await startPayment({ invoiceId: orderId });
+    expect(result).toEqual({ ok: false, code: "paid_by_credit", error: PAID_BY_CREDIT_MESSAGE });
   });
 
   it("explains that dependents cannot pay for an order", async () => {

@@ -14,6 +14,8 @@ export type StartPaymentResult =
   | { ok: true; attemptId: string; pricesChanged: boolean }
   | { ok: false; error: string; code?: PreparePaymentErrorCode };
 
+export const PAID_BY_CREDIT_MESSAGE = "Your account credit covered this invoice, so there is nothing to pay. It is now marked paid.";
+
 const ORDER_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
   forbidden: "Only the account payer can pay for this order. Ask your guardian to pay.",
   empty_order: "Your cart is empty.",
@@ -53,7 +55,9 @@ export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
       ? ORDER_MESSAGES[result.code] ?? "This order can't be paid right now. Refresh and try again."
       : target.data.membershipApplicationId
         ? MEMBERSHIP_MESSAGES[result.code] ?? "This membership can't be paid right now. Refresh and try again."
-        : "This payment is unavailable. Refresh to check the balance or lesson hold.";
+        : result.code === "paid_by_credit"
+          ? PAID_BY_CREDIT_MESSAGE
+          : "This payment is unavailable. Refresh to check the balance or lesson hold.";
     return { ok: false, error, code: result.code };
   }
   return { ok: true, attemptId: result.attempt.attempt_id, pricesChanged: result.attempt.prices_changed };

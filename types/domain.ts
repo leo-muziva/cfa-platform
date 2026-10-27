@@ -355,6 +355,8 @@ export interface PayerBillingView {
   balance: number
   outstandingCharges: OutstandingCharge[]
   creditTotal: number
+  // left to pay on each invoice (cents), after payments and credit already used
+  invoiceDueCents: Record<string, number>
   invoices: Invoice[]
   receipts: Receipt[]
   pendingLessonCharges: PendingLessonCharge[]

@@ -247,7 +247,8 @@ export async function endFamilyLink(linkId: string) {
 
 export async function getBillingForPayer(payerId: string) {
   const db = await createClient()
-  const [{ data: invoices }, { data: receipts }, { data: household }, { data: charges }, { data: credits }, { data: pending }] = await Promise.all([
+  const [{ data: invoices }, { data: receipts }, { data: household }, { data: charges }, { data: credits }, { data: pending },
+    chargeBalances, invoiceBalances, availableCredit] = await Promise.all([
     db.from('invoices').select('*,lines:invoice_lines(*,participant:profiles!invoice_lines_participant_id_fkey(id,full_name))').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('receipts').select('*').eq('payer_id', payerId).order('issued_at', { ascending: false }),
     db.from('households').select('membership_payment_method').eq('payer_id', payerId).single(),
@@ -264,9 +265,22 @@ export async function getBillingForPayer(payerId: string) {
     `).eq('payer_id', payerId).eq('status', 'unpaid').eq('lifecycle_state', 'provisional')
       // Approved memberships awaiting payment have their own section.
       .is('membership_application_id', null).order('created_at'),
+    // what is actually left on each charge and invoice, after credit used and payments made
+    db.rpc('get_payer_payment_balances'),
+    db.rpc('get_invoice_payment_balances'),
+    db.rpc('get_my_available_credit'),
   ])
+  const outstandingByCharge = new Map(((chargeBalances.data ?? []) as { charge_id: string; outstanding_cents: string }[])
+    .map((row) => [row.charge_id, Number(row.outstanding_cents)]))
+  // if the credit lookup fails, fall back to every credit, as before
+  const availableCreditCents = availableCredit.error
+    ? Math.round(calculateCreditTotal(credits ?? []) * 100)
+    : Number(availableCredit.data ?? 0)
   return {
-    balance: calculateOutstandingBalance(charges ?? [], credits ?? []),
+    balance: outstandingAfterCredit(
+      (charges ?? []).map((charge) => outstandingByCharge.get(charge.id) ?? Math.round(Number(charge.amount) * 100)),
+      availableCreditCents,
+    ) / 100,
     outstandingCharges: (charges ?? []).map((charge) => ({
       id: charge.id,
       participantName: relationValue(charge.participant)?.full_name ?? 'Participant',
@@ -274,7 +288,9 @@ export async function getBillingForPayer(payerId: string) {
       label: outstandingChargeLabel(charge.type, relationValue(charge.booking)?.status ?? null),
       finalizedAt: charge.finalized_at,
     })),
-    creditTotal: calculateCreditTotal(credits ?? []),
+    creditTotal: availableCreditCents / 100,
+    invoiceDueCents: Object.fromEntries(((invoiceBalances.data ?? []) as { invoice_id: string; outstanding_cents: string }[])
+      .map((row) => [row.invoice_id, Number(row.outstanding_cents)])),
     invoices: (invoices ?? []) as Invoice[], receipts: (receipts ?? []) as Receipt[],
     // Pay-now lessons are never invoiced; live holds are listed separately with a pay button.
     pendingLessonCharges: (pending ?? []).filter((row) => relationValue(row.booking)?.payment_option !== 'pay_now').map((row) => ({
@@ -294,6 +310,13 @@ function relationValue<T>(value: T | T[] | null): T | null {
 export function calculateOutstandingBalance(charges: Array<{ amount: number | string }>, credits: Array<{ amount: number | string }>) {
   const chargeTotal = charges.reduce((sum, row) => sum + Number(row.amount), 0)
   return Math.max(0, chargeTotal - calculateCreditTotal(credits))
+}
+
+// What the payer owes now: what is left on each charge, less credit not used
+// yet. In cents, never below zero.
+export function outstandingAfterCredit(chargeOutstandingCents: number[], availableCreditCents: number) {
+  const owed = chargeOutstandingCents.reduce((sum, cents) => sum + cents, 0)
+  return Math.max(0, owed - availableCreditCents)
 }
 
 export function calculateCreditTotal(credits: Array<{ amount: number | string }>) {

@@ -18,6 +18,7 @@ export function CheckoutButton({ bookingId, invoiceId, membershipApplicationId }
       <p className="text-sm text-muted-foreground">Sandbox demonstration - no real money is charged.</p>
       <Button type="submit" disabled={pending}>{pending ? "Preparing checkout…" : "Continue to secure checkout"}</Button>
       {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
+      {state.notice && <p role="status" className="text-sm text-green-700 dark:text-green-400">{state.notice}</p>}
     </form>
   );
 }
