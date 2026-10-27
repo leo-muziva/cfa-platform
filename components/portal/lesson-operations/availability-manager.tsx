@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { OperationForm, type LessonOperationState } from "./operation-form";
 import { ExceptionPreviewCard } from "./exception-preview-card";
 
+// Display shapes for the coach's weekly windows and one-off exceptions.
 export interface AvailabilityRuleView {
   id: string;
   isoWeekday: number;
@@ -24,6 +25,7 @@ export interface AvailabilityExceptionView {
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+// An instant as "Mon 6 Oct, 17:30" in Cape Town time.
 function localDateTime(value: string) {
   const formatter = new Intl.DateTimeFormat("en-ZA", {
     timeZone: "Africa/Johannesburg",
@@ -37,6 +39,7 @@ function localDateTime(value: string) {
   return formatter.format(new Date(value));
 }
 
+/** A coach's weekly availability and one-off blocks or extra slots, with add and remove forms. */
 export function AvailabilityManager({
   coachId,
   rules,

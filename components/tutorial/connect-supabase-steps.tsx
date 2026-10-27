@@ -1,5 +1,6 @@
 import { TutorialStep } from "./tutorial-step";
 
+// Leftover from the Supabase starter template's tutorial. Not used by any page.
 export function ConnectSupabaseSteps() {
   return (
     <ol className="flex flex-col gap-6">

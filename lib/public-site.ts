@@ -1,3 +1,4 @@
+// Contact and legal links shared by the public pages, so they only need changing in one place.
 export const PUBLIC_CONTACT_LINKS = [
   {
     id: "location",

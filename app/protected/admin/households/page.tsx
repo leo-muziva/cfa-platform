@@ -2,8 +2,11 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { getHouseholdAdminData } from '@/lib/services/MemberService'
 
-// Dependents join a household when they accept a guardian's link request.
-// Moving responsibility goes through the audited family request workflow.
+/**
+ * /protected/admin/households: read-only list of household roles.
+ * Dependents join a household when they accept a guardian's link request.
+ * Moving responsibility goes through the audited family request workflow.
+ */
 export default async function HouseholdsAdminPage() {
   const result = await getHouseholdAdminData()
   if ('error' in result) return null

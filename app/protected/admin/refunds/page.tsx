@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 
 
+// Date and time in Cape Town, e.g. "6 Oct 2026, 17:30".
 function formatDateTime(value: string | null) {
   if (!value) return "";
   return new Date(value).toLocaleString("en-ZA", {
@@ -59,10 +60,13 @@ const STATUS_ORDER: RefundStatus[] = ["requested", "approved", "processing", "pr
 const selectClasses = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const textareaClasses = "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
+// Narrows a ?status= filter value to a refund status.
 function isRefundStatus(value: string): value is RefundStatus {
   return (STATUS_ORDER as string[]).includes(value);
 }
 
+// Approve (with method and optional lower amount) and reject forms for a
+// requested refund. The PayFast option explains why it is unavailable when it is.
 function DecisionForms({ refund, providerAvailable }: { refund: RefundRequest; providerAvailable: boolean }) {
   const id = refund.id;
   const providerReason = !providerRefundsEnabled()
@@ -136,6 +140,7 @@ function DecisionForms({ refund, providerAvailable }: { refund: RefundRequest; p
   );
 }
 
+// The next step staff can take for a refund in its current status.
 function StatusActions({ refund }: { refund: RefundRequest }) {
   const id = refund.id;
 
@@ -233,6 +238,7 @@ function StatusActions({ refund }: { refund: RefundRequest }) {
   return null;
 }
 
+// One refund in the staff queue, with its details and next action.
 function RefundCard({ refund }: { refund: RefundRequest }) {
   return (
     <Card>
@@ -277,6 +283,7 @@ function RefundCard({ refund }: { refund: RefundRequest }) {
   );
 }
 
+/** /protected/admin/refunds: staff refund queue, with approve, reject and payout actions per status. */
 export default async function AdminRefundsPage({
   searchParams,
 }: {

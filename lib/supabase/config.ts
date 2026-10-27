@@ -1,13 +1,18 @@
+// Reads and checks the public Supabase settings (URL and publishable key).
+// A missing or placeholder value gives a clear setup message instead of a
+// confusing network error later.
 export interface SupabasePublicConfig {
   url: string;
   publishableKey: string;
 }
 
+// Why the configuration was rejected.
 export type SupabaseConfigErrorCode =
   | "missing"
   | "placeholder"
   | "invalid-url";
 
+/** Thrown when the public Supabase settings are missing or invalid. */
 export class SupabaseConfigError extends Error {
   constructor(
     message: string,
@@ -18,6 +23,7 @@ export class SupabaseConfigError extends Error {
   }
 }
 
+// Text found in template values that were never replaced.
 const PLACEHOLDER_MARKERS = [
   "[insert",
   "<paste",
@@ -31,6 +37,7 @@ function isPlaceholder(value: string) {
   return PLACEHOLDER_MARKERS.some((marker) => normalized.includes(marker));
 }
 
+/** Checks the URL and key and returns them cleaned, or throws SupabaseConfigError. */
 export function validateSupabasePublicConfig(values: {
   url?: string;
   publishableKey?: string;
@@ -75,6 +82,7 @@ export function validateSupabasePublicConfig(values: {
   };
 }
 
+/** Validated settings from NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. */
 export function getSupabasePublicConfig(): SupabasePublicConfig {
   return validateSupabasePublicConfig({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -82,6 +90,7 @@ export function getSupabasePublicConfig(): SupabasePublicConfig {
   });
 }
 
+/** True when the public Supabase settings are usable. */
 export function hasValidSupabasePublicConfig() {
   try {
     getSupabasePublicConfig();

@@ -13,6 +13,7 @@ function currentCapeTownPeriod() {
   return `${year}-${month}-01`
 }
 
+/** /protected/admin/invoicing: run invoicing by hand and record offline invoice payments. */
 export default async function InvoicingPage() {
   const result = await getInvoicesForAdmin(); const invoices = 'invoices' in result ? result.invoices : []
   return <div className="space-y-6"><h1 className="text-3xl font-bold">Invoicing</h1><Card><CardHeader><CardTitle>Run monthly invoicing</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-sm text-muted-foreground">Invoices also run automatically at the start of the 25th each month. Running again for the same month puts any new charges on a separate supplementary invoice; invoices already sent never change.</p><ActionForm action={runInvoicesAction} submitLabel="Generate invoices" className="flex flex-wrap items-end gap-3"><div><Label htmlFor="period">Billing period</Label><Input id="period" name="period" type="date" defaultValue={currentCapeTownPeriod()}/></div></ActionForm></CardContent></Card>

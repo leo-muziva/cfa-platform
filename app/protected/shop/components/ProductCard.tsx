@@ -5,6 +5,7 @@ import { FavouriteButton } from "./FavouriteButton";
 import { productImageUrl } from "@/lib/productImage";
 import { formatRands } from "@/lib/money";
 
+// The product fields a catalogue card needs.
 export interface ShopCardProduct {
   id: number;
   item_code: string;
@@ -15,6 +16,7 @@ export interface ShopCardProduct {
   image_path: string | null;
 }
 
+/** A product tile in the catalogue, with quick add and favourite buttons. */
 export function ProductCard({
   product: p,
   isFavourite,

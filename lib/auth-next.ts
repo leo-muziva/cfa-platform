@@ -1,3 +1,8 @@
+/**
+ * Returns `value` only when it is a path on this site, otherwise
+ * `fallback`. Stops a crafted ?next= link from sending someone to another
+ * website after login (an open redirect).
+ */
 export function safeInternalNext(value: string | null | undefined, fallback = '/protected'): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return fallback
   try {

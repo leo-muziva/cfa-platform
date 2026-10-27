@@ -1,15 +1,21 @@
 'use server'
 
+// Server Actions for the admin member pages. Like every file in app/actions,
+// each action reads the submitted FormData, hands the raw values to a
+// service (which validates and authorizes), then refreshes the pages that
+// show the changed data with revalidatePath.
 import { revalidatePath } from 'next/cache'
 import { adminUpdateMember, inviteMemberForAdmin } from '@/lib/services/MemberService'
 import { failureState } from '@/lib/validations/form-errors'
 import type { FormFieldState } from '@/types/domain'
 
+// State returned to useActionState in the admin member forms.
 export type AdminMemberActionState = FormFieldState & {
   success?: boolean
   message?: string
 }
 
+/** Saves an admin's edits to another member's profile. */
 export async function adminUpdateMemberAction(
   _prevState: AdminMemberActionState,
   formData: FormData
@@ -40,6 +46,7 @@ export async function adminUpdateMemberAction(
   return { success: true, message: 'Member updated successfully' }
 }
 
+/** Sends a Supabase invite email to a new member or staff member. */
 export async function inviteMemberAction(
   _prevState: AdminMemberActionState,
   formData: FormData

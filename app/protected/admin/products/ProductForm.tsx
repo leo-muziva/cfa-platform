@@ -13,6 +13,8 @@ import {
   type ProductInput,
 } from "./actions";
 
+// A product as loaded for editing. Browse fields are optional because older
+// rows may not have them yet.
 export type ProductRow = {
   id: number;
   item_code: string;
@@ -28,6 +30,7 @@ export type ProductRow = {
   is_active: boolean;
 };
 
+/** The add and edit product form. Saves through the createProduct or updateProduct actions. */
 export function ProductForm({
   product,
   categories,
@@ -285,6 +288,7 @@ export function ProductForm({
   );
 }
 
+// A labelled dropdown for one of the browse fields.
 function ChoiceField({
   id,
   label,

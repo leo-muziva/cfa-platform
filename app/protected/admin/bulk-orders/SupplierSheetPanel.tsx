@@ -26,6 +26,7 @@ const primaryButton =
   "rounded-lg bg-black px-4 py-2 text-sm text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20";
 const secondaryButton = "rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-40 dark:hover:bg-white/10";
 
+// One numbered step in the supplier sheet checklist.
 function Step({ number, title, done, children }: { number: number; title: string; done: boolean; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
@@ -49,6 +50,10 @@ function Step({ number, title, done, children }: { number: number; title: string
   );
 }
 
+/**
+ * The supplier sheet checklist for one bulk order: generate, AI proof,
+ * approve and draft the Gmail email, then mark as sent.
+ */
 export function SupplierSheetPanel({
   bulkOrderId,
   bulkStatus,

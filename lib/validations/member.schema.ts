@@ -1,3 +1,5 @@
+// Zod schemas for profiles, the admin member list, invites, membership
+// applications and family links.
 import { z } from 'zod'
 import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min'
 
@@ -16,12 +18,14 @@ const requiredPhone = z.string('Enter a phone number').trim().min(1, 'Enter a ph
 
 const EARLIEST_BIRTH_DATE = '1900-01-01'
 
+// True for a YYYY-MM-DD string that is a real calendar date (no 31 February).
 function isRealIsoDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const date = new Date(`${value}T00:00:00Z`)
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value)
 }
 
+// Today's date in Cape Town as YYYY-MM-DD (the en-CA locale formats that way).
 function todayInCapeTown() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date())
 }
@@ -41,6 +45,7 @@ export const profileUpdateSchema = z.object({
   reminder_preference: z.enum(['email', 'whatsapp', 'both']).optional(),
 })
 
+// Admins can also change staff access and deactivate an account.
 export const adminProfileUpdateSchema = profileUpdateSchema.extend({
   is_staff: z.boolean().optional(),
   staff_type: z.enum(['admin', 'coach']).optional().nullable(),
@@ -49,6 +54,8 @@ export const adminProfileUpdateSchema = profileUpdateSchema.extend({
   message: 'Non-staff accounts cannot have a staff type',
 })
 
+// Filters come from the URL, so bad values fall back to defaults with .catch()
+// instead of showing an error.
 export const memberListFiltersSchema = z.object({
   search: z.string().trim().max(100).transform((s) => s || undefined).optional().catch(undefined),
   membershipStatus: z.enum(['guest', 'member']).optional().catch(undefined),
@@ -85,6 +92,7 @@ export const registrationDetailsSchema = profileUpdateSchema.extend({
   }
 })
 
+// Legacy slot booking schemas. No page uses them now.
 export const lessonSlotSchema = z.object({
   starts_at: z.iso.datetime({ offset: true }),
   ends_at: z.iso.datetime({ offset: true }),
@@ -100,6 +108,7 @@ export const bookingSchema = z.object({
   payment_option: z.enum(['pay_now', 'pay_later']),
 })
 
+// Membership applications and their review.
 export const membershipRequestSchema = z.object({ membership_type_id: z.uuid() })
 export const membershipResubmissionSchema = membershipRequestSchema.extend({ application_id: z.uuid() })
 export const membershipReviewSchema = z.object({
@@ -112,9 +121,11 @@ export const membershipApplicationSchema = z.object({ application_id: z.uuid() }
 export const membershipWithdrawalSchema = membershipApplicationSchema.extend({
   visible_response: z.string().trim().max(2000).optional().nullable(),
 })
+// Admin status change on an existing membership.
 export const membershipStatusChangeSchema = z.object({
   profile_id: z.uuid(), status: z.enum(['active', 'suspended', 'expired', 'cancelled']),
 })
+// Family link requests between existing accounts.
 export const familyLinkRequestSchema = z.object({ email: z.email('Enter a valid email address').max(254) })
 export const familyLinkResponseSchema = z.object({ link_id: z.uuid(), response: z.enum(['accept', 'reject']) })
 export const familyLinkEndSchema = z.object({ link_id: z.uuid() })

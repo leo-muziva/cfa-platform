@@ -8,6 +8,7 @@ import { getResendConfig, sendWithResend, type OutgoingEmail, type ResendConfig,
 
 type Env = Record<string, string | undefined>;
 
+// SMTP settings read from SMTP_* and EMAIL_FROM.
 export interface SmtpConfig {
   host: string;
   port: number;
@@ -16,6 +17,7 @@ export interface SmtpConfig {
   from: string;
 }
 
+// The transport chosen for this environment.
 export type EmailTransport =
   | { kind: "smtp"; config: SmtpConfig }
   | { kind: "resend"; config: ResendConfig };
@@ -28,8 +30,10 @@ interface MailMessage {
   html: string;
 }
 
+// Makes an SMTP sender. Tests pass a fake so no real mail is sent.
 export type CreateSmtpSender = (config: SmtpConfig) => { sendMail(message: MailMessage): Promise<unknown> };
 
+/** SMTP settings, or null when any required setting is missing. */
 export function getSmtpConfig(env: Env = process.env): SmtpConfig | null {
   const host = env.SMTP_HOST?.trim();
   const port = Number(env.SMTP_PORT?.trim());
@@ -41,6 +45,7 @@ export function getSmtpConfig(env: Env = process.env): SmtpConfig | null {
   return { host, port, user, password, from };
 }
 
+/** The email transport to use (SMTP first, then Resend), or null when email is not set up. */
 export function getEmailTransport(env: Env = process.env): EmailTransport | null {
   const smtp = getSmtpConfig(env);
   if (smtp) return { kind: "smtp", config: smtp };
@@ -59,6 +64,10 @@ const createNodemailerSender: CreateSmtpSender = (config) => nodemailer.createTr
   socketTimeout: 15_000,
 });
 
+/**
+ * Sends one email through the chosen transport. Never throws: failures come
+ * back as `{ ok: false }` so a webhook or approval is not undone by email.
+ */
 export async function sendEmail(
   transport: EmailTransport,
   email: OutgoingEmail,

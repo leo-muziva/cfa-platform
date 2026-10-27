@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+// tiltLimit is in degrees. "evade" tilts away from the pointer, "gravitate" towards it.
 export interface TiltCardProps {
   tiltLimit?: number;
   scale?: number;
@@ -18,6 +19,7 @@ export interface TiltCardProps {
 
 const RESTING_SPOTLIGHT = { x: 50, y: 50 };
 
+/** A card that tilts in 3D as the pointer moves over it, with an optional spotlight. */
 export function TiltCard({
   tiltLimit = 15,
   scale = 1.05,

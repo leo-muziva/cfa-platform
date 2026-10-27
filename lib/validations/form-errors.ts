@@ -3,6 +3,8 @@ import type { z } from 'zod'
 /** Field name -> first problem with it, keyed by the schema's top-level path. */
 export type FieldErrors = Record<string, string>
 
+// What a service returns when input fails validation: one summary message
+// plus a message per field for the form to show beside each input.
 export interface ValidationFailure {
   error: string
   fieldErrors: FieldErrors

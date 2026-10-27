@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatCapeTownLessonDate, formatCapeTownTime } from "@/lib/booking-calendar";
 import { OperationForm, type LessonOperationState } from "./operation-form";
 
+// A lesson on the coach's agenda. No money fields.
 export interface CoachAgendaLesson {
   bookingId: string;
   coachId: string;
@@ -15,6 +16,10 @@ export interface CoachAgendaLesson {
   participants?: Array<{ id: string; fullName: string; attendanceOutcome?: 'attended' | 'no_show' | null }>;
 }
 
+/**
+ * Splits scheduled lessons into: finished but still needing attendance,
+ * later today, and the rest of the next seven days.
+ */
 export function partitionCoachAgenda(items: CoachAgendaLesson[], now = new Date()) {
   const day = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Johannesburg",
@@ -33,6 +38,7 @@ export function partitionCoachAgenda(items: CoachAgendaLesson[], now = new Date(
   };
 }
 
+// Time, weapon and participant names for one lesson.
 function LessonIdentity({ lesson }: { lesson: CoachAgendaLesson }) {
   return (
     <div className="min-w-0 space-y-2">
@@ -46,6 +52,7 @@ function LessonIdentity({ lesson }: { lesson: CoachAgendaLesson }) {
   );
 }
 
+// Attended / no-show buttons, per participant in a shared lesson.
 function OutcomeControls({
   lesson,
   action,
@@ -75,6 +82,7 @@ function OutcomeControls({
   );
 }
 
+// A titled group of agenda lessons.
 function AgendaSection({
   title,
   description,
@@ -114,6 +122,7 @@ function AgendaSection({
   );
 }
 
+/** The coach dashboard agenda. */
 export function LessonAgenda({
   items,
   outcomeAction,

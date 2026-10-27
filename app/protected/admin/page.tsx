@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMemberStatsForAdmin } from '@/lib/services/MemberService'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+// One headline number on the dashboard.
 function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
     <Card>
@@ -18,6 +19,7 @@ function StatCard({ label, value, hint }: { label: string; value: number; hint?:
   )
 }
 
+/** /protected/admin: member counts by status, role and membership type. */
 export default async function AdminDashboardPage() {
   const result = await getMemberStatsForAdmin()
 

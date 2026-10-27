@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
 
+/** Leftover from the Supabase starter template. Not used by any page. */
 export function DeployButton() {
   return (
     <>

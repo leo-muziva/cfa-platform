@@ -1,5 +1,8 @@
+// Optional WhatsApp test messaging through Meta's Cloud API. Off by default
+// and not used by any page yet.
 import "server-only";
 
+// A plain-text WhatsApp message to one approved test recipient.
 export interface WhatsAppTestMessage {
   recipient: string;
   body: string;

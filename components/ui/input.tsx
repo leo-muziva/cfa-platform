@@ -5,6 +5,7 @@ import * as React from "react";
 import { useFormField } from "@/components/forms/form-state";
 import { cn } from "@/lib/utils";
 
+// shadcn/ui input, extended to show its own error inside a ValidatedForm.
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, name, ...props }, ref) => {
     // Inside a ValidatedForm, a named input highlights itself and shows its

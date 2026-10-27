@@ -20,6 +20,10 @@ const displayDate = (date: string) => {
   return new Intl.DateTimeFormat("en-ZA", { dateStyle: "long", timeZone: "Africa/Johannesburg" }).format(parsed);
 };
 
+/**
+ * Add-closure form. Staff first preview which lessons the dates would
+ * cancel, then confirm in a dialog.
+ */
 export function ClosurePreviewCard({
   coachNames,
   createAction,

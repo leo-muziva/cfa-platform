@@ -1,3 +1,8 @@
+// Refund workflow. A payer (or staff on their behalf) requests a refund of
+// a completed online payment; staff approve or reject it, then pay it out
+// either by bank transfer ("manual") or back through PayFast ("provider").
+// Status moves requested -> approved -> processing -> processed, or ends at
+// rejected/failed. The database RPCs enforce every transition.
 import "server-only";
 import { getRefundClient, providerRefundsEnabled as registryProviderRefundsEnabled } from "@/lib/payments/registry";
 import type { ProviderRefundResult } from "@/lib/payments/payfast-refunds";
@@ -26,6 +31,8 @@ import type { RefundablePayment, RefundRequest } from "@/types/domain";
 export type RefundFailure = { ok: false; error: string; code?: RefundErrorCode; fieldErrors?: FieldErrors };
 export type RefundResult<T> = { ok: true; data: T } | RefundFailure;
 
+// Result of sending a refund through PayFast. "pending_check" means the
+// answer was unclear and staff must confirm it in the PayFast dashboard.
 export type ProviderRefundOutcome =
   | { status: "processed"; reference: string | null }
   | { status: "failed"; reason: string }
@@ -54,19 +61,23 @@ const ERROR_MESSAGES: Record<RefundErrorCode, string> = {
 
 const STAFF_FORBIDDEN = "Only active staff can manage refunds.";
 
+/** User-facing message for a refund error code. */
 export function refundErrorMessage(code: RefundErrorCode): string {
   return ERROR_MESSAGES[code] ?? ERROR_MESSAGES.unknown;
 }
 
+// Staff get a staff-specific message for "forbidden"; payers get the payer one.
 function fail(code: RefundErrorCode, staff = false): RefundFailure {
   return { ok: false, error: staff && code === "forbidden" ? STAFF_FORBIDDEN : refundErrorMessage(code), code };
 }
 
+// The signed-in profile id, or null when signed out.
 async function currentProfileId(): Promise<string | null> {
   const profile = await getCurrentProfile();
   return profile?.id ?? null;
 }
 
+// Returns a failure for non-staff, or null to carry on.
 async function staffGuard(): Promise<RefundFailure | null> {
   const staff = await requireStaff();
   if ("error" in staff) return { ok: false, error: STAFF_FORBIDDEN, code: "forbidden" };
@@ -84,6 +95,7 @@ export function providerRefundsEnabled(): boolean {
 // their own payments.
 // ---------------------------------------------------------------------------
 
+/** The signed-in payer's completed payments that still have money left to refund. */
 export async function listMyRefundablePayments(): Promise<RefundResult<RefundablePayment[]>> {
   const profileId = await currentProfileId();
   if (!profileId) return { ok: false, error: "Please sign in to view refunds.", code: "forbidden" };
@@ -92,6 +104,7 @@ export async function listMyRefundablePayments(): Promise<RefundResult<Refundabl
   return { ok: true, data: result.data.filter((payment) => payment.payerId === profileId) };
 }
 
+/** The signed-in payer's own refund requests. */
 export async function listMyRefundRequests(): Promise<RefundResult<RefundRequest[]>> {
   const profileId = await currentProfileId();
   if (!profileId) return { ok: false, error: "Please sign in to view refunds.", code: "forbidden" };
@@ -100,12 +113,14 @@ export async function listMyRefundRequests(): Promise<RefundResult<RefundRequest
   return { ok: true, data: result.data.filter((refund) => refund.payerId === profileId) };
 }
 
+/** One of the payer's refundable payments, or null when it is not theirs or not refundable. */
 export async function getMyRefundablePayment(attemptId: string): Promise<RefundResult<RefundablePayment | null>> {
   const result = await listMyRefundablePayments();
   if (!result.ok) return result;
   return { ok: true, data: result.data.find((payment) => payment.attemptId === attemptId) ?? null };
 }
 
+/** Payer requests a refund. Checks the payment is theirs and has money left before asking the database. */
 export async function requestRefund(raw: unknown): Promise<RefundResult<{ refundId: string }>> {
   const parsed = requestRefundSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, ...validationFailure(parsed.error), code: "invalid_input" };
@@ -123,6 +138,7 @@ export async function requestRefund(raw: unknown): Promise<RefundResult<{ refund
 // active staff again in the database.
 // ---------------------------------------------------------------------------
 
+/** Every refund request, for the staff refunds page. */
 export async function listRefundQueue(): Promise<RefundResult<RefundRequest[]>> {
   const denied = await staffGuard();
   if (denied) return denied;
@@ -130,6 +146,7 @@ export async function listRefundQueue(): Promise<RefundResult<RefundRequest[]>> 
   return result.ok ? result : fail(result.code, true);
 }
 
+/** Every refundable payment, so staff can raise a refund for any payer. */
 export async function listRefundablePaymentsForStaff(): Promise<RefundResult<RefundablePayment[]>> {
   const denied = await staffGuard();
   if (denied) return denied;
@@ -137,6 +154,7 @@ export async function listRefundablePaymentsForStaff(): Promise<RefundResult<Ref
   return result.ok ? result : fail(result.code, true);
 }
 
+/** Staff raise a refund request on a payer's behalf. */
 export async function raiseRefundForPayer(raw: unknown): Promise<RefundResult<{ refundId: string }>> {
   const denied = await staffGuard();
   if (denied) return denied;
@@ -147,6 +165,10 @@ export async function raiseRefundForPayer(raw: unknown): Promise<RefundResult<{ 
   return { ok: true, data: { refundId: result.data } };
 }
 
+/**
+ * Staff approve (choosing the method, and optionally a lower amount) or
+ * reject (a note is required) a requested refund.
+ */
 export async function decideRefund(raw: unknown): Promise<RefundResult<{ decision: "approve" | "reject" }>> {
   const denied = await staffGuard();
   if (denied) return denied;
@@ -164,6 +186,10 @@ export async function decideRefund(raw: unknown): Promise<RefundResult<{ decisio
   return { ok: true, data: { decision: parsed.data.decision } };
 }
 
+/**
+ * Staff record that a manual refund was paid, with the bank reference.
+ * `alreadyProcessed` is true when it had already been recorded.
+ */
 export async function completeManualRefund(raw: unknown): Promise<RefundResult<{ alreadyProcessed: boolean }>> {
   const denied = await staffGuard();
   if (denied) return denied;
@@ -174,6 +200,10 @@ export async function completeManualRefund(raw: unknown): Promise<RefundResult<{
   return { ok: true, data: { alreadyProcessed: !result.data } };
 }
 
+/**
+ * Staff settle a PayFast refund left in "processing" after an unclear
+ * answer, once they have checked the PayFast dashboard.
+ */
 export async function resolveProcessingRefund(raw: unknown): Promise<RefundResult<{ outcome: "processed" | "failed" }>> {
   const denied = await staffGuard();
   if (denied) return denied;

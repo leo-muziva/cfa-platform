@@ -29,10 +29,12 @@ const coachPhotos: Record<string, { url: string; position: string }> = {
 
 const fallbackCoachPhoto = coachPhotos["Dr. Misha Galukhin"];
 
+// A coach with their next open lesson time, if any.
 export type LessonCoachDirectoryEntry = LessonCoachSummary & {
   nextAvailableAt: string | null;
 };
 
+/** Cards for every bookable coach, each linking to that coach's booking page. */
 export function CoachDirectory({ coaches }: { coaches: LessonCoachDirectoryEntry[] }) {
   if (coaches.length === 0) {
     return (

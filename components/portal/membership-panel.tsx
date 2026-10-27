@@ -9,6 +9,7 @@ import { formatZar } from '@/lib/money'
 import type { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 import type { MembershipApplicationStatus } from '@/types/domain'
 
+// Everything getMembershipRequestPageData returns when it succeeds.
 export type MembershipData = Exclude<Awaited<ReturnType<typeof getMembershipRequestPageData>>, { error: string }>
 
 const applicationStatusLabels: Record<MembershipApplicationStatus, string> = {

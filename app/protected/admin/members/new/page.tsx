@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getInviteFormDataForAdmin } from '@/lib/services/MemberService'
 import { InviteMemberForm } from './invite-member-form'
 
+/** /protected/admin/members/new: invite a member or staff member by email. */
 export default async function NewMemberPage() {
   const result = await getInviteFormDataForAdmin()
 

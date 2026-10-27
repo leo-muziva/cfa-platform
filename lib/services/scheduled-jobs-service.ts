@@ -1,3 +1,5 @@
+// Scheduled jobs triggered by Vercel Cron through app/api/cron/*: releasing
+// lapsed lesson holds and running the monthly invoice batch.
 import 'server-only'
 import { timingSafeEqual } from 'node:crypto'
 import { expireLessonHolds, runScheduledInvoices, type JobResult } from '@/lib/repositories/scheduled-jobs-repository'
@@ -20,10 +22,12 @@ export async function releaseExpiredLessonHolds(): Promise<void> {
   if (!result.ok) console.error('[scheduled-jobs] expire_lesson_holds failed', { error: result.error })
 }
 
+/** Cron job: release every pay-now hold that has expired. */
 export async function runExpireHoldsJob(): Promise<JobResult> {
   return expireLessonHolds()
 }
 
+/** Cron job: generate this month's invoices (Johannesburg time). */
 export async function runMonthlyInvoicesJob(): Promise<JobResult> {
   return runScheduledInvoices()
 }

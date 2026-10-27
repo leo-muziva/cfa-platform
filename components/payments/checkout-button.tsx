@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { startCheckoutAction } from "@/app/actions/payments";
 import { Button } from "@/components/ui/button";
 
+/** "Pay now" for one lesson hold, invoice or membership. Pass exactly one id. */
 export function CheckoutButton({ bookingId, invoiceId, membershipApplicationId }: {
   bookingId?: string;
   invoiceId?: string;

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
 
+// Shows the error passed in ?error=, if any.
 async function ErrorContent({
   searchParams,
 }: {
@@ -23,6 +24,7 @@ async function ErrorContent({
   );
 }
 
+/** /auth/error: shown when a sign-in, confirmation or OAuth link fails. */
 export default function Page({
   searchParams,
 }: {

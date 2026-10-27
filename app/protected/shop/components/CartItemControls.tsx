@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateQuantity, removeItem } from "../actions/cart";
 
+/** Quantity buttons and remove for one cart line. */
 export function CartItemControls({
   itemId,
   quantity,

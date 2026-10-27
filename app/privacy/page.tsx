@@ -1,5 +1,6 @@
 import { PublicPageShell } from "@/components/public-page-shell";
 
+/** /privacy: placeholder until CFA supplies the approved privacy notice. */
 export default function PrivacyPage() {
   return (
     <PublicPageShell

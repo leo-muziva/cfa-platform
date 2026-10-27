@@ -5,11 +5,17 @@ import { useRouter } from "next/navigation";
 import { getPreviousInternalPath } from "@/components/navigation-history";
 import { cn } from "@/lib/utils";
 
+// Where to go back to from pages under `prefix` when there is no history.
 interface RouteFallback {
   prefix: string;
   target: string;
 }
 
+/**
+ * A "Back" button that returns to the previous page inside this site. When
+ * the visitor arrived from elsewhere (or history is off), it goes to the
+ * fallback for the current route instead of leaving the site.
+ */
 export function BackButton({
   fallback,
   rootFallback = "/",

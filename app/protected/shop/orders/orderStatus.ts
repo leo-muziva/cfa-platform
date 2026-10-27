@@ -17,6 +17,7 @@ export type StatusView = {
   linkToCart?: boolean;
 };
 
+/** The label, colour and next-step text for an order, from its own status and its bulk order's. */
 export function statusView(
   orderStatus: string,
   bulkStatus: string | null

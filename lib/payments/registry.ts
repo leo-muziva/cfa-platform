@@ -1,8 +1,15 @@
+// Chooses the payment provider from environment settings. Only the PayFast
+// sandbox is wired in so far; with settings missing, online payment is off
+// and the UI hides its pay buttons.
 import "server-only";
 import type { PaymentGateway } from "./gateway";
 import { createPayFastGateway } from "./payfast";
 import { createPayFastRefundClient, type ProviderRefundClient } from "./payfast-refunds";
 
+/**
+ * The public https origin providers send people back to and post webhooks
+ * to. Null unless PAYMENT_PUBLIC_ORIGIN is a bare https origin.
+ */
 export function getPaymentOrigin(): string | null {
   try {
     const url = new URL(process.env.PAYMENT_PUBLIC_ORIGIN ?? "");
@@ -13,6 +20,7 @@ export function getPaymentOrigin(): string | null {
   }
 }
 
+/** The configured payment adapter, or null when payments are not set up. */
 export function getPaymentGateway(provider: string | undefined = process.env.PAYMENT_PROVIDER): PaymentGateway | null {
   if (provider !== "payfast_sandbox" || process.env.PAYFAST_SANDBOX_ENABLED !== "true") return null;
   const merchantId = process.env.PAYFAST_MERCHANT_ID;
@@ -45,6 +53,7 @@ export function paymentSetupIssues(env: NodeJS.ProcessEnv = process.env): string
   return issues;
 }
 
+/** True when PAYFAST_REFUNDS_ENABLED switches on refunds through PayFast. */
 export function providerRefundsEnabled(): boolean {
   return process.env.PAYFAST_REFUNDS_ENABLED === "true";
 }

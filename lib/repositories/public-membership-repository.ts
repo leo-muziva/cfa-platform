@@ -1,3 +1,4 @@
+// Reads the active membership products shown on the public pricing page.
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,6 +11,7 @@ export interface PublicMembershipProductRow {
   description: string | null;
 }
 
+/** Returns active membership_types rows, or an error message when the read fails. */
 export async function listPublicMembershipProducts(): Promise<
   { products: PublicMembershipProductRow[] } | { error: string }
 > {

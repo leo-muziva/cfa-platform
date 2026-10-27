@@ -1,3 +1,4 @@
+// Error messages for the legacy slot booking (see PlatformService).
 import type { BookingErrorCode } from '@/types/domain'
 
 export const BOOKING_ERROR_MESSAGES: Record<BookingErrorCode, string> = {
@@ -11,10 +12,15 @@ export const BOOKING_ERROR_MESSAGES: Record<BookingErrorCode, string> = {
   unexpected: 'We could not complete the booking. Please try again.',
 }
 
+/** User-facing message for a legacy booking error code. */
 export function bookingErrorMessage(code: BookingErrorCode): string {
   return BOOKING_ERROR_MESSAGES[code]
 }
 
+/**
+ * Maps a database error to a booking error code. Postgres code 23505
+ * (unique violation) means the fencer is already booked.
+ */
 export function bookingDatabaseErrorCode(
   message: string | undefined,
   postgresCode?: string,

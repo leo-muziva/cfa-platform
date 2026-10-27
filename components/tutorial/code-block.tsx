@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "../ui/button";
 
+// Leftover from the Supabase starter template's tutorial. Not used by any page.
 const CopyIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

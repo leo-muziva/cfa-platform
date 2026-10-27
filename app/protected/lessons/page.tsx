@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/LessonBookingService";
 import type { AvailableLessonTime } from "@/types/domain";
 
+/** /protected/lessons: the member's upcoming lessons and history, with cancel and reschedule. */
 export default async function LessonsPage() {
   const data = await getMemberLessonsPageData();
   if ("error" in data) {

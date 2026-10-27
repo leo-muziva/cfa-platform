@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OperationForm, type LessonOperationState } from "./operation-form";
 
+// Settings as shown on the form.
 export interface LessonSettingsView {
   cancellationWindowHours: number;
   lateCancellationFeeMultiplier: number;
@@ -25,10 +26,12 @@ export interface LessonSettingsView {
   externalRemindersEnabled?: boolean;
 }
 
+// A labelled number input with an optional hint.
 function NumberField({ id, label, value, min = 0, step = 1, hint }: { id: string; label: string; value: number; min?: number; step?: number; hint?: string }) {
   return <div className="space-y-2"><Label htmlFor={id}>{label}</Label><Input id={id} name={id} type="number" defaultValue={value} min={min} step={step} required />{hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}</div>;
 }
 
+/** Admin form for cancellation windows, fees and booking limits. */
 export function LessonSettingsForm({ settings, action }: {
   settings: LessonSettingsView;
   action: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;

@@ -15,6 +15,7 @@ const optionalText = z
   .optional()
   .transform((value) => (value ? value : null))
 
+// An optional dropdown value limited to the given choices.
 function optionalChoice<T extends readonly [string, ...string[]]>(values: T) {
   return z
     .union([z.enum(values), z.literal('')])
@@ -50,4 +51,5 @@ export const productInputSchema = z.object({
 
 export type ProductRowInput = z.output<typeof productInputSchema>
 
+// Products use numeric ids, unlike most tables.
 export const productIdSchema = z.number().int().positive()

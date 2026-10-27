@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { exportForSupplier, exportForDistribution } from "./actions";
 
+/** Download buttons for the supplier CSV and CFA's packing list. */
 export function ExportButtons({ bulkOrderId }: { bulkOrderId: string }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");

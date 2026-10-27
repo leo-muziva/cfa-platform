@@ -19,10 +19,12 @@ import {
   GoogleIcon,
 } from "@/components/ui/glass-auth";
 
+// The sign-up form asks one thing at a time: name, email, password, then confirm.
 type Step = "name" | "email" | "password" | "confirm";
 const STEPS: Step[] = ["name", "email", "password", "confirm"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
+/** The sign-up page form. Creates a Supabase Auth account and asks the user to confirm their email. */
 export function SignUpFlow({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();

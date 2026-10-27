@@ -1,5 +1,6 @@
 import { PublicPageShell } from "@/components/public-page-shell";
 
+/** /terms: placeholder until CFA supplies the approved terms. */
 export default function TermsPage() {
   return (
     <PublicPageShell

@@ -8,6 +8,10 @@ import { getPaymentStatus } from "@/lib/services/payment-service";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * /protected/payments/[attemptId]: where the provider sends the payer back.
+ * Shows the payment status and refreshes until the webhook has settled it.
+ */
 export default async function PaymentResultPage({
   params,
   searchParams,

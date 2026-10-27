@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProductForm } from "../ProductForm";
 
+/** /protected/admin/products/new: add a product. Existing categories are offered as suggestions. */
 export default async function NewProductPage() {
   const supabase = await createClient();
 

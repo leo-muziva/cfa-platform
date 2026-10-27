@@ -8,10 +8,15 @@ import type { SheetDiff } from "@/lib/services/supplier-sheet";
 // staff member's client, so RLS (admin only) applies; the service-role key
 // is never used here.
 
+// Supabase Storage bucket that holds the generated xlsx files.
 export const SHEET_BUCKET = "supplier-sheets";
 
+// generated -> (needs_approval if the file is out of date) -> proofed ->
+// approved (Gmail draft created) -> sent.
 export type SheetStatus = "generated" | "needs_approval" | "proofed" | "approved" | "sent";
 
+// A supplier sheet as the app uses it (camelCase). `lines` is the snapshot
+// written into the file; `lastCheck` is the latest database comparison.
 export interface SheetRecord {
   id: string;
   bulkOrderId: string;
@@ -33,6 +38,7 @@ export interface SheetRecord {
   sentAt: string | null;
 }
 
+// Result of comparing the saved file with the paid orders in the database.
 export interface SheetCheck {
   checkedAt: string;
   matches: boolean;
@@ -40,6 +46,7 @@ export interface SheetCheck {
   diff: SheetDiff;
 }
 
+// The bulk order fields the sheet flow needs.
 export interface BulkOrderSummary {
   id: string;
   reference: string;
@@ -48,10 +55,12 @@ export interface BulkOrderSummary {
 
 type OneOrMany<T> = T | T[] | null;
 
+// Unwraps a joined row that Supabase may return as a single-item array.
 function one<T>(value: OneOrMany<T>): T | null {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
 
+// Raw supplier_order_sheets row (snake_case).
 interface SheetRow {
   id: string;
   bulk_order_id: string;
@@ -77,6 +86,7 @@ const SHEET_COLUMNS =
   "id, bulk_order_id, status, lines, lines_hash, paid_order_count, snapshot_path, generated_at, last_check, " +
   "sheet_approved_at, ai_summary, ai_findings, email_draft, model_used, proofed_at, approved_at, gmail_draft_id, sent_at";
 
+// Maps a database row to a SheetRecord.
 function toSheet(row: SheetRow): SheetRecord {
   return {
     id: row.id,
@@ -100,6 +110,7 @@ function toSheet(row: SheetRow): SheetRecord {
   };
 }
 
+/** Reference and status of a bulk order, or null when it does not exist. */
 export async function getBulkOrderSummary(bulkOrderId: string): Promise<BulkOrderSummary | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -110,6 +121,7 @@ export async function getBulkOrderSummary(bulkOrderId: string): Promise<BulkOrde
   return data ? { id: data.id, reference: data.reference, status: data.status } : null;
 }
 
+// Raw order rows used to build supplier lines.
 interface RawItem {
   quantity: number;
   size: string | null;
@@ -161,6 +173,7 @@ export async function getBulkOrderLines(
   return { orders, paidOrderIds };
 }
 
+/** The sheet for a bulk order, or null when none has been generated. */
 export async function getSheet(bulkOrderId: string): Promise<SheetRecord | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -171,6 +184,7 @@ export async function getSheet(bulkOrderId: string): Promise<SheetRecord | null>
   return data ? toSheet(data as unknown as SheetRow) : null;
 }
 
+/** Sheets for several bulk orders at once, keyed by bulk order id. */
 export async function getSheetsForBulkOrders(bulkOrderIds: string[]): Promise<Map<string, SheetRecord>> {
   const result = new Map<string, SheetRecord>();
   if (bulkOrderIds.length === 0) return result;
@@ -182,6 +196,7 @@ export async function getSheetsForBulkOrders(bulkOrderIds: string[]): Promise<Ma
   return result;
 }
 
+// Columns a write may set. Every field is optional so callers send only what changes.
 export interface SheetWrite {
   status?: SheetStatus;
   lines?: SupplierLine[];
@@ -204,6 +219,7 @@ export interface SheetWrite {
   sent_at?: string | null;
 }
 
+/** Creates the first sheet for a bulk order. */
 export async function insertSheet(bulkOrderId: string, values: SheetWrite): Promise<SheetRecord | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -232,6 +248,7 @@ export async function updateSheet(
   return row ? toSheet(row as unknown as SheetRow) : null;
 }
 
+/** Writes an audit event for the sheet through a database function. */
 export async function logSheetEvent(sheetId: string, event: string, details: Record<string, unknown> = {}): Promise<void> {
   const supabase = await createClient();
   await supabase.rpc("log_supplier_sheet_event", { target_sheet: sheetId, event, details });
@@ -239,12 +256,14 @@ export async function logSheetEvent(sheetId: string, event: string, details: Rec
 
 const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+/** Saves an xlsx file, replacing any file already at that path. */
 export async function uploadSheetFile(path: string, file: Buffer): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase.storage.from(SHEET_BUCKET).upload(path, file, { contentType: XLSX_TYPE, upsert: true });
   return !error;
 }
 
+/** Reads a saved xlsx file, or null when it cannot be downloaded. */
 export async function downloadSheetFile(path: string): Promise<Buffer | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.storage.from(SHEET_BUCKET).download(path);
@@ -252,6 +271,7 @@ export async function downloadSheetFile(path: string): Promise<Buffer | null> {
   return Buffer.from(await data.arrayBuffer());
 }
 
+/** A short-lived download link that saves the file as `downloadName`. */
 export async function createSheetSignedUrl(path: string, seconds: number, downloadName: string): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.storage
@@ -260,6 +280,7 @@ export async function createSheetSignedUrl(path: string, seconds: number, downlo
   return error || !data ? null : data.signedUrl;
 }
 
+// Catalogue fields the basic rules check against.
 export interface CatalogueRow {
   item_code: string;
   sizes: string | null;
@@ -268,6 +289,7 @@ export interface CatalogueRow {
   is_active: boolean;
 }
 
+/** Catalogue rows for the given item codes. */
 export async function getCatalogueRows(itemCodes: string[]): Promise<CatalogueRow[]> {
   if (itemCodes.length === 0) return [];
   const supabase = await createClient();
@@ -322,6 +344,7 @@ export async function countOrdersWithOpenRefunds(orderIds: string[]): Promise<nu
   return orders.size;
 }
 
+/** When the most recent AI run on this sheet started, for the cooldown check. */
 export async function getLastAiRunStart(sheetId: string): Promise<Date | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -334,8 +357,13 @@ export async function getLastAiRunStart(sheetId: string): Promise<Date | null> {
   return data ? new Date(data.created_at) : null;
 }
 
+// "already_running" when another run on the sheet has not finished.
 export type StartRunResult = { ok: true; runId: string } | { ok: false; reason: "already_running" | "failed" };
 
+/**
+ * Records the start of an AI run. A unique index allows only one running
+ * run per sheet, so a duplicate insert (error 23505) means one is in progress.
+ */
 export async function startAiRun(sheetId: string, userId: string): Promise<StartRunResult> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -348,6 +376,7 @@ export async function startAiRun(sheetId: string, userId: string): Promise<Start
   return { ok: true, runId: data.id };
 }
 
+// What is stored when an AI run ends.
 export interface RunFinish {
   status: "succeeded" | "fell_back" | "rules_only" | "failed";
   provider: string | null;
@@ -360,6 +389,7 @@ export interface RunFinish {
   error: string | null;
 }
 
+/** Saves the run's steps and its final status, tokens and timing. */
 export async function finishAiRun(runId: string, finish: RunFinish, steps: ReviewStep[]): Promise<void> {
   const supabase = await createClient();
   if (steps.length > 0) {
@@ -394,6 +424,7 @@ export async function finishAiRun(runId: string, finish: RunFinish, steps: Revie
     .eq("id", runId);
 }
 
+// Rows read back for the AI run log page.
 export interface AiRunStepRow {
   step_number: number;
   provider: string | null;

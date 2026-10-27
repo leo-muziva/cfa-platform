@@ -68,6 +68,7 @@ export default async function SupplierSheetPreviewPage({ params }: { params: Pro
   );
 }
 
+// Link back to the bulk orders page.
 function BackLink() {
   return (
     <Link href="/protected/admin/bulk-orders" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium hover:underline">

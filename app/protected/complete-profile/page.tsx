@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+/** /protected/complete-profile: the details and consents every new account must give before booking. */
 export default function CompleteProfilePage() {
   const [state, action, pending] = useFormAction(completeProfileAction, {})
   return (

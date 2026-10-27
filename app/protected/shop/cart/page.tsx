@@ -8,6 +8,7 @@ import { formatZar } from "@/lib/money";
 
 
 
+/** /protected/shop/cart: the open cart, checkout, and editing a cart that is waiting for payment. */
 export default async function CartPage({
   searchParams,
 }: {

@@ -1,3 +1,4 @@
+/** Leftover from the Supabase starter template. Not used by any page. */
 export function SupabaseLogo() {
   return (
     <svg

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/back-button";
 import { PUBLIC_CONTACT_LINKS, PUBLIC_LEGAL_LINKS } from "@/lib/public-site";
 
+/** Layout for simple public pages (privacy, terms): dark header, then the content. */
 export function PublicPageShell({
   eyebrow = "Cape Fencing Academy",
   title,

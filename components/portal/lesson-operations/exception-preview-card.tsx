@@ -11,6 +11,7 @@ import { capeTownDateTimeToIso } from "@/lib/cape-town-time";
 import { OperationForm, type LessonOperationState } from "./operation-form";
 import type { ClosureAffectedBooking } from "@/types/domain";
 
+// An instant as "Mon 6 Oct, 17:30" in Cape Town time.
 function localDateTime(value: string) {
   const formatter = new Intl.DateTimeFormat("en-ZA", {
     timeZone: "Africa/Johannesburg",
@@ -24,6 +25,10 @@ function localDateTime(value: string) {
   return formatter.format(new Date(value));
 }
 
+/**
+ * Add-exception form for a coach. A block over booked lessons is previewed
+ * first so the coach confirms which lessons will be cancelled.
+ */
 export function ExceptionPreviewCard({
   coachId,
   createExceptionAction,

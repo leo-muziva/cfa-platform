@@ -44,11 +44,14 @@ const MESSAGES: Record<SheetErrorCode, string> = {
   changed: "Someone else changed this spreadsheet. Refresh the page and try again.",
 };
 
+// The user-facing message for a failed step, with the service's detail
+// added where it helps.
 function toError<T>(result: SheetResult<T> & { ok: false }): SheetActionResult {
   const base = MESSAGES[result.code];
   return { error: result.message && result.code !== "file_unreadable" ? base + " " + result.message : base };
 }
 
+// Admin-only guard that also checks the bulk order id is a UUID.
 async function staff(bulkOrderId: string): Promise<{ actorId: string } | { error: string }> {
   const admin = await requireAdmin();
   if ("error" in admin) return { error: "Only admins can do that." };
@@ -56,10 +59,12 @@ async function staff(bulkOrderId: string): Promise<{ actorId: string } | { error
   return { actorId: admin.profile.id };
 }
 
+// Pages that show supplier sheets.
 function refresh() {
   revalidatePath("/protected/admin/bulk-orders");
 }
 
+/** Step 1: build the supplier spreadsheet from the paid orders. */
 export async function generateOrdersSpreadsheet(bulkOrderId: string): Promise<SheetActionResult> {
   const actor = await staff(bulkOrderId);
   if ("error" in actor) return { error: actor.error };
@@ -69,6 +74,7 @@ export async function generateOrdersSpreadsheet(bulkOrderId: string): Promise<Sh
   return { success: true, message: "Spreadsheet saved with " + result.data.lines.length + " rows." };
 }
 
+/** Step 2: check the file against the database, then run the AI review. */
 export async function runAiProofAction(bulkOrderId: string): Promise<SheetActionResult> {
   const actor = await staff(bulkOrderId);
   if ("error" in actor) return { error: actor.error };
@@ -80,6 +86,7 @@ export async function runAiProofAction(bulkOrderId: string): Promise<SheetAction
     : { success: true, message: "AI proof finished. Read the briefing below." };
 }
 
+/** Step 2b: approve a sheet that was rebuilt with new orders, then review it. */
 export async function approveUpdatedSheetAction(bulkOrderId: string): Promise<SheetActionResult> {
   const actor = await staff(bulkOrderId);
   if ("error" in actor) return { error: actor.error };
@@ -93,6 +100,7 @@ export async function approveUpdatedSheetAction(bulkOrderId: string): Promise<Sh
 
 const emailBodySchema = z.string().trim().min(1, "Write the email to the supplier.").max(3000, "Keep the email under 3,000 characters.");
 
+/** Step 3: approve the email text and create the Gmail draft with the file attached. */
 export async function approveAndCreateDraftAction(bulkOrderId: string, emailBody: string): Promise<SheetActionResult> {
   const actor = await staff(bulkOrderId);
   if ("error" in actor) return { error: actor.error };
@@ -120,6 +128,7 @@ async function placeBulkOrder(bulkOrderId: string, done: string): Promise<SheetA
   return { success: true, message: done + " New orders will go into the next bulk order." };
 }
 
+/** Step 4: record that staff sent the email, and move the bulk order to "placed". */
 export async function markSpreadsheetSentAction(bulkOrderId: string): Promise<SheetActionResult> {
   const actor = await staff(bulkOrderId);
   if ("error" in actor) return { error: actor.error };
@@ -128,6 +137,7 @@ export async function markSpreadsheetSentAction(bulkOrderId: string): Promise<Sh
   return placeBulkOrder(bulkOrderId, "Marked as sent.");
 }
 
+/** A short-lived download link for the saved spreadsheet. */
 export async function getSpreadsheetDownloadAction(bulkOrderId: string): Promise<SheetActionResult> {
   const actor = await staff(bulkOrderId);
   if ("error" in actor) return { error: actor.error };

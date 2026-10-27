@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { toggleFavourite } from "../actions/favourites";
 
+/** Heart button that adds or removes a product from the customer's favourites. */
 export function FavouriteButton({
   productId,
   initiallyFavourite,

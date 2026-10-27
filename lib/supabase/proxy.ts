@@ -1,3 +1,6 @@
+// Runs on every page request (see proxy.ts at the project root). It
+// refreshes the Supabase session cookie, clears broken auth cookies and
+// sends signed-out visitors on protected pages to the login page.
 import { createServerClient } from "@supabase/ssr";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
@@ -5,6 +8,7 @@ import { hasEnvVars } from "../utils";
 import { selectStaleAuthCookieNames } from "./auth-cookies";
 import { getSupabasePublicConfig } from "./config";
 
+/** Refreshes the session and returns the response, or a redirect to /auth/login. */
 export async function updateSession(request: NextRequest) {
   // PayFast has no browser session; this exact endpoint verifies signed ITNs.
   if (request.nextUrl.pathname === "/api/payments/payfast/webhook") {
@@ -67,6 +71,7 @@ export async function updateSession(request: NextRequest) {
     staleAuthCookies.forEach((name) => supabaseResponse.cookies.delete(name));
   }
 
+  // Pages anyone can open without signing in. Everything else needs a session.
   const publicPrefixes = [
     "/", "/book", "/classes", "/membership", "/membership-portal", "/family", "/about", "/contact", "/privacy", "/terms", "/auth"
   ];

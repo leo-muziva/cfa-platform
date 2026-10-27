@@ -27,6 +27,10 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+/**
+ * Root layout for every page: fonts, the light/dark theme provider, the
+ * top navigation bar and a warning when Supabase is not configured.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

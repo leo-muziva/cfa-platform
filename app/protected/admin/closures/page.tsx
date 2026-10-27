@@ -3,6 +3,7 @@ import { cancelClubClosureAction, createClubClosureAction } from "@/app/actions/
 import { ClosureManager } from "@/components/portal/lesson-operations/closure-manager";
 import { getAdminClosuresPageData, getAdminCoachSetupPageData } from "@/lib/services/LessonBookingService";
 
+/** /protected/admin/closures: create and withdraw club-wide closures. */
 export default async function AdminClosuresPage() {
   const [result, coachResult] = await Promise.all([getAdminClosuresPageData(), getAdminCoachSetupPageData()]);
   if ("error" in result) redirect(result.error === "Not authenticated" ? "/auth/login" : "/protected");

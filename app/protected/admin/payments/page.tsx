@@ -19,6 +19,10 @@ const KIND_LABELS: Record<PaymentKind, string> = {
   invoice: 'Invoice',
 }
 
+/**
+ * /protected/admin/payments: unpaid invoices, settled online payments and
+ * any settings that stop online payments working in this environment.
+ */
 export default async function PaymentsPage() {
   const [result, settled] = await Promise.all([getInvoicesForAdmin(), listRefundablePaymentsForStaff()])
   const invoices = 'invoices' in result ? result.invoices : []

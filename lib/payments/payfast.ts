@@ -1,3 +1,6 @@
+// PayFast adapter (sandbox). Builds the signed checkout form and verifies
+// ITN webhooks: the signature, the field values and a server-to-server
+// validate call back to PayFast before an event is trusted.
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { CheckoutRequest, CheckoutResponse, PaymentGateway, VerifiedPaymentEvent } from "./gateway";
@@ -15,10 +18,12 @@ function encode(value: string): string {
   ).replace(/%20/g, "+");
 }
 
+// Joins fields as key=value pairs in the given order, PayFast-encoded.
 function serialize(entries: [string, string][]): string {
   return entries.map(([key, value]) => `${key}=${encode(value)}`).join("&");
 }
 
+// PayFast checkout/ITN signature: MD5 of the serialized fields plus the passphrase.
 function signature(payload: string, passphrase: string): string {
   return createHash("md5").update(`${payload}&passphrase=${encode(passphrase.trim())}`).digest("hex");
 }
@@ -46,6 +51,8 @@ export function payFastApiSignature(fields: Record<string, string>, passphrase: 
   return createHash("md5").update(payload).digest("hex");
 }
 
+// Parses a webhook body strictly. Rejects oversized bodies, odd keys and
+// duplicate keys, so a tampered body cannot slip extra fields past the signature.
 function parseNotification(body: string): [string, string][] | null {
   if (!body || body.length > 32_768) return null;
   const entries: [string, string][] = [];
@@ -66,6 +73,10 @@ function parseNotification(body: string): [string, string][] | null {
   return entries;
 }
 
+/**
+ * Creates the PayFast sandbox gateway. `fetcher` can be replaced in tests
+ * so the validate call does not reach the real PayFast.
+ */
 export function createPayFastGateway(config: PayFastConfig, fetcher: typeof fetch = fetch): PaymentGateway {
   if (![config.merchantId, config.merchantKey, config.passphrase].every((value) => value.trim())) {
     throw new Error("Incomplete PayFast sandbox configuration.");
@@ -126,6 +137,7 @@ export function createPayFastGateway(config: PayFastConfig, fetcher: typeof fetc
         return null;
       }
       return {
+        // One event id per payment and status, so a retried notification is ignored.
         provider: "payfast_sandbox", eventId: `${fields.pf_payment_id}:${fields.payment_status}`,
         paymentId: fields.pf_payment_id, reference: fields.m_payment_id, status,
         amountCents: amountCents.toString(), currency: "ZAR",

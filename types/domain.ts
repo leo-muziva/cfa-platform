@@ -1,5 +1,14 @@
+// Shared types used across pages, services and repositories. snake_case
+// interfaces mirror database rows as Supabase returns them; camelCase ones
+// are shaped by a repository for the UI. DTO types meant for dependents or
+// coaches deliberately leave out money fields.
+
+// guest: has an account but no membership. member: has a paid membership.
 export type MembershipStatus = 'guest' | 'member'
+// Status of a membership after it has started.
 export type MembershipLifecycleStatus = 'active' | 'suspended' | 'expired' | 'cancelled'
+// pending -> approved by staff -> awaiting_payment -> approved once paid.
+// Staff can also ask for changes or reject.
 export type MembershipApplicationStatus = 'pending' | 'changes_requested' | 'awaiting_payment' | 'rejected' | 'approved'
 export type MembershipPaymentEmailStatus = 'sent' | 'failed' | 'not_configured'
 export type MembershipReviewDecision = 'approve' | 'request_changes' | 'reject'
@@ -10,21 +19,29 @@ export type MembershipOperationErrorCode =
   | 'status_change_failed'
   | 'payment_record_failed'
   | 'withdraw_failed'
+// A guardian/dependent link between two existing accounts.
 export type FamilyLinkStatus = 'pending' | 'active' | 'rejected' | 'ended'
+// Whether guests may book a time, or only active members.
 export type LessonAccessRule = 'guest_allowed' | 'active_members_only'
+// The payer pays for everyone in the household; dependents never see money.
 export type HouseholdRole = 'payer' | 'dependent'
 export type StaffType = 'admin' | 'coach'
 export type PaymentPreference = 'manual' | 'recurring_card'
 export type PaymentOption = 'pay_now' | 'pay_later'
 export type ReminderPreference = 'email' | 'whatsapp' | 'both'
+// Legacy membership request flow, replaced by MembershipApplication.
 export type MembershipRequestStatus = 'pending' | 'approved' | 'declined'
+// Status of a legacy slot booking.
 export type BookingStatus = 'upcoming' | 'attended' | 'cancelled'
+// What a charge on the payer's account is for.
 export type ChargeType = 'lesson' | 'rental' | 'membership' | 'joining_fee' | 'lesson_adjustment' | 'shop' | 'drop_in'
 // 'submitted' is historical: orders placed before pay-now checkout existed.
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'submitted' | 'cancelled' | 'refunded'
 export type Handedness = 'right' | 'left'
+// Payment status of an invoice.
 export type FinancialStatus = 'unpaid' | 'paid' | 'overdue'
 
+// A membership product. Amounts are in rands.
 export interface MembershipType {
   id: string
   code: 'month_to_month' | 'six_month' | 'twelve_month' | 'beginner_package'
@@ -38,6 +55,9 @@ export interface MembershipType {
   created_at: string
 }
 
+// A person's account details from the profiles table. Staff rights come from
+// is_staff and staff_type. profile_completed_at is set once sign-up details
+// are filled in, which unlocks the portal.
 export interface Profile {
   id: string
   email: string
@@ -60,6 +80,7 @@ export interface Profile {
   updated_at: string
 }
 
+// Fields a member may change on their own profile.
 export interface ProfileUpdate {
   full_name?: string
   phone?: string
@@ -69,12 +90,14 @@ export interface ProfileUpdate {
   reminder_preference?: ReminderPreference
 }
 
+// Fields an admin may also change on someone else's profile.
 export interface AdminProfileUpdate extends ProfileUpdate {
   is_active?: boolean
   is_staff?: boolean
   staff_type?: StaffType | null
 }
 
+// A started membership for one profile.
 export interface Membership {
   id: string
   profile_id: string
@@ -86,6 +109,8 @@ export interface Membership {
   membership_type?: Pick<MembershipType, 'id' | 'code' | 'name'>
 }
 
+// One application for a membership. `version` goes up each time the
+// applicant resubmits after staff ask for changes.
 export interface MembershipApplication {
   id: string
   applicant_id: string
@@ -115,6 +140,7 @@ export interface MembershipPaymentDue {
   approvedAt: string | null
 }
 
+// A guardian/dependent link. The guardian becomes the dependent's payer.
 export interface FamilyLink {
   id: string
   guardian_id: string
@@ -130,6 +156,7 @@ export interface FamilyLink {
   dependent?: Pick<Profile, 'id' | 'full_name' | 'email'>
 }
 
+// Mirrors the dependent billing link table. Not used by app code yet.
 export interface DependentBillingLink {
   id: string
   household_id: string
@@ -140,6 +167,7 @@ export interface DependentBillingLink {
   effective_to: string | null
 }
 
+// Mirrors the audit_events table. Not used by app code yet.
 export interface AuditEvent {
   id: string
   event_type: string
@@ -151,6 +179,7 @@ export interface AuditEvent {
   created_at: string
 }
 
+// A household and its paying account.
 export interface Household {
   id: string
   payer_id: string
@@ -159,6 +188,7 @@ export interface Household {
   updated_at: string
 }
 
+// A profile's place in a household.
 export interface HouseholdMember {
   household_id: string
   profile_id: string
@@ -167,6 +197,7 @@ export interface HouseholdMember {
   profile?: Pick<Profile, 'id' | 'full_name' | 'email' | 'membership_status'>
 }
 
+// Legacy membership request row. Not used by app code.
 export interface MembershipRequest {
   id: string
   applicant_id: string
@@ -179,6 +210,8 @@ export interface MembershipRequest {
   membership_type?: Pick<MembershipType, 'id' | 'name'>
 }
 
+// Legacy slot booking types (see PlatformService). Lesson booking now uses
+// the LessonBooking types further down.
 export interface LessonSlot {
   id: string
   starts_at: string
@@ -210,10 +243,12 @@ export interface Booking {
   fencer?: Pick<Profile, 'id' | 'full_name'>
 }
 
+// An application with the private staff notes. Admins only.
 export interface AdminMembershipApplication extends MembershipApplication {
   private_notes: string | null
 }
 
+// Error codes for legacy slot booking.
 export type BookingErrorCode =
   | 'duplicate'
   | 'unavailable'
@@ -224,6 +259,7 @@ export type BookingErrorCode =
   | 'invalid_input'
   | 'unexpected'
 
+// Billing rows. Amounts are in rands as stored in numeric columns.
 export interface Charge {
   id: string
   fencer_id: string
@@ -271,6 +307,8 @@ export interface Receipt {
   issued_at: string
 }
 
+// Mirrors payment rows. Not used by app code yet; the payment flow uses the
+// row types in payment-repository.ts.
 export interface PaymentAttempt {
   id: string
   payer_id: string
@@ -293,6 +331,8 @@ export interface ProviderEvent {
   created_at: string
 }
 
+// What the signed-in person may do. Worked out by deriveCapabilities in
+// MemberService. Hiding a button is not security: services and RLS check again.
 export interface Capabilities {
   isAdmin: boolean
   isCoach: boolean
@@ -304,6 +344,7 @@ export interface Capabilities {
   canManageStaffArea: boolean
 }
 
+// Admin member list filters, from the URL.
 export interface MemberListFilters {
   search?: string
   membershipStatus?: MembershipStatus
@@ -312,6 +353,7 @@ export interface MemberListFilters {
   page: number
 }
 
+// One page of results plus totals for pagination.
 export interface Paged<T> {
   items: T[]
   total: number
@@ -320,6 +362,7 @@ export interface Paged<T> {
   pageCount: number
 }
 
+// Profile columns the admin dashboard counts are built from.
 export interface MemberStatsRow {
   membership_status: MembershipStatus
   is_staff: boolean
@@ -328,6 +371,7 @@ export interface MemberStatsRow {
   membership_type: Pick<MembershipType, 'name'> | null
 }
 
+// Counts shown on the admin dashboard.
 export interface MemberStats {
   total: number
   active: number
@@ -350,6 +394,7 @@ export interface LessonHistoryItem {
   fencer_name: string | null
 }
 
+// The payer's billing page. Amounts are in rands.
 export interface PayerBillingView {
   balance: number
   outstandingCharges: OutstandingCharge[]
@@ -377,6 +422,8 @@ export interface PendingLessonCharge {
   lessonStartsAt: string | null
 }
 
+// Lesson booking types. Times are ISO strings; cents are strings so large
+// values keep their precision.
 export type Weapon = 'foil' | 'epee' | 'sabre'
 
 export type LessonBookingStatus =
@@ -386,6 +433,7 @@ export type LessonBookingStatus =
   | 'cancelled'
   | 'rescheduled'
 
+// A bookable coach and the weapons they teach.
 export interface LessonCoachSummary {
   coachId: string
   fullName: string
@@ -428,6 +476,7 @@ export interface LessonBookingAllocation {
   status: 'pending' | 'payable' | 'voided'
 }
 
+// Someone the signed-in person can book a lesson for.
 export interface LessonParticipant {
   id: string
   fullName: string
@@ -471,6 +520,7 @@ export interface PayableLessonHold {
   holdExpiresAt: string
 }
 
+// A weekly repeating window when a coach teaches, in local time.
 export interface CoachAvailabilityRule {
   id: string
   coachId: string
@@ -481,6 +531,7 @@ export interface CoachAvailabilityRule {
   accessRule: LessonAccessRule
 }
 
+// A one-off change to a coach's week: "block" removes time, "extra" adds it.
 export interface CoachAvailabilityException {
   id: string
   coachId: string
@@ -490,6 +541,7 @@ export interface CoachAvailabilityException {
   reason: string | null
 }
 
+// Dates when the whole club is closed and no lessons run.
 export interface ClubClosure {
   id: string
   startsOn: string
@@ -507,6 +559,8 @@ export interface ClosureAffectedBooking {
   participantNames: string[]
 }
 
+// Lesson rules from lesson_booking_settings. Fields typed as a single literal
+// are fixed in this build and not stored in the database.
 export interface LessonBookingSettings {
   cancellationWindowHours: number
   lateCancellationAction: 'allow'
@@ -532,6 +586,7 @@ export interface LessonBookingSettings {
   updatedAt: string
 }
 
+// Whether a coach takes bookings, and for which weapons.
 export interface CoachLessonProfile {
   coachId: string
   fullName: string
@@ -539,6 +594,7 @@ export interface CoachLessonProfile {
   weapons: Weapon[]
 }
 
+// One lesson audit event for the admin activity feed.
 export interface LessonActivityItem {
   id: string
   eventType: string
@@ -548,6 +604,8 @@ export interface LessonActivityItem {
   metadata: Record<string, unknown>
 }
 
+// Every error a lesson operation can return. LessonBookingRepository maps
+// each code to a user-facing message.
 export type LessonBookingErrorCode =
   | 'not_authenticated'
   | 'account_incomplete'
@@ -579,10 +637,12 @@ export type LessonBookingErrorCode =
   | 'not_found'
   | 'request_failed'
 
+// Result of every lesson booking operation.
 export type LessonBookingResult<T> =
   | { success: true; data: T }
   | { success: false; errorCode: LessonBookingErrorCode; error: string; fieldErrors?: Record<string, string> }
 
+// Shop cart types. Money is in cents.
 export interface ShopCartLine {
   id: string
   productId: number
@@ -603,7 +663,9 @@ export interface ShopCart {
   totalCents: number
 }
 
+// requested -> approved -> processing -> processed, or rejected/failed.
 export type RefundStatus = 'requested' | 'approved' | 'rejected' | 'processing' | 'processed' | 'failed'
+// manual_bank: staff pay by bank transfer. provider: refunded through PayFast.
 export type RefundMethod = 'manual_bank' | 'provider'
 export type PaymentKind = 'booking' | 'order' | 'membership' | 'invoice'
 
@@ -622,6 +684,7 @@ export interface RefundablePayment {
   invoiceNumber: string | null
 }
 
+// A refund request as shown to payers and staff. Money is in cents.
 export interface RefundRequest {
   id: string
   refundNumber: string

@@ -57,6 +57,7 @@ type RawOrder = {
 
 type RawBulk = { reference: string; orders: RawOrder[] | null };
 
+// Shapes the raw query rows into the plain rows the CSV builders take.
 function toExportOrders(bulk: RawBulk): ExportOrder[] {
   return (bulk.orders ?? []).map(function (order) {
     const profile = one(order.profiles ?? null);

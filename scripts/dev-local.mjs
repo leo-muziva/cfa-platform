@@ -1,3 +1,6 @@
+// `npm run dev` / `npm run dev:local`: reads the URL and keys of the local
+// Supabase stack (started with `npx supabase start`) and runs `next dev`
+// with them, so no .env file is needed for local work.
 import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 

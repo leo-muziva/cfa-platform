@@ -21,11 +21,13 @@ export const SECTIONS: SectionInfo[] = [
   { key: 'club', label: 'Club and coaching', asksForWeapon: false },
 ]
 
+// Allowed values for URL parameters, used by the Zod schemas.
 export const SECTION_KEYS = ['weapons', 'clothing', 'electric', 'parts', 'bags_tools', 'club'] as const
 export const WEAPON_KEYS = ['foil', 'epee', 'sabre'] as const
 export const LEVEL_KEYS = ['practice', 'electric', 'fie'] as const
 
 export const WEAPON_LABELS: Record<ShopWeapon, string> = { foil: 'Foil', epee: 'Épée', sabre: 'Sabre' }
+// Products with no weapon fit every weapon and are listed under this key.
 export const GENERAL = 'general'
 export const GENERAL_LABEL = 'Fits any weapon'
 
@@ -57,16 +59,20 @@ export const KIND_LABELS: Record<string, string> = {
 }
 export const KIND_KEYS = Object.keys(KIND_LABELS) as [string, ...string[]]
 const KIND_ORDER: string[] = KIND_KEYS
+// Products with no level are listed last.
 const LEVEL_ORDER: (ShopLevel | null)[] = ['practice', 'electric', 'fie', null]
 
+/** The section for a URL key, or undefined when the key is not known. */
 export function findSection(key: string | undefined): SectionInfo | undefined {
   return SECTIONS.find((section) => section.key === key)
 }
 
+/** Narrows a URL value to a weapon. */
 export function isShopWeapon(value: string | undefined): value is ShopWeapon {
   return value === 'foil' || value === 'epee' || value === 'sabre'
 }
 
+// The product fields grouping needs.
 export interface BrowseProduct {
   kind: string | null
   level: string | null
@@ -107,6 +113,7 @@ export function groupProducts<T extends BrowseProduct>(products: T[]): ProductGr
   return groups
 }
 
+// Position of a value in an ordering; unknown values go last.
 function rank(order: (string | null)[], value: string | null) {
   const index = order.indexOf(value)
   return index === -1 ? order.length : index

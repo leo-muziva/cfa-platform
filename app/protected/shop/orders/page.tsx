@@ -7,6 +7,7 @@ import { formatZar } from "@/lib/money";
 
 
 
+/** /protected/shop/orders: the customer's submitted orders and their bulk order progress. */
 export default async function OrdersPage({
   searchParams,
 }: {

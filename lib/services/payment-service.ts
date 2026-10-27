@@ -1,3 +1,13 @@
+// Online payment flow, shared by lessons, invoices, shop orders and
+// memberships:
+//   1. startPayment: the database prices the item and creates a payment
+//      attempt (only the account payer is allowed).
+//   2. buildCheckout: the payment provider (PayFast, or the sandbox) turns
+//      the attempt into a hosted checkout page.
+//   3. receivePaymentNotification: the provider's webhook reports the
+//      result; the database settles the item, then emails go out.
+// Amounts never come from the browser; they are always read from the
+// database.
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentGateway, getPaymentOrigin, paymentSetupIssues } from "@/lib/payments/registry";
@@ -14,6 +24,7 @@ export type StartPaymentResult =
   | { ok: true; attemptId: string; pricesChanged: boolean }
   | { ok: false; error: string; code?: PreparePaymentErrorCode };
 
+// User-facing messages for checkout errors, per kind of item being paid.
 const ORDER_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
   forbidden: "Only the account payer can pay for this order. Ask your guardian to pay.",
   empty_order: "Your cart is empty.",
@@ -25,6 +36,7 @@ const MEMBERSHIP_MESSAGES: Partial<Record<PreparePaymentErrorCode, string>> = {
   checkout_unavailable: "This membership is no longer waiting for payment. Refresh to see its status.",
 };
 
+// Cheap sign-in check; the RPCs do the real authorization.
 async function isSignedIn() {
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
@@ -41,6 +53,11 @@ export function getPaymentSetupIssues(): string[] {
   return paymentSetupIssues();
 }
 
+/**
+ * Creates a payment attempt for one lesson, invoice, order or membership.
+ * `pricesChanged` is true when a shop price moved since the item was added
+ * to the cart, so the UI can warn before sending the payer to checkout.
+ */
 export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   const target = paymentTargetSchema.safeParse(raw);
   if (!target.success) return { ok: false, error: "Choose one valid lesson, invoice, order or membership to pay." };
@@ -59,6 +76,10 @@ export async function startPayment(raw: unknown): Promise<StartPaymentResult> {
   return { ok: true, attemptId: result.attempt.attempt_id, pricesChanged: result.attempt.prices_changed };
 }
 
+/**
+ * Asks the attempt's provider for a checkout form or redirect. The provider
+ * returns to /protected/payments/[attemptId] and notifies our webhook route.
+ */
 export async function buildCheckout(attemptId: unknown): Promise<{ ok: true; checkout: CheckoutResponse } | Failure> {
   const id = paymentAttemptSchema.safeParse(attemptId);
   if (!id.success || !await isSignedIn()) return { ok: false, error: "Checkout unavailable." };
@@ -76,6 +97,7 @@ export async function buildCheckout(attemptId: unknown): Promise<{ ok: true; che
       description: attempt.description,
       returnUrl,
       cancelUrl: `${returnUrl}?cancelled=1`,
+      // Sandbox providers share the real provider's webhook route.
       notifyUrl: `${origin}/api/payments/${provider.name.replace(/_sandbox$/, "")}/webhook`,
     });
     return { ok: true, checkout };
@@ -84,12 +106,18 @@ export async function buildCheckout(attemptId: unknown): Promise<{ ok: true; che
   }
 }
 
+/** Current status of a payment attempt, for the "payment processing" page. */
 export async function getPaymentStatus(attemptId: unknown) {
   const id = paymentAttemptSchema.safeParse(attemptId);
   if (!id.success || !await isSignedIn()) return null;
   return findPaymentStatus(id.data);
 }
 
+/**
+ * Handles a provider webhook. Returns the HTTP status for the route to send:
+ * 404 unknown provider, 400 bad or mismatched event, 503 so the provider
+ * retries when recording failed, 200 once the event is stored.
+ */
 export async function receivePaymentNotification(providerName: string, input: { body: string; headers: Headers; url: string }): Promise<200 | 400 | 404 | 503> {
   const provider = getPaymentGateway(providerName);
   if (!provider) return 404;

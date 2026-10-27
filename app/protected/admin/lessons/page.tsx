@@ -3,6 +3,7 @@ import { cancelLessonBookingAction, recordLessonOutcomeAction, waiveLessonCharge
 import { AdminLessonConsole } from "@/components/portal/lesson-operations/admin-lesson-console";
 import { getAdminLessonsPageData } from "@/lib/services/LessonBookingService";
 
+/** /protected/admin/lessons: every lesson booking, with cancel, attendance and waive actions. */
 export default async function AdminLessonsPage() {
   const result = await getAdminLessonsPageData();
   if ("error" in result) redirect(result.error === "Not authenticated" ? "/auth/login" : "/protected");

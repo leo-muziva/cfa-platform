@@ -7,6 +7,7 @@ import { productImageUrl } from "@/lib/productImage";
 import { formatRands } from "@/lib/money";
 import { GENERAL, GENERAL_LABEL, WEAPON_LABELS, findSection, isShopWeapon } from "@/lib/shop/browse";
 
+/** /protected/shop/[itemCode]: one product, with size and hand choices and add to cart. */
 export default async function ProductPage({
   params,
 }: {

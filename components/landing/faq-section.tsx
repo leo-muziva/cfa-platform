@@ -1,5 +1,6 @@
 import { FaqAccordion, type FaqItem } from "@/components/ui/faq-chat-accordion";
 
+// Home page questions and answers. Edit here to change them.
 const FAQS: FaqItem[] = [
   { id: 1, question: "How do I start fencing?", answer: "Start with the beginner package: four one-on-one lessons with a coach, to use within three months. After that you can join the club and train at every session." },
   { id: 2, question: "What should I bring?", answer: "Indoor court shoes, tracksuit pants, a T-shirt, a towel and water. We lend beginners all the fencing kit." },
@@ -8,6 +9,7 @@ const FAQS: FaqItem[] = [
   { id: 5, question: "Why become a member?", answer: "Members can attend every club session, from footwork drills to sparring, and fence on electronic scoring. Membership also gives you entry to provincial and national competitions, and it helps keep the venue, coaches and equipment going." },
 ];
 
+/** The FAQ section of the home page. */
 export function FaqSection() {
   return (
     <section id="faq" className="relative bg-muted/30 px-4 py-20 text-primary sm:px-6 md:px-12 md:py-28">

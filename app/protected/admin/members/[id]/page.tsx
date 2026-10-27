@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { changeMembershipStatusAction } from '@/app/actions/platform'
 
+/** /protected/admin/members/[id]: edit one member's profile, staff access and status. */
 export default async function MemberDetailPage({
   params,
 }: {

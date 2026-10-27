@@ -35,6 +35,7 @@ import type {
   Weapon,
 } from "@/types/domain";
 
+// Form state returned by the lesson Server Actions.
 export interface LessonMemberActionState extends FormFieldState {
   success?: string;
   errorCode?: LessonBookingErrorCode;
@@ -42,6 +43,7 @@ export interface LessonMemberActionState extends FormFieldState {
   checkoutRequired?: boolean;
 }
 
+// A lesson Server Action, passed in as a prop so this component stays testable.
 export type LessonMemberFormAction = (
   previousState: LessonMemberActionState,
   formData: FormData,
@@ -55,6 +57,10 @@ const weaponLabels: Record<Weapon, string> = {
   sabre: "Sabre",
 };
 
+/**
+ * The booking form for one coach: pick a day, a time, a weapon and who is
+ * fencing, see the price (payers only), then pay now or later.
+ */
 export function CoachBookingCalendar({
   coach,
   times,

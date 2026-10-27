@@ -25,6 +25,7 @@ export const MEMBER_PORTAL_HREF = "/protected";
 // /protected page is part of the member portal.
 const OWN_BUTTON = ["/protected/book", "/protected/membership", "/protected/shop"];
 
+/** Whether a main bar link should show as the current page. */
 export function isMainLinkCurrent(href: string, pathname: string) {
   if (href === "/") return pathname === "/";
   if (href === MEMBER_PORTAL_HREF) {
@@ -58,6 +59,7 @@ export function MemberPortalLink() {
   );
 }
 
+/** The site-wide top bar, with a menu on small screens. `authSlot` holds login or the user's name. */
 export function SiteNavigation({ authSlot }: { authSlot: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);

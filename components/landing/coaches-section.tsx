@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+// Coach bios and photos for the home page. Edit here to change them.
 const COACHES = [
   {
     name: "Dr. Misha Galukhin",
@@ -27,6 +28,7 @@ const COACHES = [
   },
 ] as const;
 
+/** The "Our coaches" section of the home page. */
 export function CoachesSection() {
   return (
     <section

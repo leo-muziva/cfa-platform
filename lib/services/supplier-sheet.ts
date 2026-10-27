@@ -25,6 +25,7 @@ export function supplierLinesHash(lines: SupplierLine[]): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+// A line whose quantity differs between the saved file and the database.
 export interface QuantityChange {
   key: string;
   itemCode: string;
@@ -34,6 +35,7 @@ export interface QuantityChange {
   dbQuantity: number;
 }
 
+// Result of comparing the database lines with the saved file's lines.
 export interface SheetDiff {
   matches: boolean;
   added: SupplierLine[];
@@ -41,6 +43,12 @@ export interface SheetDiff {
   changed: QuantityChange[];
 }
 
+/**
+ * Compares what the database says should be ordered with what is in the
+ * saved file: lines only in the database are "added", lines only in the
+ * file are "removed", and matching lines with a different quantity are
+ * "changed".
+ */
 export function compareSupplierLines(dbLines: SupplierLine[], sheetLines: SupplierLine[]): SheetDiff {
   const sheetByKey = new Map(sheetLines.map((l) => [lineKey(l), l]));
   const dbByKey = new Map(dbLines.map((l) => [lineKey(l), l]));
@@ -87,6 +95,7 @@ export function describeSheetDiff(diff: SheetDiff): string {
   return parts.join(", ") + ".";
 }
 
+// The catalogue facts the rules check each line against.
 export interface CatalogueEntry {
   itemCode: string;
   sizes: string[] | null;
@@ -95,6 +104,7 @@ export interface CatalogueEntry {
   isActive: boolean;
 }
 
+// One id per basic check, so the AI can refer to a rule finding by id.
 export type RuleId =
   | "size_not_offered"
   | "hand_missing"
@@ -105,6 +115,7 @@ export type RuleId =
   | "quantity_outlier"
   | "pending_refunds";
 
+// A problem found by a basic check. `lineKey` is null for whole-order findings.
 export interface RuleFinding {
   id: string;
   ruleId: RuleId;
@@ -143,6 +154,12 @@ function rands(cents: number): string {
   return "R" + (cents / 100).toFixed(2);
 }
 
+/**
+ * The basic checks that always run, with or without AI: placeholder or
+ * unknown codes, inactive products, sizes and hands the product does not
+ * offer, changed prices, unusually large quantities and paid orders with a
+ * refund in progress. Returns findings sorted most severe first.
+ */
 export function runSupplierRules(input: RuleInput): RuleFinding[] {
   const findings: RuleFinding[] = [];
 
@@ -234,6 +251,7 @@ export function runSupplierRules(input: RuleInput): RuleFinding[] {
 
 const SEVERITY_ORDER: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
 
+/** Sorts findings high, then medium, then low severity. */
 export function sortFindings<T extends { severity: Severity }>(findings: T[]): T[] {
   return [...findings].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
 }

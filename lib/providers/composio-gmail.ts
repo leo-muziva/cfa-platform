@@ -34,6 +34,7 @@ export function describeComposioError(error: unknown): string {
   return cleanProviderError(parts.join(" - "));
 }
 
+// Logs and returns a cleaned error for a failed Composio call.
 function failure(tool: string, error: unknown): { ok: false; error: string } {
   const message = describeComposioError(error);
   // Cleaned text only: never the arguments, keys or file.
@@ -41,6 +42,7 @@ function failure(tool: string, error: unknown): { ok: false; error: string } {
   return { ok: false, error: message };
 }
 
+// The file attached to the Gmail draft.
 export interface GmailDraftAttachment {
   name: string;
   mimeType: string;
@@ -56,14 +58,17 @@ export interface GmailDraftInput {
   attachment: GmailDraftAttachment;
 }
 
+// The new draft's id (when Composio returns it), or a cleaned error.
 export type GmailDraftResult = { ok: true; draftId: string | null } | { ok: false; error: string };
 
+// Creates Gmail drafts. Cannot send email.
 export interface GmailDraftProvider {
   createDraft(input: GmailDraftInput): Promise<GmailDraftResult>;
 }
 
 type Env = Record<string, string | undefined>;
 
+// Composio settings for the ordering mailbox connection.
 export interface ComposioGmailConfig {
   apiKey: string;
   // Optional: when unset, the owner is read from the connected account.
@@ -72,6 +77,7 @@ export interface ComposioGmailConfig {
   toolkitVersion: string | null;
 }
 
+/** Composio settings, or null when the API key or connection id is missing. */
 export function getComposioGmailConfig(env: Env = process.env): ComposioGmailConfig | null {
   const apiKey = env.COMPOSIO_API_KEY?.trim();
   const connectedAccountId = env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID?.trim();
@@ -109,6 +115,7 @@ export function connectionOwner(account: { user_id?: unknown; status?: unknown }
 // Owners only change if Gmail is reconnected, which also changes the ID.
 const ownerCache = new Map<string, string>();
 
+/** Creates the Composio-backed Gmail draft provider. */
 export function createComposioGmailProvider(config: ComposioGmailConfig): GmailDraftProvider {
   // Automatic file staging stays off (the SDK default): it would let tool
   // arguments name files on this server. The attachment is staged explicitly.
@@ -162,6 +169,7 @@ export function createComposioGmailProvider(config: ComposioGmailConfig): GmailD
   };
 }
 
+/** The Gmail draft provider, or null when Composio is not configured. */
 export function getGmailDraftProvider(env: Env = process.env): GmailDraftProvider | null {
   const config = getComposioGmailConfig(env);
   return config ? createComposioGmailProvider(config) : null;

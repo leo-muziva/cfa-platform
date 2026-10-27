@@ -19,6 +19,7 @@ export const addToCartSchema = z
   })
   .strict();
 
+// A quantity of 0 removes the line.
 export const updateQuantitySchema = z
   .object({
     itemId: z.uuid(),
@@ -32,6 +33,7 @@ export const removeItemSchema = z
   })
   .strict();
 
+// Optional notes for CFA staff about the order.
 export const checkoutSchema = z
   .object({
     notes: z.string().trim().max(500).optional(),

@@ -40,6 +40,7 @@ const statusLabels: Record<LessonBooking["status"], string> = {
   rescheduled: "Rescheduled",
 };
 
+/** The member's lessons, split into upcoming and history. */
 export function MemberLessons({
   lessons,
   availableTimesByBooking,
@@ -119,6 +120,7 @@ export function MemberLessons({
   );
 }
 
+// A titled list of lesson cards.
 function LessonSection({
   id,
   title,
@@ -153,6 +155,7 @@ function LessonSection({
   );
 }
 
+// One lesson, with reschedule and cancel for upcoming lessons the member can change.
 function LessonCard({
   lesson,
   children,
@@ -205,6 +208,7 @@ function LessonCard({
   );
 }
 
+// Picks a new time for a lesson.
 function RescheduleForm({
   lesson,
   times,
@@ -250,6 +254,7 @@ function RescheduleForm({
   );
 }
 
+// Cancels a lesson, first warning about any cancellation fee.
 function CancelForm({
   lesson,
   action,
@@ -305,12 +310,14 @@ function CancelForm({
   );
 }
 
+// The error or success message from a lesson action.
 function ActionMessage({ state }: { state: LessonMemberActionState }) {
   if (state.error) return <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{state.error}</p>;
   if (state.success) return <p role="status" className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">{state.success}</p>;
   return null;
 }
 
+/** Shown when the member has no lessons yet; links to booking. */
 export function LessonsEmptyCallToAction() {
   return (
     <Link href="/protected/book" className="inline-flex min-h-11 items-center rounded-full bg-[#2d176b] px-5 py-3 font-medium text-white dark:bg-violet-600">

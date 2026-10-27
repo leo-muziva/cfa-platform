@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+/** /auth/sign-up-success: tells a new user to confirm their email. */
 export default function Page() {
   return (
     <div className="flex min-h-[calc(100svh-var(--site-nav-height))] w-full items-center justify-center p-6 md:p-10">

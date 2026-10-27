@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { safeBookingSlot } from "@/lib/booking-calendar";
 
+/** /book: old public link; sends people to the portal booking page, keeping a valid ?slot= id. */
 export default async function BookingCompatibilityPage({
   searchParams,
 }: {

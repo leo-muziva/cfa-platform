@@ -1,3 +1,6 @@
+// Supabase client for Server Components, Server Actions and route handlers.
+// It reads the signed-in user's session from cookies, so RLS applies as
+// that user.
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabasePublicConfig } from "./config";

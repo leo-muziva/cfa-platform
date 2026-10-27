@@ -30,6 +30,7 @@ export interface GlassDialogProps {
   children: React.ReactNode;
 }
 
+/** A themed modal dialog. Closes on Escape or its close button, not on a backdrop click. */
 export function GlassDialog({ open, onClose, labelledBy, label, className, children }: GlassDialogProps) {
   const reduceMotion = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
