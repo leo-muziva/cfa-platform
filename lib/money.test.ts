@@ -26,3 +26,15 @@ describe("with cents, for financial records", () => {
     expect(formatRandsWithCents(-150)).toBe("-R150.00");
   });
 });
+
+describe("cart and order amounts", () => {
+  it("always use two decimals and a space between thousands", () => {
+    expect(formatRandsWithCents(55)).toBe("R55.00");
+    expect(formatRandsWithCents(2722.5)).toBe("R2 722.50");
+    expect(formatRandsWithCents(1237.5)).toBe("R1 237.50");
+    // line totals are worked out in cents, never as float rands
+    expect(formatZarWithCents(2750 * 2)).toBe("R55.00");
+    expect(formatZarWithCents(121000 * 2 + 2750 * 11)).toBe("R2 722.50");
+    expect(formatZarWithCents(121000 + 2750)).toBe("R1 237.50");
+  });
+});

@@ -4,7 +4,7 @@ import { getCart } from "@/lib/services/shop-order-service";
 import { continueCheckout, reopenOrder } from "../actions/cart";
 import { CartItemControls } from "../components/CartItemControls";
 import { PayNowButton } from "../components/SubmitOrderButton";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 
 
 
@@ -64,7 +64,7 @@ export default async function CartPage({
           ) : null}
 
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatZar(line.unitPriceCents)} each
+            {formatZarWithCents(line.unitPriceCents)} each
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export default async function CartPage({
             <CartItemControls itemId={line.id} quantity={line.quantity} />
           )}
           <p className="w-24 text-right font-semibold text-foreground">
-            {formatZar(line.unitPriceCents * line.quantity)}
+            {formatZarWithCents(line.unitPriceCents * line.quantity)}
           </p>
         </div>
       </div>
@@ -137,7 +137,7 @@ export default async function CartPage({
         <div className="mt-6 flex items-center justify-between">
           <p className="text-lg text-foreground">Total</p>
           <p className="text-xl font-semibold text-foreground">
-            {formatZar(cart.totalCents)}
+            {formatZarWithCents(cart.totalCents)}
           </p>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default async function CartPage({
                 disabled={!paymentsAvailable}
                 className="w-full rounded-lg bg-black px-4 py-3 text-white disabled:bg-gray-400 dark:bg-violet-600 dark:disabled:bg-white/20"
               >
-                Continue to payment - {formatZar(cart.totalCents)}
+                Continue to payment - {formatZarWithCents(cart.totalCents)}
               </button>
               {!paymentsAvailable ? (
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -187,7 +187,7 @@ export default async function CartPage({
         </div>
       ) : (
         <PayNowButton
-          totalLabel={formatZar(cart.totalCents)}
+          totalLabel={formatZarWithCents(cart.totalCents)}
           canPay={canPay}
           paymentsAvailable={paymentsAvailable}
           initialNotes={cart.notes ?? ""}

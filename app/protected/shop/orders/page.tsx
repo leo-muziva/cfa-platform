@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { listOrders } from "@/lib/services/shop-order-service";
 import { listMyRefundablePayments } from "@/lib/services/refund-service";
 import { statusView } from "./orderStatus";
-import { formatZar } from "@/lib/money";
+import { formatZarWithCents } from "@/lib/money";
 
 
 
@@ -103,7 +103,7 @@ export default async function OrdersPage({
             {line.quantity > 1 ? " × " + line.quantity : ""}
           </span>
           <span className="text-foreground">
-            {formatZar(line.unitPriceCents * line.quantity)}
+            {formatZarWithCents(line.unitPriceCents * line.quantity)}
           </span>
         </div>
       );
@@ -156,7 +156,7 @@ export default async function OrdersPage({
           </div>
 
           <p className="shrink-0 font-semibold text-foreground">
-            {formatZar(order.totalCents)}
+            {formatZarWithCents(order.totalCents)}
           </p>
         </div>
 

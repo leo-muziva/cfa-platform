@@ -1,10 +1,5 @@
 import { getBulkProgress } from "@/lib/services/shop-order-service";
-
-const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
-
-function formatCents(cents: number) {
-  return zar.format(cents / 100);
-}
+import { formatZarWithCents } from "@/lib/money";
 
 // Shown to customers on the catalogue. Shows how close the collecting bulk
 // order is to its threshold. Only paid orders count, and the total comes
@@ -28,7 +23,7 @@ export async function BulkOrderProgress() {
         <p className="text-sm text-muted-foreground">
           {reached
             ? "Threshold reached, order going in soon"
-            : formatCents(leftCents) + " left until next order"}
+            : formatZarWithCents(leftCents) + " left until next order"}
         </p>
       </div>
 
