@@ -1,3 +1,6 @@
+// Data access for profiles, households and membership types. Uses the
+// signed-in user's Supabase client, so row level security still applies.
+// Only the invite flow needs the service-role client.
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -6,6 +9,7 @@ import type {
   MembershipType, HouseholdMember,
 } from '@/types/domain'
 
+// Columns every Profile read returns, so all callers get the same shape.
 const PROFILE_SELECT = `
   id,email,full_name,phone,date_of_birth,emergency_contact_name,emergency_contact_phone,
   membership_status,membership_type_id,is_staff,staff_type,is_active,terms_accepted_at,
@@ -13,6 +17,7 @@ const PROFILE_SELECT = `
   membership_type:membership_types(id,code,name)
 `
 
+/** Reads one profile, or null when it does not exist or RLS hides it. */
 export async function getProfileById(id: string): Promise<Profile | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('profiles').select(PROFILE_SELECT).eq('id', id).single()
@@ -20,6 +25,7 @@ export async function getProfileById(id: string): Promise<Profile | null> {
   return data as unknown as Profile
 }
 
+/** Saves profile fields and returns the updated profile. */
 export async function updateProfile(id: string, updates: ProfileUpdate): Promise<Profile | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select(PROFILE_SELECT).single()
@@ -27,6 +33,7 @@ export async function updateProfile(id: string, updates: ProfileUpdate): Promise
   return data as unknown as Profile
 }
 
+/** Saves sign-up details and records acceptance of terms and privacy. */
 export async function completeProfile(id: string, updates: ProfileUpdate): Promise<Profile | null> {
   const supabase = await createClient()
   const now = new Date().toISOString()
@@ -36,6 +43,7 @@ export async function completeProfile(id: string, updates: ProfileUpdate): Promi
   return error ? null : data as unknown as Profile
 }
 
+/** The household the profile belongs to, and their role in it. */
 export async function getHouseholdMembership(profileId: string): Promise<HouseholdMember | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('household_members')
@@ -43,6 +51,7 @@ export async function getHouseholdMembership(profileId: string): Promise<Househo
   return error ? null : data as HouseholdMember
 }
 
+/** Household memberships with basic profile details; all households when no id is given. */
 export async function getHouseholdMembers(householdId?: string): Promise<HouseholdMember[]> {
   const supabase = await createClient()
   let query = supabase.from('household_members').select(`
@@ -54,16 +63,22 @@ export async function getHouseholdMembers(householdId?: string): Promise<Househo
   return error ? [] : data as unknown as HouseholdMember[]
 }
 
+/**
+ * Who pays for this participant: themselves, or their active guardian.
+ * Decided by the `active_billing_payer` database function.
+ */
 export async function getActiveBillingPayer(profileId: string): Promise<string | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('active_billing_payer', { target_participant: profileId })
   return error || typeof data !== 'string' ? null : data
 }
 
+/** One page of profiles for the admin list, filtered and newest first. */
 export async function getProfilesPage(filters: MemberListFilters, pageSize: number) {
   const supabase = await createClient()
   let query = supabase.from('profiles').select(PROFILE_SELECT, { count: 'exact' })
   if (filters.search) {
+    // Strip characters that have meaning inside a PostgREST or() filter.
     const term = filters.search.replace(/[,%()]/g, ' ').trim()
     if (term) query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`)
   }
@@ -76,6 +91,11 @@ export async function getProfilesPage(filters: MemberListFilters, pageSize: numb
   return { profiles: data as unknown as Profile[], total: count ?? 0 }
 }
 
+/**
+ * Sends a Supabase Auth invite. Needs the service-role client, so it returns
+ * an error when that key is not configured. Staff invites then call
+ * `provision_invited_staff` to grant staff access.
+ */
 export async function inviteMemberByEmail(
   email: string,
   fullName: string,
@@ -102,6 +122,7 @@ export async function inviteMemberByEmail(
   return { userId: data.user.id }
 }
 
+/** Active membership types, cheapest first. */
 export async function getMembershipTypes(): Promise<MembershipType[]> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('membership_types')
@@ -110,6 +131,7 @@ export async function getMembershipTypes(): Promise<MembershipType[]> {
   return error ? [] : data as MembershipType[]
 }
 
+/** The few profile columns the dashboard counts are built from. */
 export async function getMemberStatsRows(): Promise<MemberStatsRow[]> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('profiles')
@@ -117,6 +139,7 @@ export async function getMemberStatsRows(): Promise<MemberStatsRow[]> {
   return error ? [] : data as unknown as MemberStatsRow[]
 }
 
+/** Admin update of another member's profile; RLS limits this to admins. */
 export async function adminUpdateProfile(id: string, updates: AdminProfileUpdate): Promise<Profile | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select(PROFILE_SELECT).single()

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestFamilyChangeAction, acceptFamilyTransferAction } from "@/app/actions/family";
 
+/** /protected/family/changes: request an unlink or transfer for an active link, and answer transfers. */
 export default async function FamilyChangesPage() {
   const [data, family] = await Promise.all([getFamilyChanges(), getFamilyAccountsPageData()]);
   if ("error" in data || "error" in family) redirect("/auth/login");

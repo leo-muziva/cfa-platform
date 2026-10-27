@@ -16,6 +16,7 @@ function fromIso(value: string | undefined): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
+// A local Date as "YYYY-MM-DD", without time zone shifts.
 function toIso(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -48,6 +49,7 @@ export function DatePicker(props: DatePickerProps) {
   return <DatePickerField key={field.submission} {...props} field={field} />;
 }
 
+// The picker itself. Remounted after each failed submit (see DatePicker).
 function DatePickerField({
   id,
   name,
@@ -129,6 +131,7 @@ function DatePickerField({
   );
 }
 
+// Today in Cape Town as "YYYY-MM-DD" (the en-CA locale formats that way).
 function todayInCapeTown(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(new Date());
 }

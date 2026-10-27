@@ -1,9 +1,12 @@
+// Daily Vercel Cron job (see vercel.json): releases lesson slots whose
+// pay-now hold expired. Requires the CRON_SECRET bearer token.
 import { NextResponse } from "next/server";
 import { isAuthorizedCronRequest, runExpireHoldsJob } from "@/lib/services/scheduled-jobs-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Runs the job and returns how many holds were released. */
 export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request.headers.get("authorization"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

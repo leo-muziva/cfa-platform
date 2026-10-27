@@ -1,5 +1,7 @@
 import type { LessonBooking } from "@/types/domain";
 
+// Which fee applies if a lesson is cancelled now: none, none because the
+// pay-now hold was never paid, or a percentage of the lesson price.
 export type CancellationBand =
   | { kind: "free" }
   | { kind: "held" }
@@ -17,6 +19,7 @@ export function cancellationBand(lesson: LessonBooking, now: Date): Cancellation
   return { kind: "fee", percent: lesson.lateFeePercent ?? 100 };
 }
 
+/** The warning shown before a member confirms a cancellation. */
 export function cancellationWarning(band: CancellationBand): string {
   if (band.kind === "held") return "This lesson has not been paid, so cancelling releases the time at no cost.";
   if (band.kind === "free") return "You are inside the free cancellation period. No fee will be charged.";

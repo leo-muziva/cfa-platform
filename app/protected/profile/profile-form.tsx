@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
+/** The member's own profile form, with the staff-managed fields shown read-only. */
 export function ProfileForm({ profile }: { profile: Profile }) {
   const [state, formAction, isPending] = useFormAction(updateProfileAction, {})
 

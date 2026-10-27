@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isMainLinkCurrent } from "@/components/site-navigation";
 
+// One link in the member portal bar.
 export interface PortalNavigationLink {
   href: string;
   label: string;

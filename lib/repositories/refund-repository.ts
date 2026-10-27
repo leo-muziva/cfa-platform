@@ -1,3 +1,6 @@
+// Data access for refunds. Reads and staff decisions run as the signed-in
+// user so the RPCs can check who is asking. Recording PayFast's answer uses
+// the service-role client.
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -21,6 +24,7 @@ export type RefundErrorCode =
   | "admin_unavailable"
   | "unknown";
 
+// Repository result: data, or one of the refund error codes.
 export type RepoResult<T> = { ok: true; data: T } | { ok: false; code: RefundErrorCode };
 
 const KNOWN_CODES: readonly RefundErrorCode[] = [
@@ -29,6 +33,7 @@ const KNOWN_CODES: readonly RefundErrorCode[] = [
   "invalid_amount", "reference_required", "refund_not_ready",
 ];
 
+// Maps a Postgres error message to a known refund code.
 function toCode(message: string | undefined): RefundErrorCode {
   const code = message?.trim() ?? "";
   return (KNOWN_CODES as readonly string[]).includes(code) ? code as RefundErrorCode : "unknown";
@@ -40,10 +45,12 @@ function cents(value: string | number | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+// Narrows the payment kind text from the database; unknown values count as invoices.
 function toKind(value: string): PaymentKind {
   return value === "booking" || value === "order" || value === "membership" ? value : "invoice";
 }
 
+// Raw RPC rows, before mapping to camelCase domain types.
 interface RefundablePaymentRow {
   attempt_id: string;
   payer_id: string;
@@ -81,6 +88,7 @@ interface RefundRequestRow {
   processed_at: string | null;
 }
 
+// A refund that has been claimed for PayFast processing.
 export interface StartedProviderRefund {
   refundId: string;
   provider: string | null;
@@ -97,6 +105,7 @@ interface StartedProviderRefundRow {
   reason: string;
 }
 
+// Maps a refundable payment row to the domain type.
 function toRefundablePayment(row: RefundablePaymentRow): RefundablePayment {
   return {
     attemptId: row.attempt_id,
@@ -113,6 +122,7 @@ function toRefundablePayment(row: RefundablePaymentRow): RefundablePayment {
   };
 }
 
+// Maps a refund request row to the domain type.
 function toRefundRequest(row: RefundRequestRow): RefundRequest {
   return {
     id: row.id,
@@ -138,6 +148,7 @@ function toRefundRequest(row: RefundRequestRow): RefundRequest {
   };
 }
 
+/** Payments with money left to refund. Staff see everyone's; payers see their own. */
 export async function listRefundablePayments(): Promise<RepoResult<RefundablePayment[]>> {
   const db = await createClient();
   const { data, error } = await db.rpc("list_refundable_payments");
@@ -145,6 +156,7 @@ export async function listRefundablePayments(): Promise<RepoResult<RefundablePay
   return { ok: true, data: ((data ?? []) as RefundablePaymentRow[]).map(toRefundablePayment) };
 }
 
+/** Refund requests. Staff see everyone's; payers see their own. */
 export async function listRefundRequests(): Promise<RepoResult<RefundRequest[]>> {
   const db = await createClient();
   const { data, error } = await db.rpc("list_refund_requests");
@@ -152,6 +164,7 @@ export async function listRefundRequests(): Promise<RepoResult<RefundRequest[]>>
   return { ok: true, data: ((data ?? []) as RefundRequestRow[]).map(toRefundRequest) };
 }
 
+/** Creates a refund request and returns its id. */
 export async function requestRefund(attemptId: string, amountCents: number, reason: string): Promise<RepoResult<string>> {
   const db = await createClient();
   const { data, error } = await db.rpc("request_refund", {
@@ -164,6 +177,7 @@ export async function requestRefund(attemptId: string, amountCents: number, reas
   return { ok: true, data };
 }
 
+/** Records a staff approval or rejection. */
 export async function decideRefund(input: {
   refundId: string;
   approve: boolean;
@@ -194,6 +208,7 @@ export async function completeManualRefund(refundId: string, reference: string):
   return { ok: true, data: data === true };
 }
 
+/** Records the final outcome of a refund stuck in "processing". */
 export async function resolveProcessingRefund(input: {
   refundId: string;
   processed: boolean;
@@ -211,6 +226,10 @@ export async function resolveProcessingRefund(input: {
   return { ok: true, data: true };
 }
 
+/**
+ * Moves an approved PayFast refund to "processing" and returns what PayFast
+ * needs. Claiming first means a second click cannot send the money twice.
+ */
 export async function startProviderRefund(refundId: string): Promise<RepoResult<StartedProviderRefund>> {
   const db = await createClient();
   const { data, error } = await db.rpc("start_provider_refund", { target_refund: refundId });

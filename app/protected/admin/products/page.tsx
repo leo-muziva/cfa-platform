@@ -16,6 +16,11 @@ import { formatRands } from "@/lib/money";
 const selectClasses =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
+/**
+ * /protected/admin/products: the shop catalogue with search and filters.
+ * Reads products directly with the Supabase client rather than through a
+ * repository (an existing exception to the layered pattern).
+ */
 export default async function AdminProductsPage({
   searchParams,
 }: {

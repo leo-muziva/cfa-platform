@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Book a Fencing Lesson — Cape Fencing Academy",
 };
 
+/** /protected/book: the coach directory, with each coach's next open times. */
 export default async function BookLessonPage() {
   const [result, context] = await Promise.all([getLessonCoachDirectory(), getCurrentAccountContext()]);
   const profileIncomplete = !("error" in context) && !context.profile.profile_completed_at && !context.capabilities.isAdmin;

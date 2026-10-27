@@ -35,6 +35,7 @@ export function normalizeFieldName(name: string): string {
   return name.replace(/[_\-\s[\]]/g, "").toLowerCase();
 }
 
+// The error for a field, matching names regardless of snake_case or camelCase.
 function errorFor(fieldErrors: Record<string, string> | undefined, name: string): string | undefined {
   if (!fieldErrors) return undefined;
   const target = normalizeFieldName(name);
@@ -44,6 +45,7 @@ function errorFor(fieldErrors: Record<string, string> | undefined, name: string)
   return undefined;
 }
 
+/** The id of a field's error message, for aria-describedby. */
 export function fieldErrorId(name: string): string {
   return `field-error-${name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 }
@@ -75,6 +77,7 @@ export function useFormAction<S extends FormFieldState>(
   }, initialState as Awaited<S>);
 }
 
+// Input types whose values are never restored after a failed submit.
 const RESTORABLE_SKIP = new Set(["hidden", "submit", "button", "reset", "file", "image"]);
 
 /**
@@ -134,6 +137,7 @@ export function ValidatedForm({
   );
 }
 
+// What an input needs to show its error and starting value.
 export interface FormFieldInfo {
   error?: string;
   invalid: boolean;
@@ -143,6 +147,7 @@ export interface FormFieldInfo {
   submission: number;
 }
 
+/** Error state and starting value for one named field inside a ValidatedForm. */
 export function useFormField(name: string | undefined, fallback?: string): FormFieldInfo {
   const context = useContext(FormStateContext);
   if (!context || !name) return { invalid: false, defaultValue: fallback, submission: 0 };
@@ -151,6 +156,7 @@ export function useFormField(name: string | undefined, fallback?: string): FormF
   return { error, invalid: Boolean(error), errorId: error ? fieldErrorId(name) : undefined, defaultValue, submission: context.submission };
 }
 
+/** The error message under a field, if the server rejected it. */
 export function FieldError({ name, className }: { name: string; className?: string }) {
   const { error } = useFormField(name);
   if (!error) return null;

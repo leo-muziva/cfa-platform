@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getFamilyChanges } from "@/lib/services/FamilyService";
 import { FamilyReviewList } from "@/components/portal/family-review-list";
 
+/** /protected/admin/family-requests: staff queue of unlink and transfer requests. */
 export default async function AdminFamilyRequestsPage() {
   const data = await getFamilyChanges(true);
   if ("error" in data) redirect("/protected");

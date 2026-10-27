@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
+/** Error boundary for portal pages: shows a friendly message with a retry button. */
 export default function ProtectedError({
   error,
   reset,

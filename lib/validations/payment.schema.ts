@@ -33,8 +33,11 @@ export const paymentTargetSchema = z.union([
   }).strict(),
 ]);
 
+// Payment attempt ids in URLs and actions.
 export const paymentAttemptSchema = z.uuid();
 
+// A second check on what a provider adapter returns before it is stored.
+// Cents are a positive whole number as a string.
 export const paymentEventSchema = z.object({
   provider: z.string().min(1).max(64),
   eventId: z.string().min(1).max(200),

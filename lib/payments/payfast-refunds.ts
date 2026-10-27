@@ -37,6 +37,8 @@ export interface ProviderRefundRequest {
   reason: string;
 }
 
+// `retryable` means the outcome is unknown (timeout, 5xx), so staff must
+// check PayFast before trying again.
 export type ProviderRefundResult =
   | { ok: true; reference: string | null }
   | { ok: false; error: string; retryable: boolean };
@@ -49,14 +51,17 @@ export interface ProviderRefundClient {
 const API_BASE = "https://api.payfast.co.za";
 const MAX_REASON_LENGTH = 100;
 
+// UTC timestamp in the format PayFast signs.
 function formatTimestamp(date: Date): string {
   return `${date.toISOString().slice(0, 19)}+00:00`;
 }
 
+// Removes control characters and limits the length PayFast accepts.
 function sanitizeReason(reason: string): string {
   return reason.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, MAX_REASON_LENGTH);
 }
 
+// Finds a refund reference in PayFast's response, if it sent one.
 function pickReference(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const record = data as Record<string, unknown>;
@@ -69,6 +74,7 @@ function pickReference(data: unknown): string | null {
   return null;
 }
 
+// True when PayFast's response says the refund was accepted.
 function isSuccessEnvelope(body: unknown): body is { data?: unknown } {
   if (!body || typeof body !== "object") return false;
   const record = body as Record<string, unknown>;
@@ -78,6 +84,10 @@ function isSuccessEnvelope(body: unknown): body is { data?: unknown } {
   return status === "success" || status === "completed" || (!!data && typeof data === "object" && data.response === true);
 }
 
+/**
+ * Creates the PayFast refund client. `testing` adds the sandbox flag;
+ * `fetcher` and `now` can be replaced in tests.
+ */
 export function createPayFastRefundClient(
   config: { merchantId: string; passphrase: string },
   options: { testing?: boolean; fetcher?: typeof fetch; now?: () => Date } = {},

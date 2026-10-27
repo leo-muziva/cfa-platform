@@ -20,6 +20,7 @@ interface CountryOption {
   dialCode: string;
 }
 
+// Every country with its English name and dialling code, for the dropdown.
 function countryOptions(): CountryOption[] {
   const names = new Intl.DisplayNames(["en-ZA"], { type: "region" });
   const options = getCountries().map((code) => ({
@@ -34,6 +35,7 @@ function countryOptions(): CountryOption[] {
   return options;
 }
 
+// useSyncExternalStore needs a subscribe function; this store never changes.
 const subscribeNothing = () => () => {};
 
 /** True only in the browser, without a hydration mismatch. */
@@ -41,6 +43,7 @@ function useIsClient() {
   return useSyncExternalStore(subscribeNothing, () => true, () => false);
 }
 
+// Splits a stored E.164 number into its country and the national number to show.
 function initialState(value: string | undefined): { country: CountryCode; national: string } {
   if (!value) return { country: DEFAULT_COUNTRY, national: "" };
   const parsed = parsePhoneNumberFromString(value, DEFAULT_COUNTRY);
@@ -74,6 +77,7 @@ export function PhoneInput(props: PhoneInputProps) {
   return <PhoneInputFields key={field.submission} {...props} field={field} />;
 }
 
+// The country dropdown and number box. Remounted after each failed submit.
 function PhoneInputFields({
   id,
   name,

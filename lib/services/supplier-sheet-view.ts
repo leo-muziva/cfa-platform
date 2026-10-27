@@ -8,6 +8,7 @@ export interface SheetDiffRowView {
   change: string;
 }
 
+// One finding row. `source` says whether a basic rule or the AI raised it.
 export interface SheetFindingRowView {
   id: string;
   severity: "high" | "medium" | "low";
@@ -16,6 +17,7 @@ export interface SheetFindingRowView {
   suggestion: string | null;
 }
 
+// Everything the bulk-orders page shows about one supplier sheet.
 export interface SheetView {
   status: SheetRecord["status"];
   generatedAt: string;
@@ -33,12 +35,15 @@ export interface SheetView {
   sentAt: string | null;
 }
 
+// "ITEM SIZE HAND" with blank parts left out.
 function label(line: Pick<SupplierLine, "itemCode" | "size" | "hand">): string {
   return [line.itemCode, line.size, line.hand].filter((part) => part !== "").join(" ");
 }
 
+// Only the first 20 differences are listed; the description gives the totals.
 const MAX_DIFF_ROWS = 20;
 
+/** Shapes a stored sheet for display on the bulk-orders page. */
 export function toSheetView(sheet: SheetRecord): SheetView {
   const diff = sheet.lastCheck?.diff;
   const diffRows: SheetDiffRowView[] = diff

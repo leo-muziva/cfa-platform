@@ -18,10 +18,12 @@ import {
   GoogleIcon,
 } from "@/components/ui/glass-auth";
 
+// The login form asks for the email first, then the password.
 type Step = "email" | "password";
 const STEPS: Step[] = ["email", "password"];
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
+/** The login page form. Signs in with Supabase Auth (email and password, or Google). */
 export function SignInFlow({
   next = "/",
   accountConfirmed = false,

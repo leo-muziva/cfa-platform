@@ -29,6 +29,11 @@ const SORTS: Record<string, { column: string; ascending: boolean; label: string 
 // Products per page: eight rows of three on desktop.
 const PAGE_SIZE = 24;
 
+/**
+ * /protected/shop: the catalogue. Browse by section, then weapon, or
+ * search, with sorting and pagination. Reads products directly with the
+ * Supabase client (an existing exception to the layered pattern).
+ */
 export default async function ShopPage({
   searchParams,
 }: {
@@ -511,6 +516,7 @@ export default async function ShopPage({
   );
 }
 
+// Frame for one browse step: breadcrumbs, title, toolbar and the content below.
 function BrowseStep({
   crumbs,
   title,

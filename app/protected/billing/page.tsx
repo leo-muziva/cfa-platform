@@ -10,6 +10,11 @@ import { getPayableLessonHolds } from '@/lib/services/LessonBookingService'
 import { formatCapeTownTime } from '@/lib/booking-calendar'
 import { formatRandsWithCents, formatZarWithCents } from '@/lib/money'
 
+/**
+ * /protected/billing: the payer's balance, outstanding and upcoming
+ * charges, lesson holds and memberships to pay, invoices and receipts.
+ * Dependents get a short note that their guardian handles billing.
+ */
 export default async function BillingPage() {
   const billing = await getPayerBilling()
   if ('error' in billing) {

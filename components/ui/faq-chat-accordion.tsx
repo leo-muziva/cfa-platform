@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// One question and answer.
 export interface FaqItem {
   id: number;
   question: string;
@@ -22,6 +23,7 @@ export interface FaqAccordionProps {
   answerClassName?: string;
 }
 
+/** FAQ list styled as chat bubbles. One answer is open at a time. */
 export function FaqAccordion({ data, className, timestamp, questionClassName, answerClassName }: FaqAccordionProps) {
   const [openItem, setOpenItem] = React.useState("");
   const shouldReduceMotion = useReducedMotion();

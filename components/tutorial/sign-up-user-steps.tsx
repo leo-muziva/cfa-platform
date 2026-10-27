@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TutorialStep } from "./tutorial-step";
 import { ArrowUpRight } from "lucide-react";
 
+// Leftover from the Supabase starter template's tutorial. Not used by any page.
 export function SignUpUserSteps() {
   return (
     <ol className="flex flex-col gap-6">

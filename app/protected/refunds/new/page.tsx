@@ -19,6 +19,7 @@ const KIND_LABELS: Record<PaymentKind, string> = {
   invoice: "Invoice",
 };
 
+// Page frame with a link back to the refunds list.
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -31,6 +32,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** /protected/refunds/new?attempt=<id>: request a refund for one of the payer's payments. */
 export default async function NewRefundPage({
   searchParams,
 }: {

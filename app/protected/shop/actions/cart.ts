@@ -9,10 +9,12 @@ import * as shop from "@/lib/services/shop-order-service";
 
 export type CartActionResult = { success: true } | { error: string };
 
+// Converts a service result into the shape the client components expect.
 function toActionResult(result: { ok: true } | { ok: false; error: string }): CartActionResult {
   return result.ok ? { success: true } : { error: result.error };
 }
 
+// The route that forwards the browser to the payment provider.
 function checkoutUrl(attemptId: string) {
   return `/api/payments/checkout?attempt=${encodeURIComponent(attemptId)}`;
 }

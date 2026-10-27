@@ -7,6 +7,7 @@ import { getCurrentAccountContext } from '@/lib/services/MemberService'
 import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 import { ProfileForm } from './profile/profile-form'
 
+/** /protected: the member's home page, with their profile form and a one-line membership status. */
 export default async function ProfileDashboardPage() {
   const [context, membershipData] = await Promise.all([
     getCurrentAccountContext(),

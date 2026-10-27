@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { MemberListFilters, Profile } from '@/types/domain'
 
+// Shows the staff role, or guest/member for everyone else.
 function AccountBadge({ profile }: { profile: Profile }) {
   return <Badge variant={profile.staff_type === 'admin' ? 'default' : profile.is_staff ? 'secondary' : 'outline'}>
     {profile.staff_type ?? profile.membership_status}
@@ -29,6 +30,7 @@ function pageHref(filters: MemberListFilters, page: number): string {
 const selectClasses =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
+/** /protected/admin/members: searchable, filterable, paged member list. */
 export default async function MembersPage({
   searchParams,
 }: {

@@ -25,6 +25,7 @@ const PLAN_BADGES: Partial<Record<string, string>> = {
   twelve_month: "Pay once for the year",
 };
 
+// Link to the apply form on the membership page with this plan picked.
 function applyHref(code: string) {
   return `/protected/membership?plan=${code}#apply-membership`;
 }
@@ -78,6 +79,7 @@ export function membershipPricingCards(plans: PublicPricingPlan[], showButtons: 
   return { beginner, terms };
 }
 
+/** The pricing cards at the top of the membership page. */
 export function MembershipPlans({
   plans,
   showButtons,

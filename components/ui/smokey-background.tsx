@@ -75,6 +75,7 @@ const PAUSE_EVENT = "cfa:smoke-paused-change";
 // In-memory copy for when storage is blocked (private windows, strict settings).
 let pausedInMemory = false;
 
+// Whether the visitor paused the animation, saved in local storage.
 function readPausedPreference(): boolean {
   try {
     return window.localStorage.getItem(PAUSE_STORAGE_KEY) === "true";
@@ -83,6 +84,7 @@ function readPausedPreference(): boolean {
   }
 }
 
+// "#RRGGBB" or "#RGB" as red, green and blue from 0 to 1, for the shader.
 function hexToRgb01(hex: string): [number, number, number] {
   const normalized = hex.replace("#", "");
   const full =
@@ -97,6 +99,7 @@ function hexToRgb01(hex: string): [number, number, number] {
   return [((int >> 16) & 255) / 255, ((int >> 8) & 255) / 255, (int & 255) / 255];
 }
 
+// Compiles one WebGL shader; null when the browser rejects it.
 function compileShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
   const shader = gl.createShader(type);
   if (!shader) return null;
@@ -109,6 +112,11 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string):
   return shader;
 }
 
+/**
+ * The animated purple smoke behind the member portal, drawn with WebGL.
+ * Falls back to a plain colour without WebGL and stays still when the
+ * visitor prefers reduced motion or has paused it.
+ */
 export function SmokeyBackground({
   color = "#7C3AED",
   baseColor = DARK_BASE_HEX,

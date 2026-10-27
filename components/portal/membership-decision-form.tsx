@@ -5,6 +5,7 @@ import { decideMembershipRequestAction } from '@/app/actions/platform'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 
+/** Admin approve / ask for changes / reject form for one membership application. */
 export function MembershipDecisionForm({ applicationId, privateNotes }: {
   applicationId: string
   privateNotes: string | null

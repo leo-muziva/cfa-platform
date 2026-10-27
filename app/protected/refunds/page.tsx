@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 
 
+// A date as "6 October 2026".
 function formatDate(value: string | null) {
   if (!value) return "";
   return new Date(value).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
@@ -62,6 +63,7 @@ function accessProblem(error: string): "login" | "forbidden" | "other" {
   return "other";
 }
 
+// One of the payer's refunds, with a plain-language status.
 function RefundCard({ refund }: { refund: RefundRequest }) {
   const view = STATUS_VIEW[refund.status];
   return (
@@ -94,6 +96,7 @@ function RefundCard({ refund }: { refund: RefundRequest }) {
   );
 }
 
+/** /protected/refunds: the payer's refund requests and their status. */
 export default async function RefundsPage({
   searchParams,
 }: {

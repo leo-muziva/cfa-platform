@@ -1,3 +1,5 @@
+// Membership pricing for the public website. Prices come from the
+// membership_types table so the site never shows hardcoded amounts.
 import "server-only";
 import { listPublicMembershipProducts } from "@/lib/repositories/public-membership-repository";
 
@@ -13,6 +15,8 @@ export interface PublicPricingPlan {
   discountNote: string | null;
 }
 
+// Display order on the pricing page, and fallback names for plans that are
+// missing from the database (they then show without a price).
 const PRODUCT_CODES: PublicMembershipCode[] = ["month_to_month", "six_month", "twelve_month", "beginner_package"];
 const PRODUCT_NAMES: Record<PublicMembershipCode, string> = {
   month_to_month: "Month-to-month",
@@ -21,11 +25,17 @@ const PRODUCT_NAMES: Record<PublicMembershipCode, string> = {
   beginner_package: "Beginner package",
 };
 
+// Database numerics can arrive as strings; anything invalid becomes null.
 function randValue(value: number | string): number | null {
   const amount = Number(value);
   return Number.isFinite(amount) && amount >= 0 ? amount : null;
 }
 
+/**
+ * Turns membership_types rows into the four pricing cards. The six-month
+ * "10% off" note only appears when the stored price really is six monthly
+ * dues less 10%, so the label cannot drift from the data.
+ */
 export function mapPublicPricingPlans(rows: Awaited<ReturnType<typeof listPublicMembershipProducts>>): PublicPricingPlan[] {
   const available = "products" in rows ? rows.products : [];
   const monthly = available.find((row) => row.code === "month_to_month");
@@ -47,6 +57,7 @@ export function mapPublicPricingPlans(rows: Awaited<ReturnType<typeof listPublic
   });
 }
 
+/** Loads and maps the active membership products for the pricing page. */
 export async function getPublicPricingPlans(): Promise<PublicPricingPlan[]> {
   return mapPublicPricingPlans(await listPublicMembershipProducts());
 }

@@ -3,6 +3,7 @@ import { cancelCoachFutureBookingsAction, setCoachLessonProfileAction } from "@/
 import { CoachSetup } from "@/components/portal/lesson-operations/coach-setup";
 import { getAdminCoachSetupPageData } from "@/lib/services/LessonBookingService";
 
+/** /protected/admin/coaches: which coaches take bookings and for which weapons. */
 export default async function AdminCoachSetupPage() {
   const result = await getAdminCoachSetupPageData();
   if ("error" in result) redirect(result.error === "Not authenticated" ? "/auth/login" : "/protected");

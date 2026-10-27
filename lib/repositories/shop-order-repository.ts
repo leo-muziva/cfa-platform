@@ -6,6 +6,7 @@ import type { Handedness, OrderStatus, ShopCart, ShopCartLine } from "@/types/do
 // customer's own orders; status changes past draft happen only through the
 // security-definer checkout routines.
 
+// The product fields the cart rules need.
 export interface CartProductRecord {
   id: number;
   price: number;
@@ -14,16 +15,19 @@ export interface CartProductRecord {
   isActive: boolean;
 }
 
+// The open cart's id and whether it is still editable.
 export interface OpenCartHeader {
   id: string;
   status: ShopCart["status"];
 }
 
+// An existing cart line that matches a product, size and hand.
 export interface CartLineMatch {
   id: string;
   quantity: number;
 }
 
+// A line to insert into the cart. unitPrice is in rands.
 export interface NewCartLine {
   orderId: string;
   productId: number;
@@ -33,12 +37,14 @@ export interface NewCartLine {
   unitPrice: number;
 }
 
+// Paid total of the collecting bulk order against its threshold.
 export interface BulkProgressRecord {
   reference: string;
   thresholdCents: number;
   totalCents: number;
 }
 
+// One line of a submitted order, for the "my orders" page.
 export interface ShopOrderLineSummary {
   id: string;
   itemCode: string;
@@ -49,6 +55,7 @@ export interface ShopOrderLineSummary {
   unitPriceCents: number;
 }
 
+// A submitted order with its lines and bulk order status.
 export interface ShopOrderSummary {
   id: string;
   status: Exclude<OrderStatus, "draft">;
@@ -71,16 +78,19 @@ export function toCents(value: number | string): number {
   return Math.round(Number(value) * 100);
 }
 
+// Narrows the stored text to "right", "left" or null.
 function toHandedness(value: string | null): Handedness | null {
   return value === "right" || value === "left" ? value : null;
 }
 
+/** The signed-in user's id, or null. */
 export async function getCurrentUserId(): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   return data?.user?.id ?? null;
 }
 
+/** The customer's one open order (draft or pending payment), without its lines. */
 export async function findOpenCartHeader(userId: string): Promise<OpenCartHeader | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -96,6 +106,7 @@ export async function findOpenCartHeader(userId: string): Promise<OpenCartHeader
   };
 }
 
+// Raw order_items row with its joined product.
 interface CartLineRow {
   id: string;
   product_id: number;
@@ -109,6 +120,7 @@ interface CartLineRow {
     | null;
 }
 
+/** The open order with its lines and a total worked out from the stored unit prices. */
 export async function findOpenCart(userId: string): Promise<ShopCart | null> {
   const supabase = await createClient();
   const { data: order } = await supabase
@@ -154,6 +166,7 @@ export async function findOpenCart(userId: string): Promise<ShopCart | null> {
   };
 }
 
+/** The product fields needed to validate an add-to-cart request. */
 export async function findProduct(productId: number): Promise<CartProductRecord | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -184,6 +197,7 @@ export async function createDraftOrder(userId: string): Promise<string | null> {
   return data.id as string;
 }
 
+/** The cart line for this exact product, size and hand, if there is one. */
 export async function findMatchingLine(
   orderId: string,
   productId: number,
@@ -204,6 +218,7 @@ export async function findMatchingLine(
   return { id: data.id as string, quantity: data.quantity as number };
 }
 
+/** Adds a new line to the cart. */
 export async function insertLine(line: NewCartLine): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase.from("order_items").insert({
@@ -230,6 +245,7 @@ export async function updateLineQuantity(orderId: string, itemId: string, quanti
   return !error && (data ?? []).length > 0;
 }
 
+/** Deletes a cart line; scoped to the order like updateLineQuantity. */
 export async function deleteLine(orderId: string, itemId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -241,6 +257,7 @@ export async function deleteLine(orderId: string, itemId: string): Promise<boole
   return !error && (data ?? []).length > 0;
 }
 
+/** Total quantity across all lines in the cart. */
 export async function countCartItems(orderId: string): Promise<number> {
   const supabase = await createClient();
   const { data } = await supabase.from("order_items").select("quantity").eq("order_id", orderId);
@@ -268,6 +285,7 @@ export async function actorCanPay(): Promise<boolean> {
   return data === true;
 }
 
+/** Progress of the bulk order currently collecting customer orders, or null. */
 export async function findCollectingBulkProgress(): Promise<BulkProgressRecord | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_collecting_bulk_progress");
@@ -282,6 +300,7 @@ export async function findCollectingBulkProgress(): Promise<BulkProgressRecord |
   };
 }
 
+// Raw order row with its bulk order and lines joined in.
 interface OrderListRow {
   id: string;
   status: string;

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { addToCart } from "../actions/cart";
 
+/** Size and hand pickers plus the add-to-cart button on a product page. */
 export function AddToCartButton({
   productId,
   sizes,

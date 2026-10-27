@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { capeTownDateKey, formatCapeTownDate, formatCapeTownTime } from "@/lib/booking-calendar";
 import { OperationForm, type LessonOperationState } from "./operation-form";
 
+// Lesson data for the admin console. No money fields.
 export interface AdminLessonView {
   id: string;
   coachId: string;
@@ -30,6 +31,7 @@ export interface LessonActivityView {
 
 export interface AdminCoachFilterView { coachId: string; fullName: string }
 
+// Groups bookings by Cape Town calendar day.
 function groupedByDate(bookings: AdminLessonView[]) {
   return bookings.reduce<Record<string, AdminLessonView[]>>((groups, booking) => {
     const key = capeTownDateKey(booking.startsAt);
@@ -40,6 +42,7 @@ function groupedByDate(bookings: AdminLessonView[]) {
 
 const eventLabel = (eventType: string) => eventType.replace(/^lesson\./, "").replaceAll("_", " ");
 
+/** Admin view of every lesson by day, with cancel, attendance and waive actions and recent activity. */
 export function AdminLessonConsole({ bookings, activity, coaches, cancelAction, outcomeAction, waiveAction }: {
   bookings: AdminLessonView[];
   activity: LessonActivityView[];

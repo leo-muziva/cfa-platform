@@ -38,6 +38,10 @@ function orderBadge(status: string) {
   };
 }
 
+/**
+ * /protected/admin/bulk-orders: each bulk order with its paid customer
+ * orders, status controls, CSV exports and the supplier sheet workflow.
+ */
 export default async function BulkOrdersPage() {
   const supabase = await createClient();
 

@@ -8,6 +8,7 @@ import {
   bulkOrderStatusSchema,
 } from "@/lib/validations/bulk-order.schema";
 
+/** Moves a bulk order to its next status, cancels it, or sets the estimated arrival date. */
 export function StatusControls({
   bulkOrderId,
   status,

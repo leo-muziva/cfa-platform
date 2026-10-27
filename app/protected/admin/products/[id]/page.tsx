@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProductForm } from "../ProductForm";
 
+/** /protected/admin/products/[id]: edit a product. */
 export default async function EditProductPage({
   params,
 }: {

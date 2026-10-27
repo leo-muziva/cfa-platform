@@ -1,5 +1,6 @@
 import { UpdatePasswordForm } from "@/components/update-password-form";
 
+/** /auth/update-password: where reset and invite links land to set a new password. */
 export default function Page() {
   return (
     <div className="flex min-h-[calc(100svh-var(--site-nav-height))] w-full items-center justify-center p-6 md:p-10">

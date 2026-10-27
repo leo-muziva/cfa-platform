@@ -31,15 +31,18 @@ async function requireAdminClient() {
   return createClient();
 }
 
+// The validation message to show for a failed product form.
 function firstIssue(error: ZodError) {
   return validationFailure(error).error;
 }
 
+// Product changes show in both the admin list and the customer shop.
 function refreshShop() {
   revalidatePath("/protected/admin/products");
   revalidatePath("/protected/shop");
 }
 
+/** Adds a product. Admins only. */
 export async function createProduct(input: ProductInput): Promise<ActionResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };
@@ -61,6 +64,7 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
   return { success: true };
 }
 
+/** Saves changes to a product. Admins only. */
 export async function updateProduct(id: number, input: ProductInput): Promise<ActionResult> {
   const supabase = await requireAdminClient();
   if (!supabase) return { error: "Only admins can do that." };

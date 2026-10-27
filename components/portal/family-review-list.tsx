@@ -12,6 +12,7 @@ const statusLabels: Record<FamilyChangeRequest["status"], string> = {
   rejected: "Rejected",
 };
 
+// "Name (email)", or a short account id when the reader may not see the profile.
 function person(party: FamilyChangeParty | null | undefined, fallbackId: string) {
   if (!party) return `Account ${fallbackId.slice(0, 8)}`;
   return party.full_name ? `${party.full_name} (${party.email})` : party.email;

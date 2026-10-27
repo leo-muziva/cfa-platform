@@ -2,6 +2,7 @@ import { getBulkProgress } from "@/lib/services/shop-order-service";
 
 const zar = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
+// Cents as a rand amount for the progress text.
 function formatCents(cents: number) {
   return zar.format(cents / 100);
 }

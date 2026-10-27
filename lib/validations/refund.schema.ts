@@ -3,6 +3,7 @@ import { z } from "zod";
 // R1,000,000 is far above any club payment; it guards against typos.
 export const MAX_REFUND_CENTS = 100_000_000;
 
+// Up to seven whole rand digits and at most two decimals.
 const RAND_PATTERN = /^\d{1,7}(\.\d{1,2})?$/;
 
 // Converts a typed rand amount ("125.50", "R 1 250") to whole cents without
@@ -18,6 +19,7 @@ export function randsToCents(value: string): number | null {
 const blankToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
+// A typed rand amount, checked and converted to cents.
 const amountCents = z
   .string({ error: "Enter a refund amount." })
   .transform((value, ctx) => {
@@ -51,6 +53,8 @@ export const requestRefundSchema = z.object({
     .max(500, "Keep the reason under 500 characters."),
 }).transform(({ attemptId, amount, reason }) => ({ attemptId, amountCents: amount, reason }));
 
+// Rejecting needs a note; approving needs a payout method. A lower amount
+// may be approved; blank means the amount requested.
 export const decideRefundSchema = z
   .object({
     refundId,
@@ -72,6 +76,7 @@ export const decideRefundSchema = z
   })
   .transform(({ amount, ...rest }) => ({ ...rest, amountCents: amount }));
 
+// Staff confirm a bank transfer refund with its reference.
 export const completeManualRefundSchema = z.object({
   refundId,
   reference: z

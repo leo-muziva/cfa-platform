@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { OperationForm, type LessonOperationState } from "./operation-form";
 import { ClosurePreviewCard } from "./closure-preview-card";
 
+// A club closure as shown in the list.
 export interface ClosureView {
   id: string;
   startsOn: string;
@@ -16,6 +17,7 @@ export interface ClosureView {
 
 const displayDate = (date: string) => new Intl.DateTimeFormat("en-ZA", { dateStyle: "long", timeZone: "Africa/Johannesburg" }).format(new Date(`${date}T12:00:00+02:00`));
 
+/** Lists club closures and holds the "add closure" preview card. */
 export function ClosureManager({ closures, coachNames, createAction, cancelAction }: {
   closures: ClosureView[];
   coachNames: Record<string, string>;

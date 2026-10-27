@@ -3,9 +3,12 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+// Remembers the last 25 pages visited on this site, in session storage, so
+// BackButton never sends someone back to another website.
 const HISTORY_KEY = "cfa.internal-navigation";
 const MAX_HISTORY_LENGTH = 25;
 
+// The stored history, or an empty list when storage is unavailable or corrupt.
 function readHistory(): string[] {
   try {
     const value = window.sessionStorage.getItem(HISTORY_KEY);
@@ -17,6 +20,7 @@ function readHistory(): string[] {
     return [];
   }
 }
+/** The page visited before `currentPath`, or null when there is none. */
 export function getPreviousInternalPath(currentPath: string): string | null {
   const history = readHistory();
   const currentIndex = history.lastIndexOf(currentPath);
@@ -25,6 +29,10 @@ export function getPreviousInternalPath(currentPath: string): string | null {
   return previous?.startsWith("/") && !previous.startsWith("//") ? previous : null;
 }
 
+/**
+ * Records each page visit. Mounted once in the root layout. Going back to
+ * the previous page pops it instead of adding it again.
+ */
 export function NavigationHistoryTracker() {
   const pathname = usePathname();
 

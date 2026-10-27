@@ -1,8 +1,12 @@
+// PayFast ITN (payment notification) endpoint. PayFast calls it without a
+// browser session, so lib/supabase/proxy.ts lets it through; trust comes
+// from the signature and validation checks in lib/payments/payfast.ts.
 import { NextResponse } from "next/server";
 import { receivePaymentNotification } from "@/lib/services/payment-service";
 
 export const runtime = "nodejs";
 
+/** Reads the body (16 KB at most) and passes it to the payment service. */
 export async function POST(request: Request) {
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/x-www-form-urlencoded")) {
     return new NextResponse("Unsupported notification", { status: 415 });

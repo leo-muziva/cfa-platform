@@ -1,9 +1,13 @@
+// Data access for memberships, family links, billing and invoices, plus the
+// legacy slot booking tables. Runs as the signed-in user; RLS and the RPCs
+// decide what each person may read and change.
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import type { AdminMembershipApplication, BookableLessonSlot, Booking, FamilyLink, Invoice, LessonSlot, Membership, MembershipApplication, MembershipOperationErrorCode, MembershipPaymentDue, MembershipPaymentEmailStatus, Receipt } from '@/types/domain'
 import { bookingDatabaseErrorCode } from '@/lib/booking-errors'
 import { getPaymentProvider } from '@/lib/providers/contracts'
 
+// Numeric columns can arrive as strings from PostgREST.
 type PublicLessonSlotRow = Omit<BookableLessonSlot, 'price' | 'booked_count' | 'remaining_capacity' | 'is_full'> & {
   price: number | string
   booked_count: number | string
@@ -11,6 +15,7 @@ type PublicLessonSlotRow = Omit<BookableLessonSlot, 'price' | 'booked_count' | '
   is_full: boolean
 }
 
+/** Legacy: open lesson slots with remaining capacity. */
 export async function listOpenSlots(): Promise<BookableLessonSlot[]> {
   const db = await createClient()
   const { data, error } = await db.rpc('list_open_lesson_slots')
@@ -24,12 +29,14 @@ export async function listOpenSlots(): Promise<BookableLessonSlot[]> {
   }))
 }
 
+/** Legacy: inserts a lesson slot. */
 export async function createSlot(input: Omit<LessonSlot, 'id' | 'created_by' | 'created_at' | 'is_open'>, createdBy: string) {
   const db = await createClient()
   const { data, error } = await db.from('lesson_slots').insert({ ...input, created_by: createdBy }).select('*').single()
   return error ? null : data as LessonSlot
 }
 
+/** Legacy: books a slot through `create_lesson_booking`. */
 export async function createBooking(slotId: string, fencerId: string, paymentOption: string) {
   const db = await createClient()
   const { data, error } = await db.rpc('create_lesson_booking', {
@@ -40,6 +47,7 @@ export async function createBooking(slotId: string, fencerId: string, paymentOpt
     : { bookingId: data as string }
 }
 
+/** Legacy slot bookings the user can see, newest first. */
 export async function listBookings(): Promise<Booking[]> {
   const db = await createClient()
   const { data, error } = await db.from('bookings').select(`
@@ -49,6 +57,7 @@ export async function listBookings(): Promise<Booking[]> {
   return error ? [] : data as unknown as Booking[]
 }
 
+/** Submits an application. The RPC takes the applicant from the session, not `applicantId`. */
 export async function createMembershipRequest(applicantId: string, membershipTypeId: string) {
   const db = await createClient()
   const { error } = await db.rpc('submit_membership_application', { target_type: membershipTypeId })
@@ -56,6 +65,7 @@ export async function createMembershipRequest(applicantId: string, membershipTyp
   return membershipOperationResult(error, 'request_failed')
 }
 
+/** One applicant's applications, newest first. */
 export async function listMembershipRequestsForMember(applicantId: string): Promise<MembershipApplication[]> {
   const db = await createClient()
   const { data, error } = await db.from('membership_applications').select(`
@@ -67,6 +77,7 @@ export async function listMembershipRequestsForMember(applicantId: string): Prom
   return error ? [] : data as unknown as MembershipApplication[]
 }
 
+/** Every application, with private admin notes flattened onto each row. */
 export async function listMembershipRequestsForAdmin(): Promise<AdminMembershipApplication[]> {
   const db = await createClient()
   const { data, error } = await db.from('membership_applications').select(`
@@ -88,6 +99,7 @@ export async function listMembershipRequestsForAdmin(): Promise<AdminMembershipA
   })
 }
 
+/** Records an admin decision on an application. */
 export async function reviewMembershipRequest(requestId: string, decision: 'approve' | 'request_changes' | 'reject', visibleResponse?: string | null, privateNotes?: string | null) {
   const db = await createClient()
   const { error } = await db.rpc('review_membership_application', {
@@ -96,30 +108,35 @@ export async function reviewMembershipRequest(requestId: string, decision: 'appr
   return membershipOperationResult(error, 'review_failed')
 }
 
+/** A profile's membership row, or null when they have none. */
 export async function getMembership(profileId: string): Promise<Membership | null> {
   const db = await createClient()
   const { data, error } = await db.from('memberships').select('*,membership_type:membership_types(id,code,name)').eq('profile_id', profileId).maybeSingle()
   return error ? null : data as Membership | null
 }
 
+/** Resubmits an application that was sent back for changes. */
 export async function resubmitMembership(applicationId: string, membershipTypeId: string) {
   const db = await createClient()
   const { error } = await db.rpc('resubmit_membership_application', { application_id: applicationId, target_type: membershipTypeId })
   return membershipOperationResult(error, 'resubmit_failed')
 }
 
+/** Changes a membership's status; the RPC decides who may make which change. */
 export async function changeMembershipStatus(profileId: string, status: string) {
   const db = await createClient()
   const { error } = await db.rpc('change_membership_status', { target_profile: profileId, target_status: status })
   return membershipOperationResult(error, 'status_change_failed')
 }
 
+/** Marks an approved application as paid offline. */
 export async function recordManualMembershipPayment(applicationId: string) {
   const db = await createClient()
   const { error } = await db.rpc('record_manual_membership_payment', { target_application: applicationId })
   return membershipOperationResult(error, 'payment_record_failed')
 }
 
+/** Withdraws an approval that is still waiting for payment. */
 export async function withdrawMembershipApproval(applicationId: string, visibleResponse?: string | null) {
   const db = await createClient()
   const { error } = await db.rpc('withdraw_membership_approval', {
@@ -128,6 +145,7 @@ export async function withdrawMembershipApproval(applicationId: string, visibleR
   return membershipOperationResult(error, 'withdraw_failed')
 }
 
+// Cents arrive as strings so large amounts keep their precision.
 interface MembershipPaymentDueRow {
   application_id: string
   applicant_id: string
@@ -156,6 +174,7 @@ export async function listMembershipPaymentsDue(): Promise<MembershipPaymentDue[
   }))
 }
 
+// What the approval email needs: who applied, who pays and how much.
 export interface MembershipPaymentNotice {
   applicationId: string
   applicantId: string
@@ -167,6 +186,7 @@ export interface MembershipPaymentNotice {
   totalCents: string
 }
 
+/** Payer and amount details for an approved application. */
 export async function getMembershipPaymentNotice(applicationId: string): Promise<MembershipPaymentNotice | null> {
   const db = await createClient()
   const { data, error } = await db.rpc('get_membership_payment_notice', { target_application: applicationId })
@@ -184,16 +204,19 @@ export async function getMembershipPaymentNotice(applicationId: string): Promise
   }
 }
 
+/** Stores whether the payment request email was sent. */
 export async function recordMembershipPaymentEmail(applicationId: string, outcome: MembershipPaymentEmailStatus) {
   const db = await createClient()
   const { error } = await db.rpc('record_membership_payment_email', { target_application: applicationId, target_outcome: outcome })
   return !error
 }
 
+// The database error is not passed on; callers only see the error code.
 function membershipOperationResult(error: unknown, errorCode: MembershipOperationErrorCode) {
   return error ? { errorCode } as const : { success: true as const }
 }
 
+/** Family links the user is part of, with both people's names filled in. */
 export async function listFamilyLinks(): Promise<FamilyLink[]> {
   const db = await createClient()
   const [{ data, error }, counterparts] = await Promise.all([
@@ -225,24 +248,32 @@ export function withCounterparts(links: FamilyLink[], counterparts: FamilyLinkCo
   })
 }
 
+/** Asks the account with this email to accept a family link. */
 export async function requestFamilyLink(email: string) {
   const db = await createClient()
   const { error } = await db.rpc('request_family_link_by_email', { target_email: email })
   return error ? { error: error.message } : { success: true as const }
 }
 
+/** Accepts or rejects a pending family link. */
 export async function respondFamilyLink(linkId: string, response: 'accept' | 'reject') {
   const db = await createClient()
   const { error } = await db.rpc('respond_family_link', { link_id: linkId, response })
   return error ? { error: error.message } : { success: true as const }
 }
 
+/** Ends an active family link. */
 export async function endFamilyLink(linkId: string) {
   const db = await createClient()
   const { error } = await db.rpc('end_family_link', { link_id: linkId })
   return error ? { error: error.message } : { success: true as const }
 }
 
+/**
+ * The payer's billing view. Finalized unpaid charges make up the balance;
+ * provisional charges (pay-later lessons not yet finalized) are listed
+ * separately so the payer can see what is coming.
+ */
 export async function getBillingForPayer(payerId: string) {
   const db = await createClient()
   const [{ data: invoices }, { data: receipts }, { data: household }, { data: charges }, { data: credits }, { data: pending }] = await Promise.all([
@@ -285,19 +316,23 @@ export async function getBillingForPayer(payerId: string) {
   }
 }
 
+// Unwraps a joined row that Supabase may return as a single-item array.
 function relationValue<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? value[0] ?? null : value
 }
 
+/** Unpaid charges minus credits, never below zero. Amounts are in rands. */
 export function calculateOutstandingBalance(charges: Array<{ amount: number | string }>, credits: Array<{ amount: number | string }>) {
   const chargeTotal = charges.reduce((sum, row) => sum + Number(row.amount), 0)
   return Math.max(0, chargeTotal - calculateCreditTotal(credits))
 }
 
+/** Sum of the payer's ledger credits, in rands. */
 export function calculateCreditTotal(credits: Array<{ amount: number | string }>) {
   return credits.reduce((sum, row) => sum + Number(row.amount), 0)
 }
 
+/** A plain-language label for a charge, based on its type and the lesson outcome. */
 export function outstandingChargeLabel(type: string, bookingStatus: string | null) {
   if (type === 'membership') return 'Membership fee'
   if (type === 'joining_fee') return 'Joining fee'
@@ -307,18 +342,21 @@ export function outstandingChargeLabel(type: string, bookingStatus: string | nul
   return 'Lesson charge'
 }
 
+/** Generates invoices for a period and returns how many were created. */
 export async function runInvoices(period: string) {
   const db = await createClient()
   const { data, error } = await db.rpc('run_monthly_invoices', { target_period: period })
   return error ? { error: error.message } : { count: data as number }
 }
 
+/** Every invoice with its lines and payer, newest first. */
 export async function listAllInvoices(): Promise<Invoice[]> {
   const db = await createClient()
   const { data, error } = await db.from('invoices').select('*,lines:invoice_lines(*),payer:profiles!invoices_payer_id_fkey(full_name,email)').order('issued_at', { ascending: false })
   return error ? [] : data as unknown as Invoice[]
 }
 
+/** Marks an invoice paid offline. The RPC takes the staff member from the session. */
 export async function recordManualPayment(invoiceId: string, adminId: string) {
   const db = await createClient()
   const { data, error } = await db.rpc('record_manual_invoice_payment', { target_invoice: invoiceId })

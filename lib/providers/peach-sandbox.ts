@@ -1,3 +1,6 @@
+// Peach Payments sandbox helpers. Not wired in: the Peach routes under
+// app/api/payments/peach return 404 until a Hosted Checkout V2 adapter is
+// built. Kept as a starting point for that work.
 import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
@@ -8,22 +11,26 @@ export interface PeachSandboxCheckout {
   fields: Record<string, string>;
 }
 
+// Reads a setting, treating blank values as missing.
 function configuredValue(name: "PEACH_ENTITY_ID" | "PEACH_SECRET_TOKEN" | "PEACH_WEBHOOK_SECRET") {
   const value = process.env[name]?.trim();
   return value || null;
 }
 
+/** True only when the Peach sandbox flag and all three secrets are set. */
 export function isPeachSandboxEnabled() {
   return process.env.CFA_PEACH_SANDBOX_ENABLED === "true"
     && Boolean(configuredValue("PEACH_ENTITY_ID") && configuredValue("PEACH_SECRET_TOKEN") && configuredValue("PEACH_WEBHOOK_SECRET"));
 }
 
+// HMAC-SHA256 over the fields sorted by key, as Peach checkout expects.
 function signFields(fields: Record<string, string>, secret: string) {
   return createHmac("sha256", secret)
     .update(Object.keys(fields).sort().map((key) => `${key}${fields[key]}`).join(""))
     .digest("hex");
 }
 
+/** Builds a signed Peach checkout form. Throws when Peach is not configured. */
 export function createPeachSandboxCheckout(input: {
   amountCents: number;
   merchantTransactionId: string;
@@ -46,6 +53,7 @@ export function createPeachSandboxCheckout(input: {
   return { action: SANDBOX_CHECKOUT_URL, fields: { ...fields, signature: signFields(fields, secret) } };
 }
 
+/** Checks a Peach webhook signature and returns the result, or null when it is invalid. */
 export function verifyPeachSandboxWebhook(input: { body: string; url: string; headers: Headers }) {
   const secret = configuredValue("PEACH_WEBHOOK_SECRET");
   const timestamp = input.headers.get("x-webhook-timestamp");

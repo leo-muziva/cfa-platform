@@ -1,5 +1,6 @@
 import { Checkbox } from "../ui/checkbox";
 
+// Leftover from the Supabase starter template's tutorial. Not used by any page.
 export function TutorialStep({
   title,
   children,

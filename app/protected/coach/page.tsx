@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LessonAgenda } from "@/components/portal/lesson-operations/lesson-agenda";
 import { getCoachLessonsPageData } from "@/lib/services/LessonBookingService";
 
+/** /protected/coach: the coach's lesson agenda, where they record attendance. Coaches only. */
 export default async function CoachDashboardPage() {
   const result = await getCoachLessonsPageData();
   if ("error" in result) redirect(result.error === "Not authenticated" ? "/auth/login" : "/protected");

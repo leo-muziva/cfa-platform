@@ -3,6 +3,7 @@
 
 export type Handedness = "right" | "left";
 
+// One ordered item, in rands as stored on the order.
 export interface ExportItem {
   itemCode: string;
   name: string;
@@ -13,18 +14,22 @@ export interface ExportItem {
   category?: string | null;
 }
 
+// Customer contact details, used only for CFA's own packing list.
 export interface ExportCustomer {
   fullName: string | null;
   email: string | null;
   phone: string | null;
 }
 
+// A paid (or legacy submitted) order with its items.
 export interface ExportOrder {
   status: string;
   customer: ExportCustomer | null;
   items: ExportItem[];
 }
 
+// One row of the supplier order: items grouped across all customers.
+// Money is in cents to avoid floating-point rounding.
 export interface SupplierLine {
   itemCode: string;
   name: string;
@@ -42,6 +47,7 @@ export function isExportableOrder(order: ExportOrder): boolean {
   return order.status === "paid";
 }
 
+/** "RH", "LH" or blank, as suppliers write it. */
 export function handLabel(handedness: Handedness | null): string {
   if (handedness === "right") return "RH";
   if (handedness === "left") return "LH";
@@ -106,6 +112,7 @@ export function groupSupplierLines(orders: ExportOrder[]): SupplierLine[] {
   });
 }
 
+/** The supplier CSV: grouped lines with no customer details, and a total row. */
 export function buildSupplierCsv(orders: ExportOrder[]): string {
   const lines = groupSupplierLines(orders);
   const rows = ["Item Code,Description,Size,Hand,Quantity,Unit Price,Line Total"];

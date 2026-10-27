@@ -1,9 +1,14 @@
+// Data access for payments. Checkout preparation runs as the signed-in user
+// so the database can check they are the payer. Webhook work (recording
+// events, claiming emails) has no user session, so it uses the service-role
+// client.
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PaymentTarget } from "@/lib/validations/payment.schema";
 import type { VerifiedPaymentEvent } from "@/lib/payments/gateway";
 
+// What a provider needs to build a checkout for one attempt.
 export interface CheckoutRow {
   attempt_id: string;
   provider: string;
@@ -13,6 +18,7 @@ export interface CheckoutRow {
   description: string;
 }
 
+// Status of an attempt as shown on the payment result page.
 export interface PaymentStatusRow {
   attempt_id: string;
   status: "pending" | "succeeded" | "failed";
@@ -22,6 +28,7 @@ export interface PaymentStatusRow {
   receipt_number: string | null;
 }
 
+// A newly created payment attempt.
 export interface PreparedPaymentRow {
   attempt_id: string;
   provider_reference: string;
@@ -44,6 +51,10 @@ function toPrepareCode(message: string | undefined): PreparePaymentErrorCode {
   return (KNOWN_PREPARE_CODES as readonly string[]).includes(code) ? code as PreparePaymentErrorCode : "unknown";
 }
 
+/**
+ * Creates a payment attempt with the RPC that matches the target: a shop
+ * order, a membership application, or a lesson booking / invoice.
+ */
 export async function preparePayment(target: PaymentTarget, provider: string): Promise<PreparePaymentResult> {
   const db = await createClient();
   const { data, error } = target.orderId
@@ -76,18 +87,21 @@ export async function preparePayment(target: PaymentTarget, provider: string): P
   };
 }
 
+/** Checkout details for an attempt that is still payable, otherwise null. */
 export async function findCheckout(attemptId: string): Promise<CheckoutRow | null> {
   const db = await createClient();
   const { data, error } = await db.rpc("get_payment_checkout", { target_attempt: attemptId });
   return error ? null : (Array.isArray(data) ? data[0] ?? null : data) as CheckoutRow | null;
 }
 
+/** Status of an attempt the signed-in user may see, otherwise null. */
 export async function findPaymentStatus(attemptId: string): Promise<PaymentStatusRow | null> {
   const db = await createClient();
   const { data, error } = await db.rpc("get_payment_status", { target_attempt: attemptId });
   return error ? null : (Array.isArray(data) ? data[0] ?? null : data) as PaymentStatusRow | null;
 }
 
+// Data for the shop order confirmation email.
 export interface ShopOrderConfirmationRow {
   order_id: string;
   recipient_email: string;
@@ -106,12 +120,17 @@ export async function claimShopOrderConfirmation(provider: string, reference: st
   return ((data ?? []) as ShopOrderConfirmationRow[])[0] ?? null;
 }
 
+/** Gives the claim back after a failed send so a later retry can try again. */
 export async function releaseShopOrderConfirmation(orderId: string): Promise<void> {
   const db = createAdminClient();
   if (!db) return;
   await db.rpc("release_shop_order_confirmation", { target_order: orderId });
 }
 
+/**
+ * Stores a verified provider event and settles the payment. The RPC ignores
+ * an event id it has already seen, so provider retries are safe.
+ */
 export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<boolean> {
   const db = createAdminClient();
   if (!db) return false;
@@ -127,6 +146,7 @@ export async function recordPaymentEvent(event: VerifiedPaymentEvent): Promise<b
   return !error;
 }
 
+// Data for the payment receipt email.
 export interface PaymentReceiptRow {
   attempt_id: string;
   kind: "membership" | "booking" | "invoice";
@@ -148,6 +168,7 @@ export async function claimPaymentReceipt(provider: string, reference: string): 
   return ((data ?? []) as PaymentReceiptRow[])[0] ?? null;
 }
 
+/** Gives the receipt claim back after a failed send. */
 export async function releasePaymentReceipt(attemptId: string): Promise<void> {
   const db = createAdminClient();
   if (!db) return;

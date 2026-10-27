@@ -42,13 +42,18 @@ export type SheetErrorCode =
   | "gmail_failed"
   | "changed";
 
+// Every step returns this. `message` carries extra detail for some codes.
 export type SheetResult<T> = { ok: true; data: T } | { ok: false; code: SheetErrorCode; message?: string };
 
+// The AI proof either finds the sheet out of date (staff must approve the
+// rebuilt sheet first) or finishes the review.
 export type ProofOutcome =
   | { kind: "needs_approval"; check: SheetCheck; sheet: SheetRecord }
   | { kind: "proofed"; sheet: SheetRecord };
 
+// Minimum gap between AI runs on one sheet, to protect free-tier quotas.
 const AI_COOLDOWN_MS = 30_000;
+// Download links expire after five minutes.
 const SIGNED_URL_SECONDS = 300;
 const XLSX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -65,20 +70,24 @@ export function supplierSheetFileName(generatedAt: string | Date, withNotes = fa
   return `CFA Equipment Order - ${Number(parts.day)} ${parts.month} ${parts.year}${withNotes ? " (with notes)" : ""}.xlsx`;
 }
 
+/** Storage path of the clean copy that is sent to the supplier. */
 export function supplierFilePath(bulkOrderId: string, reference: string): string {
   return bulkOrderId + "/" + reference + "-supplier-order.xlsx";
 }
 
+/** Storage path of the staff copy, which adds a "Review notes" sheet. */
 export function reviewFilePath(bulkOrderId: string, reference: string): string {
   return bulkOrderId + "/" + reference + "-supplier-order-review.xlsx";
 }
 
+// Paid orders in the bulk order, grouped into supplier lines.
 async function loadDatabaseLines(bulkOrderId: string) {
   const loaded = await repo.getBulkOrderLines(bulkOrderId);
   if (!loaded) return null;
   return { lines: groupSupplierLines(loaded.orders), paidOrderIds: loaded.paidOrderIds };
 }
 
+// Compares the database lines with the file's lines and records the result.
 function makeCheck(dbLines: SupplierLine[], fileLines: SupplierLine[]): SheetCheck {
   const diff = compareSupplierLines(dbLines, fileLines);
   return { checkedAt: new Date().toISOString(), matches: diff.matches, description: describeSheetDiff(diff), diff };
@@ -91,6 +100,8 @@ async function saveSupplierFile(bulk: repo.BulkOrderSummary, lines: SupplierLine
   return (await repo.uploadSheetFile(path, file)) ? path : null;
 }
 
+// Fields reset whenever the sheet is rebuilt, because an old AI review or
+// Gmail draft no longer describes the new file.
 const CLEARED_REVIEW = {
   ai_summary: null,
   ai_findings: null,
@@ -196,6 +207,8 @@ async function checkAgainstDatabase(
   return { ok: true, data: { check, sheet: updated, paidOrderIds: db.paidOrderIds, lines: db.lines } };
 }
 
+// Gathers what the AI review and the basic rules need: catalogue entries,
+// past order sizes and open refunds. Product data only, nothing personal.
 async function buildReviewContext(
   bulk: repo.BulkOrderSummary,
   lines: SupplierLine[],
@@ -348,6 +361,7 @@ export async function approveUpdatedSheet(bulkOrderId: string, actorId: string):
   return runAiProof(bulkOrderId, actorId);
 }
 
+// The email body staff approved, possibly edited from the AI draft.
 export interface DraftInput {
   emailBody: string;
 }
@@ -430,6 +444,7 @@ export async function getSheetDownloadUrl(bulkOrderId: string): Promise<SheetRes
   return url ? { ok: true, data: url } : fail("storage_failed");
 }
 
+// The saved file as plain text rows, for the in-browser preview.
 export interface SheetPreview {
   reference: string;
   fileName: string;
@@ -454,6 +469,7 @@ export async function getSheetPreview(bulkOrderId: string): Promise<SheetResult<
   }
 }
 
+// Every AI run and sheet event, for the AI run log page.
 export interface AiRunLog {
   reference: string;
   runs: repo.AiRunRow[];

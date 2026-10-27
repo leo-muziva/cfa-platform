@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+// The admin area's tab bar.
 const links = [
   { href: '/protected/admin', label: 'Dashboard' },
   { href: '/protected/admin/members', label: 'Members' },
@@ -20,6 +21,7 @@ const links = [
   { href: '/protected/admin/bulk-orders', label: 'Bulk orders' },
 ]
 
+/** The admin area's tab bar, highlighting the current section. */
 export function AdminNavigation() {
   const pathname = usePathname()
   const isCurrent = (href: string) =>

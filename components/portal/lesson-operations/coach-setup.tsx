@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OperationForm, type LessonOperationState } from "./operation-form";
 
+// A coach's booking status and weapons.
 export interface CoachSetupView {
   coachId: string;
   fullName: string;
@@ -14,6 +15,7 @@ export interface CoachSetupView {
 
 const WEAPONS = ["foil", "epee", "sabre"] as const;
 
+/** Per-coach booking switch and weapons, plus "cancel all future lessons". */
 export function CoachSetup({ coaches, saveAction, cancelFutureAction }: {
   coaches: CoachSetupView[];
   saveAction: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;

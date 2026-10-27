@@ -4,6 +4,12 @@ import { PortalNavigation, type PortalNavigationLink } from '@/components/portal
 import { SmokeMotionToggle, SmokeyBackground } from '@/components/ui/smokey-background'
 
 
+/**
+ * Layout for the signed-in member portal (/protected/*): the portal bar,
+ * with Coach and Admin links shown only to staff who have that role, and
+ * the frosted card the pages sit in. The proxy has already sent signed-out
+ * visitors to login.
+ */
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const context = await getCurrentAccountContext()
   const capabilities = 'error' in context ? null : context.capabilities

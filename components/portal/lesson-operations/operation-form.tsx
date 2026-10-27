@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { useFormAction, ValidatedForm } from "@/components/forms/form-state";
 import type { FormFieldState } from "@/types/domain";
 
+// Form state returned by the lesson operation Server Actions.
 export interface LessonOperationState extends FormFieldState {
   success?: string;
 }
 
+/** A form for one lesson operation, showing the action's result. Used across the lesson admin screens. */
 export function OperationForm({
   action,
   children,

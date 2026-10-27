@@ -1,7 +1,11 @@
+// Zod schemas for lesson booking, coach availability, closures and lesson
+// settings. .strict() rejects unknown keys, so the browser cannot slip in
+// fields such as a price or a payer; those always come from the database.
 import { z } from 'zod'
 
 export const weaponSchema = z.enum(['foil', 'epee', 'sabre'])
 
+// One or two different people share a lesson.
 const participantIdsSchema = z.union([
   z.tuple([z.uuid()]),
   z.tuple([z.uuid(), z.uuid()]),
@@ -13,6 +17,7 @@ export const lessonParticipantsSchema = z.object({
   participantIds: participantIdsSchema,
 }).strict()
 
+// Pay later is the default: the lesson goes on the monthly invoice.
 export const createLessonBookingSchema = z.object({
   coachId: z.uuid(),
   startsAt: z.iso.datetime({ offset: true }),
@@ -47,6 +52,8 @@ export const lessonOutcomeSchema = z.object({
   outcome: z.enum(['attended', 'no_show']),
 }).strict()
 
+// Only the settings admins may change. Values arrive as form text, hence
+// z.coerce. The drop-in fee is entered in rands; the repository stores cents.
 export const lessonSettingsPatchSchema = z.object({
   cancellationWindowHours: z.coerce.number().int().min(0).optional(),
   lateCancellationFeeMultiplier: z.coerce.number().min(0).optional(),
@@ -72,6 +79,7 @@ export const coachLessonProfileSchema = z.object({
   }),
 }).strict()
 
+// "HH:MM" or "HH:MM:SS" in the club's local time.
 const localTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/, 'Use a 24-hour local time')
 
 export const coachAvailabilityRuleSchema = z.object({

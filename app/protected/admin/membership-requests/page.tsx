@@ -11,6 +11,7 @@ const emailStatusLabels: Record<MembershipPaymentEmailStatus, string> = {
   not_configured: 'Email not configured - tell the payer directly',
 }
 
+// The response the applicant sees and the private staff notes.
 function ReviewSummary({ item }: { item: AdminMembershipApplication }) {
   return (
     <div className="space-y-3 text-sm">
@@ -20,6 +21,7 @@ function ReviewSummary({ item }: { item: AdminMembershipApplication }) {
   )
 }
 
+/** /protected/admin/membership-requests: review applications and track memberships awaiting payment. */
 export default async function MembershipRequestsPage({ searchParams }: {
   searchParams: Promise<{ activated?: string; withdrawn?: string }>
 }) {

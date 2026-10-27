@@ -1,3 +1,8 @@
+// Data access for lesson booking. Most writes call versioned database RPCs
+// (the _v2/_v3 suffix is the current version of that function), which hold
+// the booking rules and raise named error codes. Every function returns a
+// LessonBookingResult instead of throwing, so pages can show a friendly
+// message for each error code.
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import type {
@@ -29,6 +34,7 @@ import type {
   LessonSettingsPatchInput,
 } from '@/lib/validations/lesson.schema'
 
+// The message shown to the user for every error code.
 const errorMessages: Record<LessonBookingErrorCode, string> = {
   not_authenticated: 'Please sign in to continue.',
   account_incomplete: 'Complete your account before booking a lesson.',
@@ -61,18 +67,25 @@ const errorMessages: Record<LessonBookingErrorCode, string> = {
   request_failed: 'The lesson request could not be completed. Please try again.',
 }
 
+// Codes the database can raise. The rest only come from the app itself.
 const databaseErrorCodes = Object.keys(errorMessages).filter((code) => !['invalid_input', 'not_found', 'request_failed', 'payments_unavailable'].includes(code)) as LessonBookingErrorCode[]
 
+/** Builds a failed result with the user-facing message for `code`. */
 export function lessonBookingError(code: LessonBookingErrorCode): LessonBookingResult<never> {
   return { success: false, errorCode: code, error: errorMessages[code] }
 }
 
+/**
+ * Maps a database error to one of our error codes by finding the code in
+ * the error message (the RPCs raise exceptions whose message is the code).
+ */
 export function lessonBookingErrorCode(error: unknown): LessonBookingErrorCode {
   const value = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error ?? '')
   const normalized = value.toLowerCase()
   return databaseErrorCodes.find((code) => normalized.includes(code)) ?? 'request_failed'
 }
 
+// Converts any database error into a failed LessonBookingResult.
 function failed(error: unknown): LessonBookingResult<never> {
   const code = lessonBookingErrorCode(error)
   // Unmapped database errors (for example a function missing on a hosted
@@ -84,11 +97,13 @@ function failed(error: unknown): LessonBookingResult<never> {
   return lessonBookingError(code)
 }
 
+// Raw RPC row shapes, before they are mapped to camelCase domain types.
 type CoachRow = { coach_id: string; full_name: string; weapons: string[] | null }
 type TimeRow = { starts_at: string; ends_at: string }
 type TimeOptionRow = TimeRow & { is_available: boolean; members_only?: boolean | null }
 type QuoteRow = { participant_count: number | string; total_cents: number | string; currency: string }
 
+/** Coaches with lesson booking switched on, and the weapons they teach. */
 export async function listLessonCoaches(): Promise<LessonBookingResult<LessonCoachSummary[]>> {
   const db = await createClient()
   const { data, error } = await db.rpc('list_lesson_coaches')
@@ -98,6 +113,7 @@ export async function listLessonCoaches(): Promise<LessonBookingResult<LessonCoa
   })) }
 }
 
+/** Free start times for a coach and weapon in a date range. */
 export async function listAvailableLessonTimes(input: LessonAvailabilityInput): Promise<LessonBookingResult<AvailableLessonTime[]>> {
   const db = await createClient()
   const { data, error } = await db.rpc('list_available_lesson_times', {
@@ -110,6 +126,10 @@ export async function listAvailableLessonTimes(input: LessonAvailabilityInput): 
   return { success: true, data: ((data ?? []) as TimeRow[]).map((row) => ({ startsAt: row.starts_at, endsAt: row.ends_at })) }
 }
 
+/**
+ * Every slot in the range with whether it is free and whether it is
+ * reserved for active members, so the calendar can grey out taken slots.
+ */
 export async function listLessonTimeOptions(input: LessonAvailabilityInput): Promise<LessonBookingResult<LessonTimeOption[]>> {
   const db = await createClient()
   const { data, error } = await db.rpc('list_lesson_time_options', {
@@ -124,6 +144,7 @@ export async function listLessonTimeOptions(input: LessonAvailabilityInput): Pro
   })) }
 }
 
+/** Price for one or two participants. Cents come back as a string to avoid rounding. */
 export async function getLessonQuote(participantIds: [string] | [string, string]): Promise<LessonBookingResult<LessonQuote>> {
   const db = await createClient()
   const { data, error } = await db.rpc('get_lesson_quote_v3', { target_participant_ids: participantIds })
@@ -136,6 +157,7 @@ export async function getLessonQuote(participantIds: [string] | [string, string]
   } }
 }
 
+/** Creates the booking through `create_lesson_booking_v3`, which re-checks every rule. */
 export async function insertLessonBooking(input: CreateLessonBookingInput): Promise<LessonBookingResult<{ bookingId: string }>> {
   const db = await createClient()
   const { data, error } = await db.rpc('create_lesson_booking_v3', {
@@ -148,6 +170,10 @@ export async function insertLessonBooking(input: CreateLessonBookingInput): Prom
   return error ? failed(error) : { success: true, data: { bookingId: data as string } }
 }
 
+/**
+ * Cancels a booking. `actorType` tells the database who is cancelling,
+ * which decides whether cancellation fees apply.
+ */
 export async function cancelLessonBookingRecord(bookingId: string, reason: string | null, actorType: 'member' | 'payer' | 'coach' | 'admin' | 'closure' | 'system'): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = await db.rpc('cancel_lesson_booking_v2', {
@@ -156,6 +182,7 @@ export async function cancelLessonBookingRecord(bookingId: string, reason: strin
   return error ? failed(error) : { success: true, data: null }
 }
 
+/** Moves a booking; the database creates a new booking linked to the old one. */
 export async function rescheduleLessonBookingRecord(bookingId: string, startsAt: string): Promise<LessonBookingResult<{ bookingId: string }>> {
   const db = await createClient()
   const { data, error } = await db.rpc('reschedule_lesson_booking_v2', {
@@ -164,6 +191,10 @@ export async function rescheduleLessonBookingRecord(bookingId: string, startsAt:
   return error ? failed(error) : { success: true, data: { bookingId: data as string } }
 }
 
+/**
+ * Records attended or no-show. With `participantId` it marks one person in
+ * a shared double booking; without it, the whole booking.
+ */
 export async function recordLessonOutcomeRecord(bookingId: string, outcome: 'attended' | 'no_show', participantId?: string): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = participantId
@@ -172,6 +203,8 @@ export async function recordLessonOutcomeRecord(bookingId: string, outcome: 'att
   return error ? failed(error) : { success: true, data: null }
 }
 
+// Row from the money-free booking RPCs. Optional fields are only returned
+// by some of them.
 type SafeBookingRow = {
   booking_id: string
   coach_id: string
@@ -195,6 +228,7 @@ type SafeBookingRow = {
   late_fee_percent?: number | null
 }
 
+/** Maps a booking RPC row to the LessonBooking type the UI uses. */
 export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
   return {
     id: row.booking_id,
@@ -205,6 +239,7 @@ export function mapSafeLessonBooking(row: SafeBookingRow): LessonBooking {
     weapon: row.weapon as Weapon,
     status: row.status as LessonBooking['status'],
     participants: (row.participant_names ?? []).map((fullName, index) => ({
+      // Older RPCs return names without ids, so build a stable placeholder id.
       id: row.participant_ids?.[index] ?? `${row.booking_id}:${index + 1}`, fullName,
       ...(row.participant_outcomes ? { attendanceOutcome: row.participant_outcomes[index] ?? null } : {}),
     })),
@@ -255,6 +290,7 @@ export async function listPayableLessonHolds(): Promise<LessonBookingResult<Paya
   })) }
 }
 
+/** A coach's lessons. Without `coachId` the RPC uses the signed-in coach. */
 export async function listCoachLessonAgenda(coachId?: string): Promise<LessonBookingResult<LessonBooking[]>> {
   const db = await createClient()
   const { data, error } = await db.rpc('list_coach_lesson_agenda_v3', { target_coach: coachId ?? null })
@@ -264,6 +300,8 @@ export async function listCoachLessonAgenda(coachId?: string): Promise<LessonBoo
   })) }
 }
 
+// Shape of a direct bookings-table query. Supabase types a joined row as an
+// object or an array depending on the relationship, hence the unions.
 type BookingQueryRow = {
   id: string
   coach_id: string
@@ -279,10 +317,12 @@ type BookingQueryRow = {
   participants: Array<{ ordinal: number; participant_id: string; attendance_outcome: 'attended' | 'no_show' | null; profile: { full_name: string | null } | { full_name: string | null }[] | null }>
 }
 
+// Unwraps a joined row that Supabase may return as a single-item array.
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? value[0] ?? null : value
 }
 
+/** Every lesson booking with coach and participant names, for the admin view. */
 export async function listAllLessonBookings(): Promise<LessonBookingResult<LessonBooking[]>> {
   const db = await createClient()
   const { data, error } = await db.from('bookings').select(`
@@ -306,6 +346,11 @@ export async function listAllLessonBookings(): Promise<LessonBookingResult<Lesso
   })) }
 }
 
+/**
+ * Who the actor may book a lesson for. Admins may book for any active,
+ * completed profile; everyone else gets themselves plus their active
+ * dependents.
+ */
 export async function listEligibleLessonParticipants(actorId: string, isAdmin: boolean): Promise<LessonBookingResult<LessonParticipant[]>> {
   const db = await createClient()
   if (isAdmin) {
@@ -326,9 +371,11 @@ export async function listEligibleLessonParticipants(actorId: string, isAdmin: b
   return { success: true, data: participants }
 }
 
+// Raw table rows for availability rules and exceptions.
 type RuleRow = { id: string; coach_id: string; iso_weekday: number; starts_at_local: string; ends_at_local: string; is_active: boolean; access_rule: string }
 type ExceptionRow = { id: string; coach_id: string; exception_type: string; starts_at: string; ends_at: string; reason: string | null }
 
+/** A coach's weekly availability windows, by weekday then start time. */
 export async function listCoachAvailabilityRules(coachId: string): Promise<LessonBookingResult<CoachAvailabilityRule[]>> {
   const db = await createClient()
   const { data, error } = await db.from('coach_availability_rules').select('id,coach_id,iso_weekday,starts_at_local,ends_at_local,is_active,access_rule').eq('coach_id', coachId).order('iso_weekday').order('starts_at_local')
@@ -340,6 +387,7 @@ export async function listCoachAvailabilityRules(coachId: string): Promise<Lesso
   })) }
 }
 
+/** Inserts a weekly availability window. */
 export async function createCoachAvailabilityRuleRecord(input: CoachAvailabilityRuleInput): Promise<LessonBookingResult<{ ruleId: string }>> {
   const db = await createClient()
   const { data, error } = await db.from('coach_availability_rules').insert({
@@ -349,12 +397,14 @@ export async function createCoachAvailabilityRuleRecord(input: CoachAvailability
   return error ? failed(error) : { success: true, data: { ruleId: data.id } }
 }
 
+/** Deletes a weekly availability window. */
 export async function deleteCoachAvailabilityRuleRecord(ruleId: string): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = await db.from('coach_availability_rules').delete().eq('id', ruleId)
   return error ? failed(error) : { success: true, data: null }
 }
 
+/** A coach's one-off blocks and extra slots, in date order. */
 export async function listCoachAvailabilityExceptions(coachId: string): Promise<LessonBookingResult<CoachAvailabilityException[]>> {
   const db = await createClient()
   const { data, error } = await db.from('coach_availability_exceptions').select('id,coach_id,exception_type,starts_at,ends_at,reason').eq('coach_id', coachId).order('starts_at')
@@ -365,6 +415,7 @@ export async function listCoachAvailabilityExceptions(coachId: string): Promise<
   })) }
 }
 
+/** Creates an exception through the RPC so affected bookings can be cancelled in the same transaction. */
 export async function createCoachAvailabilityExceptionRecord(input: CoachAvailabilityExceptionInput): Promise<LessonBookingResult<{ exceptionId: string }>> {
   const db = await createClient()
   const { data, error } = await db.rpc('admin_create_coach_exception', {
@@ -375,6 +426,7 @@ export async function createCoachAvailabilityExceptionRecord(input: CoachAvailab
   return error ? failed(error) : { success: true, data: { exceptionId: data as string } }
 }
 
+/** Deletes a one-off exception. */
 export async function deleteCoachAvailabilityExceptionRecord(exceptionId: string): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = await db.from('coach_availability_exceptions').delete().eq('id', exceptionId)
@@ -383,6 +435,8 @@ export async function deleteCoachAvailabilityExceptionRecord(exceptionId: string
 
 type SettingsRow = Record<string, unknown>
 
+// Maps the settings row. Fields set to a literal here are fixed in this
+// build and are not stored in the database.
 function mapSettings(row: SettingsRow): LessonBookingSettings {
   return {
     cancellationWindowHours: Number(row.cancellation_window_hours),
@@ -404,6 +458,7 @@ function mapSettings(row: SettingsRow): LessonBookingSettings {
   }
 }
 
+/** The single lesson_booking_settings row. */
 export async function getLessonSettings(): Promise<LessonBookingResult<LessonBookingSettings>> {
   const db = await createClient()
   const { data, error } = await db.from('lesson_booking_settings').select('*').eq('singleton', true).single()
@@ -417,6 +472,10 @@ export async function getDropInFeeCents(): Promise<LessonBookingResult<number>> 
   return error ? failed(error) : { success: true, data: Number(data ?? 0) }
 }
 
+/**
+ * Sends only the fields that changed. The form takes the drop-in fee in
+ * rands; the database stores cents.
+ */
 export async function updateLessonSettingsRecord(input: LessonSettingsPatchInput): Promise<LessonBookingResult<LessonBookingSettings>> {
   const patch: Record<string, number> = {}
   if (input.cancellationWindowHours !== undefined) patch.cancellation_window_hours = input.cancellationWindowHours
@@ -434,6 +493,7 @@ export async function updateLessonSettingsRecord(input: LessonSettingsPatchInput
   return error || !data ? failed(error) : { success: true, data: mapSettings(data as SettingsRow) }
 }
 
+/** Every coach with their booking status and weapons, joined in memory. */
 export async function listCoachLessonProfilesForAdmin(): Promise<LessonBookingResult<CoachLessonProfile[]>> {
   const db = await createClient()
   const [{ data: coaches, error: coachError }, { data: profiles, error: profileError }, { data: weapons, error: weaponError }] = await Promise.all([
@@ -449,6 +509,7 @@ export async function listCoachLessonProfilesForAdmin(): Promise<LessonBookingRe
   })) }
 }
 
+/** Sets a coach's booking status and weapons in one RPC call. */
 export async function setCoachLessonProfileRecord(input: CoachLessonProfileInput): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = await db.rpc('admin_set_coach_lesson_profile', {
@@ -457,6 +518,7 @@ export async function setCoachLessonProfileRecord(input: CoachLessonProfileInput
   return error ? failed(error) : { success: true, data: null }
 }
 
+/** Closures, newest first, with how many bookings each one cancelled. */
 export async function listClubClosures(): Promise<LessonBookingResult<ClubClosure[]>> {
   const db = await createClient()
   const [{ data, error }, { data: effects, error: effectError }] = await Promise.all([
@@ -471,6 +533,7 @@ export async function listClubClosures(): Promise<LessonBookingResult<ClubClosur
   })) }
 }
 
+/** Creates a closure and, when confirmed, cancels the bookings inside it. */
 export async function createClubClosureRecord(input: ClubClosureInput): Promise<LessonBookingResult<{ closureId: string }>> {
   const db = await createClient()
   const { data, error } = await db.rpc('admin_create_club_closure', {
@@ -480,6 +543,7 @@ export async function createClubClosureRecord(input: ClubClosureInput): Promise<
   return error ? failed(error) : { success: true, data: { closureId: data as string } }
 }
 
+/** Bookings a closure over these dates would affect. Nothing is changed. */
 export async function previewClubClosure(startsOn: string, endsOn: string): Promise<LessonBookingResult<ClosureAffectedBooking[]>> {
   const db = await createClient()
   const { data, error } = await db.rpc('admin_preview_club_closure', {
@@ -497,6 +561,7 @@ export async function previewClubClosure(startsOn: string, endsOn: string): Prom
   })) }
 }
 
+/** Bookings a coach block over this period would affect. Nothing is changed. */
 export async function previewCoachAvailabilityException(coachId: string, startsAt: string, endsAt: string): Promise<LessonBookingResult<ClosureAffectedBooking[]>> {
   const db = await createClient()
   const { data, error } = await db.rpc('preview_coach_availability_exception', {
@@ -508,24 +573,28 @@ export async function previewCoachAvailabilityException(coachId: string, startsA
   })) }
 }
 
+/** Marks a closure as withdrawn. Bookings it cancelled are not restored. */
 export async function cancelClubClosureRecord(closureId: string): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = await db.from('club_closures').update({ cancelled_at: new Date().toISOString() }).eq('id', closureId)
   return error ? failed(error) : { success: true, data: null }
 }
 
+/** Cancels all of a coach's future bookings and returns how many were cancelled. */
 export async function cancelCoachFutureBookingsRecord(coachId: string, reason: string): Promise<LessonBookingResult<{ count: number }>> {
   const db = await createClient()
   const { data, error } = await db.rpc('admin_cancel_coach_future_bookings', { target_coach: coachId, target_reason: reason })
   return error ? failed(error) : { success: true, data: { count: Number(data) } }
 }
 
+/** Waives a booking's charges through the audited admin RPC. */
 export async function waiveLessonChargesRecord(bookingId: string, reason: string): Promise<LessonBookingResult<null>> {
   const db = await createClient()
   const { error } = await db.rpc('admin_waive_booking_charges', { target_booking: bookingId, target_reason: reason })
   return error ? failed(error) : { success: true, data: null }
 }
 
+/** The 100 most recent lesson audit events, for the admin activity feed. */
 export async function listLessonActivity(): Promise<LessonBookingResult<LessonActivityItem[]>> {
   const db = await createClient()
   const { data, error } = await db.from('audit_events').select('id,event_type,actor_id,entity_id,created_at,metadata').like('event_type', 'lesson.%').order('created_at', { ascending: false }).limit(100)

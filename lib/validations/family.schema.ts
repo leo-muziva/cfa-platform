@@ -1,5 +1,8 @@
+// Zod schemas for family change requests (unlink a dependent, or transfer
+// them to a new paying guardian) and the staff review.
 import { z } from "zod";
 
+// A transfer needs the new payer's email; an unlink does not.
 export const familyChangeSchema = z.object({
   linkId: z.uuid(),
   kind: z.enum(["unlink", "transfer"]),

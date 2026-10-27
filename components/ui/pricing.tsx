@@ -27,6 +27,7 @@ export interface PricingCardPlan {
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cfa-purple dark:focus-visible:outline-white";
 
+/** One plan card with its price, features and an optional button. */
 export function PricingCard({ plan, className }: { plan: PricingCardPlan; className?: string }) {
   return (
     <div
@@ -88,6 +89,7 @@ export function PricingCard({ plan, className }: { plan: PricingCardPlan; classN
   );
 }
 
+/** The pricing cards as a list: stacked on phones, three across on desktop. */
 export function Pricing({ plans }: { plans: PricingCardPlan[] }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const reduceMotion = useReducedMotion();

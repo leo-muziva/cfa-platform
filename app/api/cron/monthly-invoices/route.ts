@@ -1,9 +1,13 @@
+// Monthly Vercel Cron job (see vercel.json; 22:00 UTC on the 24th, which is
+// midnight on the 25th in Cape Town): generates the month's invoices.
+// Requires the CRON_SECRET bearer token.
 import { NextResponse } from "next/server";
 import { isAuthorizedCronRequest, runMonthlyInvoicesJob } from "@/lib/services/scheduled-jobs-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Runs the job and returns how many invoices were created. */
 export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request.headers.get("authorization"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

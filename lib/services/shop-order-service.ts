@@ -37,6 +37,7 @@ import type { ShopCart } from "@/types/domain";
 export type ShopFailure = { ok: false; error: string; code?: string };
 export type ShopResult<T extends object = object> = ({ ok: true } & T) | ShopFailure;
 
+// Every message the shop shows a customer, in one place.
 export const SHOP_MESSAGES = {
   signIn: "You need to be logged in to order.",
   invalid: "Check the item and try again.",
@@ -55,6 +56,7 @@ export const SHOP_MESSAGES = {
   reopenFailed: "Could not reopen your cart. Please try again.",
 } as const;
 
+// Builds a failed ShopResult, with a machine-readable code when given.
 function fail(error: string, code?: string): ShopFailure {
   return code ? { ok: false, error, code } : { ok: false, error };
 }
@@ -105,6 +107,10 @@ async function editableCart(userId: string): Promise<{ ok: true; cart: OpenCartH
   return { ok: true, cart };
 }
 
+/**
+ * Adds one of a product to the customer's cart, creating the cart if
+ * needed. Adding the same product, size and hand again raises the quantity.
+ */
 export async function addToCart(raw: unknown): Promise<ShopResult> {
   const input = addToCartSchema.safeParse(raw);
   if (!input.success) return fail(SHOP_MESSAGES.invalid, "invalid_input");
@@ -142,6 +148,7 @@ export async function addToCart(raw: unknown): Promise<ShopResult> {
   return inserted ? { ok: true } : fail(SHOP_MESSAGES.requestFailed);
 }
 
+/** Removes a line from the editable cart. */
 export async function removeItem(raw: unknown): Promise<ShopResult> {
   const input = removeItemSchema.safeParse(raw);
   if (!input.success) return fail(SHOP_MESSAGES.invalid, "invalid_input");
@@ -182,6 +189,7 @@ export async function getCartCount(): Promise<number> {
   return countCartItems(cart.id);
 }
 
+/** The open cart, whether this person may pay for it, and whether online payment is on. */
 export async function getCart(): Promise<
   ShopResult<{ cart: ShopCart | null; canPay: boolean; paymentsAvailable: boolean }>
 > {
@@ -231,6 +239,7 @@ export async function reopenOrder(): Promise<ShopResult<{ reopened: boolean }>> 
   return { ok: true, reopened };
 }
 
+// Bulk order progress with the percentage and whether the threshold is reached.
 export interface BulkProgressView extends BulkProgressRecord {
   percent: number;
   reached: boolean;
@@ -249,6 +258,7 @@ export async function getBulkProgress(): Promise<BulkProgressView | null> {
   return { ...progress, percent, reached };
 }
 
+/** The customer's submitted orders, newest first. */
 export async function listOrders(): Promise<ShopResult<{ orders: ShopOrderSummary[] }>> {
   const userId = await getCurrentUserId();
   if (!userId) return fail(SHOP_MESSAGES.signIn, "not_authenticated");

@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// A small icon and label row on the card.
 export interface ProfileCardStat {
   /** A rendered icon, so server pages can pass it to this client card. */
   icon: ReactNode;
@@ -14,6 +15,7 @@ export interface ProfileCardStat {
   value?: string;
 }
 
+// Content of a coach card.
 export interface ProfileCardProps {
   name: string;
   description?: string;

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 
 type Action = typeof resendMembershipPaymentEmailAction
 
+// The error or success message from a membership action.
 function ActionResult({ state }: { state: { error?: string; success?: string } }) {
   return (
     <>
@@ -20,6 +21,7 @@ function ActionResult({ state }: { state: { error?: string; success?: string } }
   )
 }
 
+// A form that posts just the application id when its one button is pressed.
 function SingleButtonForm({ action, applicationId, label, variant }: {
   action: Action
   applicationId: string

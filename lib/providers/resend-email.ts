@@ -14,6 +14,7 @@ export interface ResendConfig {
   from: string;
 }
 
+// Content for the "your membership is approved, please pay" email.
 export interface MembershipPaymentEmail {
   to: string;
   recipientName: string;
@@ -25,6 +26,7 @@ export interface MembershipPaymentEmail {
   payUrl: string;
 }
 
+// A ready-to-send email with plain-text and HTML bodies.
 export interface OutgoingEmail {
   to: string;
   subject: string;
@@ -32,18 +34,21 @@ export interface OutgoingEmail {
   html: string;
 }
 
+/** Resend settings, or null when the API key or From address is missing. */
 export function getResendConfig(env: Env = process.env): ResendConfig | null {
   const apiKey = env.RESEND_API_KEY?.trim();
   const from = env.EMAIL_FROM?.trim();
   return apiKey && from ? { apiKey, from } : null;
 }
 
+// Escapes text before it goes into the HTML body.
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[character] ?? character);
 }
 
+/** A simple email made of paragraphs, as text and escaped HTML. */
 export function plainEmail(to: string, subject: string, paragraphs: string[]): OutgoingEmail {
   return {
     to,
@@ -53,6 +58,7 @@ export function plainEmail(to: string, subject: string, paragraphs: string[]): O
   };
 }
 
+/** The membership payment request. Wording changes when a guardian is paying. */
 export function membershipPaymentEmail(input: MembershipPaymentEmail): OutgoingEmail {
   const amount = formatZarWithCents(input.amountCents);
   const whose = input.recipientIsApplicant
@@ -78,6 +84,7 @@ export function membershipPaymentEmail(input: MembershipPaymentEmail): OutgoingE
   return { to: input.to, subject: "Your CFA membership is approved - payment due", text: lines.join("\n\n"), html };
 }
 
+// One line of the shop order confirmation.
 export interface ShopOrderEmailItem {
   name: string;
   quantity: number;
@@ -94,11 +101,13 @@ export interface ShopOrderConfirmationEmail {
   ordersUrl: string | null;
 }
 
+// Item name with its size and hand, for the order email.
 function itemLabel(item: ShopOrderEmailItem): string {
   const options = [item.size && `size ${item.size}`, item.handedness && `${item.handedness}-handed`].filter(Boolean).join(", ");
   return `${item.quantity} x ${item.name}${options ? ` (${options})` : ""} - ${formatZarWithCents(item.lineCents)}`;
 }
 
+/** Confirmation sent once a shop order has been paid. */
 export function shopOrderConfirmationEmail(input: ShopOrderConfirmationEmail): OutgoingEmail {
   const total = formatZarWithCents(input.totalCents);
   const intro = `Thank you for your order. We have received your payment of ${total}.`;
@@ -124,6 +133,7 @@ export function shopOrderConfirmationEmail(input: ShopOrderConfirmationEmail): O
   return { to: input.to, subject: "Your CFA shop order is confirmed", text: lines.join("\n\n"), html };
 }
 
+// The kinds of payment that get a receipt email. Shop orders get their own confirmation.
 export type ReceiptKind = "membership" | "booking" | "invoice";
 
 export interface PaymentReceiptEmail {
@@ -138,12 +148,14 @@ export interface PaymentReceiptEmail {
   billingUrl: string | null;
 }
 
+// What the payment achieved, worded per kind for the receipt.
 const RECEIPT_OUTCOME: Record<ReceiptKind, string> = {
   membership: "Your membership is now active. Welcome to Cape Fencing Academy.",
   booking: "Your lesson is booked. See you on the piste.",
   invoice: "Your invoice has been marked as paid.",
 };
 
+/** Receipt sent after a membership, lesson or invoice payment succeeds. */
 export function paymentReceiptEmail(input: PaymentReceiptEmail): OutgoingEmail {
   const amount = formatZarWithCents(input.amountCents);
   const paid = `We have received your payment of ${amount} for ${input.description}.`;
@@ -173,6 +185,7 @@ export function paymentReceiptEmail(input: PaymentReceiptEmail): OutgoingEmail {
 
 export type SendEmailResult = { ok: true } | { ok: false; error: string };
 
+/** Sends through Resend's REST API. `fetchImpl` can be replaced in tests. */
 export async function sendWithResend(config: ResendConfig, email: OutgoingEmail, fetchImpl: typeof fetch = fetch): Promise<SendEmailResult> {
   try {
     const response = await fetchImpl(RESEND_ENDPOINT, {

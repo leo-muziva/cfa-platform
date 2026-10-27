@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
+/** Signs out with Supabase and returns to the home page. */
 export function LogoutButton() {
   const router = useRouter();
 

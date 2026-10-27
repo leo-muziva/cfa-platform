@@ -51,6 +51,7 @@ import confetti from "canvas-confetti";
 type ConfettiApi = { fire: (options?: ConfettiOptions) => void };
 export type ConfettiRef = ConfettiApi | null;
 
+/** A canvas that fires confetti when `ref.fire()` is called (used after sign-up). */
 export const Confetti = forwardRef<
   ConfettiRef,
   React.ComponentPropsWithRef<"canvas"> & {
@@ -109,6 +110,7 @@ export interface TextLoopProps {
   stopOnEnd?: boolean;
 }
 
+/** Cycles through its children one at a time with an animation. */
 export function TextLoop({
   children,
   className,
@@ -171,6 +173,7 @@ export interface BlurFadeProps {
   blur?: string;
 }
 
+/** Fades and unblurs its children into view. */
 export function BlurFade({
   children,
   className,
@@ -244,6 +247,7 @@ export interface GlassButtonProps
   contentClassName?: string;
 }
 
+/** The frosted-glass button used on the login and sign-up pages. */
 export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(
   ({ className, children, size, contentClassName, onClick, ...props }, ref) => {
     // The glass shell extends the button's hit area (e.g. the shadow layer's
@@ -408,6 +412,7 @@ export interface GlassFieldProps {
   ariaLabel?: string;
 }
 
+/** A labelled frosted-glass input for the login and sign-up forms. */
 export function GlassField({
   id,
   label,
@@ -529,6 +534,7 @@ export type AuthModalState =
       onAction: () => void;
     };
 
+/** Loading, error and success popup for the login and sign-up flows. */
 export function AuthModal({
   state,
   onClose,

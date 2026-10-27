@@ -10,6 +10,7 @@ import {
 } from "@/lib/services/LessonBookingService";
 import type { LessonQuote } from "@/types/domain";
 
+/** /protected/book/[coachId]: book a lesson with one coach. */
 export default async function CoachLessonBookingPage({
   params,
 }: {

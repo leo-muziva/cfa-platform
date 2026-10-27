@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getFamilyChanges } from "@/lib/services/FamilyService";
 import { FamilyReviewList } from "@/components/portal/family-review-list";
 
+/** /protected/family/review: the staff review queue for family changes. Staff only. */
 export default async function FamilyReviewPage() {
   const data = await getFamilyChanges(true);
   if ("error" in data) redirect("/protected");

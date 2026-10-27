@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+/** Sets a new password for the signed-in user (after a reset or invite link). */
 export function UpdatePasswordForm({
   className,
   ...props

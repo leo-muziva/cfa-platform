@@ -9,6 +9,7 @@ import { answerFamilyLinkAction, requestFamilyLinkAction } from '@/app/actions/p
 import { getFamilyAccountsPageData } from '@/lib/services/PlatformService'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
 
+/** /protected/family: request, accept and end guardian/dependent links. */
 export default async function FamilyAccountsPage() {
   const [data, context] = await Promise.all([
     getFamilyAccountsPageData(),

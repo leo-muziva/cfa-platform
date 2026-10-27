@@ -1,9 +1,13 @@
+// Older provider interfaces still used by PlatformService. getEmailProvider
+// wraps the email transport; getPaymentProvider only reports whether a
+// gateway exists, because checkout now goes through lib/payments instead.
 import 'server-only'
 import { getPaymentGateway } from '@/lib/payments/registry'
 import { membershipPaymentEmail, plainEmail, type MembershipPaymentEmail, type SendEmailResult } from '@/lib/providers/resend-email'
 import { getEmailTransport, sendEmail } from '@/lib/providers/email-transport'
 import { formatRandsWithCents } from '@/lib/money'
 
+// Shape of the older payment-link provider. Not implemented; see lib/payments.
 export interface PaymentLinkRequest {
   invoiceId: string
   invoiceNumber: string
@@ -23,6 +27,7 @@ export interface PaymentProvider {
   }>
 }
 
+// Emails the platform sends about invoices, receipts and memberships.
 export interface EmailProvider {
   readonly name: string
   sendInvoice(input: { to: string; invoiceNumber: string; amount: number; paymentLink: string | null }): Promise<void>
@@ -30,6 +35,7 @@ export interface EmailProvider {
   sendMembershipPaymentRequest(input: MembershipPaymentEmail): Promise<SendEmailResult>
 }
 
+/** Thrown when a provider feature is called but not configured. */
 export class ProviderUnavailableError extends Error {
   constructor(kind: 'payment' | 'email') {
     super(`${kind[0].toUpperCase()}${kind.slice(1)} provider is not configured`)
@@ -37,11 +43,16 @@ export class ProviderUnavailableError extends Error {
   }
 }
 
+/**
+ * Non-null when a payment gateway is configured. Its methods always throw:
+ * payment links are not implemented, and checkout uses lib/payments.
+ */
 export function getPaymentProvider(): PaymentProvider | null {
   const gateway = getPaymentGateway()
   return gateway ? { name: gateway.name, createPaymentLink: async () => { throw new ProviderUnavailableError('payment') }, verifyWebhook: async () => { throw new ProviderUnavailableError('payment') } } : null
 }
 
+/** Email sending through the configured transport, or null when email is off. */
 export function getEmailProvider(): EmailProvider | null {
   const transport = getEmailTransport()
   if (!transport) return null

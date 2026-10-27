@@ -1,6 +1,9 @@
+// Next.js proxy (formerly middleware): runs before every matching request
+// to keep the Supabase session fresh and protect signed-in pages.
 import { updateSession } from "@/lib/supabase/proxy";
 import { type NextRequest } from "next/server";
 
+/** Hands every request to the Supabase session check. */
 export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }

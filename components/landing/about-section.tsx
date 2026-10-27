@@ -33,6 +33,7 @@ const WEAPONS = [
   },
 ] as const;
 
+/** The About section of the home page, with expandable cards for each weapon. */
 export function AboutSection() {
   const shouldReduceMotion = useReducedMotion();
   // Which weapon card is open. Only one at a time.

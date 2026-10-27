@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button'
 import { useFormAction, ValidatedForm } from '@/components/forms/form-state'
 import type { ActionState } from '@/app/actions/platform'
 
+/**
+ * A form wired to a Server Action, with a submit button and the action's
+ * error or success message. Most simple portal forms use this.
+ */
 export function ActionForm({ action, children, submitLabel, className = 'space-y-4', submitClassName }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>
   children: React.ReactNode

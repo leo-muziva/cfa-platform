@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 
+// One clickable card in a browse step.
 export interface BrowseCardItem {
   key: string;
   label: string;
@@ -10,6 +11,7 @@ export interface BrowseCardItem {
   imageSrc?: string;
 }
 
+/** The grid of section or weapon cards on the shop's browse steps. */
 export function BrowseCards({ items }: { items: BrowseCardItem[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -19,11 +19,16 @@ export const DEFAULT_MODEL_IDS = {
 
 type Env = Record<string, string | undefined>;
 
+// Reads a setting, treating blank values as missing.
 function key(env: Env, name: string): string | null {
   const value = env[name]?.trim();
   return value ? value : null;
 }
 
+/**
+ * The AI models to try, in fallback order, for every provider that has an
+ * API key. A *_MODEL setting overrides the default model id.
+ */
 export function getReviewModels(env: Env = process.env): ReviewModel[] {
   const models: ReviewModel[] = [];
 

@@ -1,6 +1,7 @@
 import { TutorialStep } from "./tutorial-step";
 import { CodeBlock } from "./code-block";
 
+// Leftover from the Supabase starter template's tutorial. Not used by any page.
 const create = `create table notes (
   id bigserial primary key,
   title text

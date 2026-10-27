@@ -27,6 +27,8 @@ const ZAR_FORMAT = '"R" #,##0.00';
 
 const dateFormat = new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "long", year: "numeric" });
 
+// Rows are grouped by category, then item code, size, hand and price.
+// Lines with no category sort last.
 function sortForSheet(lines: SupplierLine[]): SupplierLine[] {
   return [...lines].sort(function (a, b) {
     return (
@@ -39,6 +41,10 @@ function sortForSheet(lines: SupplierLine[]): SupplierLine[] {
   });
 }
 
+/**
+ * Builds the xlsx file. With `notes`, a second "Review notes" sheet is added
+ * for staff; the supplier copy is built without notes.
+ */
 export async function buildSupplierWorkbook(
   lines: SupplierLine[],
   header: WorkbookHeader,
@@ -114,6 +120,7 @@ export async function buildSupplierWorkbook(
   return Buffer.from(output as ArrayBuffer);
 }
 
+// Reads a cell as text, including rich text and formula results.
 function cellText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "object" && "richText" in value) {
@@ -125,11 +132,13 @@ function cellText(value: ExcelJS.CellValue): string {
   return String(value).trim();
 }
 
+// Reads a cell as a number; NaN when it is not one.
 function cellNumber(value: ExcelJS.CellValue): number {
   const n = Number(cellText(value));
   return Number.isFinite(n) ? n : NaN;
 }
 
+/** A saved file could not be read; the message is safe to show staff. */
 export class SupplierWorkbookError extends Error {}
 
 // Reads the order rows back out of a saved file so the AI proof compares
@@ -185,6 +194,7 @@ export interface WorkbookGrid {
   rows: string[][];
 }
 
+// Caps the in-browser preview so a huge sheet cannot slow the page.
 const PREVIEW_ROW_LIMIT = 1000;
 
 function previewText(cell: ExcelJS.Cell): string {

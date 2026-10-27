@@ -23,12 +23,14 @@ import {
 //   the run is flagged.
 // - No member names, emails or phone numbers are ever sent.
 
+// One AI model to try, with the provider name used in logs.
 export interface ReviewModel {
   provider: string;
   modelId: string;
   model: LanguageModel;
 }
 
+// Everything the review is allowed to see about one supplier sheet.
 export interface ReviewContext {
   reference: string;
   paidOrderCount: number;
@@ -38,6 +40,8 @@ export interface ReviewContext {
   pastAverageQuantity: Map<string, number>;
 }
 
+// A finding shown to staff. "rule" findings come from the basic checks and
+// are always kept; "ai" findings must point at a real line.
 export interface ReviewFinding {
   id: string;
   source: "rule" | "ai";
@@ -49,6 +53,7 @@ export interface ReviewFinding {
   suggestion: string | null;
 }
 
+// One logged step of an AI run (a tool call, or the final answer).
 export interface ReviewStep {
   stepNumber: number;
   provider: string;
@@ -58,8 +63,11 @@ export interface ReviewStep {
   durationMs: number;
 }
 
+// succeeded: first model answered. fell_back: a later model answered.
+// rules_only: every model failed, so only the basic checks ran.
 export type ReviewStatus = "succeeded" | "fell_back" | "rules_only";
 
+// What a review run returns, including the evidence stored in ai_runs.
 export interface ReviewResult {
   status: ReviewStatus;
   provider: string | null;
@@ -80,9 +88,12 @@ export interface ReviewOptions {
   maxSteps?: number;
 }
 
+// Caps rows a tool returns, and how long product text sent to a model can be.
 export const MAX_TOOL_ROWS = 500;
 const MAX_TEXT = 120;
 
+// The shape the model must submit. Limits stop a runaway model from
+// producing huge text.
 const reviewOutputSchema = z.object({
   summary: z.string().max(1200),
   findings: z
@@ -102,6 +113,7 @@ const reviewOutputSchema = z.object({
 
 export type ReviewOutput = z.infer<typeof reviewOutputSchema>;
 
+// System instructions for the model.
 const INSTRUCTIONS = [
   "You check a fencing club's supplier order before staff send it. You are careful and brief.",
   "Call getSheetLines and getRuleFindings first. Each line already includes its catalogue entry and past average quantity, so only use getCatalogueEntry or getPastBatchStats if something is missing. Keep tool calls to a minimum.",
@@ -120,6 +132,7 @@ const INSTRUCTIONS = [
 // response mode: Groq and Gemini refuse JSON mode combined with tool calls.
 const SUBMIT_TOOL = "submitReview";
 
+// Shortens product text before it is sent to a model.
 function trimText(value: string): string {
   return value.length > MAX_TEXT ? value.slice(0, MAX_TEXT) + "..." : value;
 }
@@ -244,14 +257,18 @@ export function scrubAiText(text: string): { text: string; removed: boolean } {
   return { text: cleaned, removed: cleaned !== text.trim() };
 }
 
+// Rand amount with cents, in the same format as the rest of the site.
 function rands(cents: number): string {
   return formatZarWithCents(cents);
 }
 
+// Spots unfinished template text such as "[Your Name]".
 const PLACEHOLDER_PATTERN = /\[[^\]\n]{1,60}\]/;
 
+// Matches rand amounts written as "R1 250.00", "R 1,250" or "1250 rands".
 const AMOUNT_PATTERN = /\bR\s?(?:\d{1,3}(?:[ ,]\d{3})+|\d+)(?:\.\d{2})?(?!\d)|\b(?:\d{1,3}(?:[ ,]\d{3})+|\d+)(?:\.\d{2})?\s?rands?\b/gi;
 
+// Converts a matched amount to cents, or null when it has no digits.
 function amountCents(text: string): number | null {
   const digits = text.replace(/rands?/i, "").replace(/^R/i, "").trim();
   const decimal = digits.match(/[.,](\d{2})$/);
@@ -274,6 +291,7 @@ export function findUnknownAmounts(text: string, lines: SupplierLine[]): string[
   });
 }
 
+// Total item count and value of the sheet.
 function totals(lines: SupplierLine[]) {
   return lines.reduce(
     function (acc, l) {
@@ -283,6 +301,7 @@ function totals(lines: SupplierLine[]) {
   );
 }
 
+/** A plain supplier email built from the sheet totals, used when the AI draft is missing or unsafe. */
 export function fallbackEmailDraft(context: ReviewContext): string {
   const t = totals(context.lines);
   return [
@@ -298,6 +317,7 @@ export function fallbackEmailDraft(context: ReviewContext): string {
   ].join("\n");
 }
 
+// Converts basic-rule findings into review findings.
 function ruleFindingsAsReview(findings: RuleFinding[]): ReviewFinding[] {
   return findings.map(function (f) {
     return {
@@ -368,6 +388,7 @@ export function mergeFindings(
   return { findings: sortFindings(merged), flagReasons: Array.from(new Set(flagReasons)) };
 }
 
+// The result when no AI model could answer: rule findings plus a plain email.
 function rulesOnlyResult(context: ReviewContext, steps: ReviewStep[], errors: string[]): ReviewResult {
   const t = totals(context.lines);
   const count = context.ruleFindings.length;
@@ -390,6 +411,7 @@ function rulesOnlyResult(context: ReviewContext, steps: ReviewStep[], errors: st
   };
 }
 
+// Short error text for the run log, without stack traces.
 function describeError(error: unknown): string {
   if (error instanceof Error) return error.name + ": " + error.message.slice(0, 200);
   return "Unknown error";
