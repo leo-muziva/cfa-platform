@@ -567,6 +567,20 @@ input:-webkit-autofill:active {
 .glass-input-wrap:focus-within .glass-input::after {
   --angle-1: -125deg;
 }
+/* GlassDialog and AuthModal use the glass look but need a normal box, not a
+   pill. .glass-input sits outside the Tailwind layers, so rounded-3xl/p-8 lose to it. */
+.glass-input.glass-dialog-panel,
+.glass-input.glass-modal-panel {
+  border-radius: 1.5rem;
+  padding: 2rem;
+}
+.glass-input.glass-dialog-panel {
+  align-items: stretch;
+}
+.glass-input.glass-dialog-panel::after,
+.glass-input.glass-modal-panel::after {
+  border-radius: 1.5rem;
+}
 .glass-input-text-area {
   position: absolute;
   inset: 0;

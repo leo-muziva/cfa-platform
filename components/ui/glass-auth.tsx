@@ -566,7 +566,7 @@ export function AuthModal({
           transition={{ duration: reduceMotion ? 0 : 0.2 }}
         >
           <motion.div
-            className="glass-input relative w-full max-w-sm flex-col rounded-3xl p-8 text-center"
+            className="glass-input glass-modal-panel relative w-full max-w-sm flex-col rounded-3xl p-8 text-center"
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}

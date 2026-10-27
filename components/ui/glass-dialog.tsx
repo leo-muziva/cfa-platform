@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -60,42 +61,43 @@ export function GlassDialog({ open, onClose, labelledBy, label, className, child
     }
   }, [open]);
 
-  return (
-    <>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label={labelledBy ? undefined : label}
-          aria-labelledby={labelledBy}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2 }}
+  // Rendered into <body>: the portal's glass card uses backdrop-filter, which
+  // makes "fixed" relative to the card instead of the screen.
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
+    <motion.div
+      className="fixed inset-0 z-[100] flex overflow-y-auto bg-background/70 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={labelledBy ? undefined : label}
+      aria-labelledby={labelledBy}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+    >
+      <motion.div
+        ref={panelRef}
+        tabIndex={-1}
+        className={cn(
+          // m-auto centres it, and lets a tall dialog scroll instead of being cut off
+          "glass-input glass-dialog-panel relative m-auto w-full max-w-sm flex-col rounded-3xl p-8 outline-none",
+          className,
+        )}
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.25, 1, 0.5, 1] }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close dialog"
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
         >
-          <motion.div
-            ref={panelRef}
-            tabIndex={-1}
-            className={cn(
-              "glass-input relative w-full max-w-sm flex-col rounded-3xl p-8 outline-none",
-              className,
-            )}
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.25, 1, 0.5, 1] }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close dialog"
-              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-5 w-5" aria-hidden="true" />
-            </button>
-            {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </>
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+        {children}
+      </motion.div>
+    </motion.div>,
+    document.body,
   );
 }
