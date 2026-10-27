@@ -17,7 +17,8 @@ export async function updateProfileAction(
     full_name: formData.get('full_name') as string,
     phone: (formData.get('phone') as string) || undefined,
     date_of_birth: (formData.get('date_of_birth') as string) || null,
-    reminder_preference: formData.get('reminder_preference') as string,
+    // left out while WhatsApp is off, so the saved choice is kept
+    reminder_preference: (formData.get('reminder_preference') as string) || undefined,
   }
 
   const result = await updateCurrentProfile(rawData)

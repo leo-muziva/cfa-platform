@@ -23,7 +23,9 @@ import {
 import { getMembership } from '@/lib/repositories/PlatformRepository'
 import {
   profileUpdateSchema, adminProfileUpdateSchema, memberListFiltersSchema, inviteMemberSchema, registrationDetailsSchema,
+  reminderPreferenceAllowed,
 } from '@/lib/validations/member.schema'
+import { whatsAppRemindersAvailable } from '@/lib/providers/notification-providers'
 import type {
   Profile, MemberStats, MemberStatsRow, MemberListFilters, MembershipType, Paged,
   Capabilities, HouseholdMember,
@@ -89,6 +91,9 @@ export async function requireStaff(): Promise<{ profile: Profile } | { error: st
 export async function updateCurrentProfile(rawData: unknown): Promise<{ profile: Profile } | { error: string } | ValidationFailure> {
   const parsed = profileUpdateSchema.safeParse(rawData)
   if (!parsed.success) return validationFailure(parsed.error, PROFILE_FIELD_LABELS)
+  if (!reminderPreferenceAllowed(parsed.data.reminder_preference, whatsAppRemindersAvailable())) {
+    return { error: 'WhatsApp reminders are not available yet. Choose email.' }
+  }
   const profile = await getCurrentProfile()
   if (!profile) return { error: 'Not authenticated' }
   const updated = await updateProfile(profile.id, parsed.data)

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getCurrentAccountContext } from '@/lib/services/MemberService'
 import { getMembershipRequestPageData } from '@/lib/services/PlatformService'
 import { ProfileForm } from './profile/profile-form'
+import { whatsAppRemindersAvailable } from '@/lib/providers/notification-providers'
 
 export default async function ProfileDashboardPage() {
   const [context, membershipData] = await Promise.all([
@@ -64,7 +65,7 @@ export default async function ProfileDashboardPage() {
       )}
 
 
-      <ProfileForm profile={context.profile} />
+      <ProfileForm profile={context.profile} whatsAppAvailable={whatsAppRemindersAvailable()} />
 
       {/* Membership status and applying moved to /protected/membership. */}
       <Card className="cfa-light-card">

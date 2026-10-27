@@ -41,6 +41,12 @@ export const profileUpdateSchema = z.object({
   reminder_preference: z.enum(['email', 'whatsapp', 'both']).optional(),
 })
 
+// WhatsApp reminders can only be chosen once CFA has a WhatsApp provider on.
+// Email is always allowed, and leaving the field out keeps what is saved.
+export function reminderPreferenceAllowed(preference: string | undefined, whatsAppAvailable: boolean): boolean {
+  return preference === undefined || preference === 'email' || whatsAppAvailable
+}
+
 export const adminProfileUpdateSchema = profileUpdateSchema.extend({
   is_staff: z.boolean().optional(),
   staff_type: z.enum(['admin', 'coach']).optional().nullable(),

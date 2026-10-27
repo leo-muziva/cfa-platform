@@ -9,6 +9,12 @@ export interface WhatsAppTestProvider {
   send(message: WhatsAppTestMessage): Promise<{ providerReference: string }>;
 }
 
+// The one WhatsApp switch: reminders can only use WhatsApp once this
+// provider is set up and turned on.
+export function whatsAppRemindersAvailable(): boolean {
+  return getMetaWhatsAppTestProvider() !== null;
+}
+
 /**
  * This adapter is intentionally off unless a sandbox operator enables it.
  * Recipient approval remains a Meta dashboard responsibility; this code does

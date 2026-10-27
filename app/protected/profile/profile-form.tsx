@@ -17,8 +17,11 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export function ProfileForm({ profile, whatsAppAvailable = false }: { profile: Profile; whatsAppAvailable?: boolean }) {
   const [state, formAction, isPending] = useFormAction(updateProfileAction, {})
+  const savedPreference = profile.reminder_preference ?? 'email'
+  // a WhatsApp choice saved earlier is kept, but reminders go by email for now
+  const whatsAppPaused = !whatsAppAvailable && savedPreference !== 'email'
 
   return (
     <div className="flex w-full flex-col gap-6 text-left">
@@ -76,17 +79,26 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="reminder_preference">Lesson reminders</Label>
+              {/* While WhatsApp is off the choice is fixed to email and isn't
+                  sent (a disabled select isn't submitted), so nothing saved changes. */}
               <select
                 id="reminder_preference"
                 name="reminder_preference"
-                defaultValue={profile.reminder_preference ?? 'email'}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                defaultValue={whatsAppAvailable ? savedPreference : 'email'}
+                disabled={!whatsAppAvailable}
+                aria-describedby={whatsAppAvailable ? undefined : "reminder-preference-hint"}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm disabled:opacity-70"
               >
                 <option value="email">Email</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="both">Email and WhatsApp</option>
+                <option value="whatsapp" disabled={!whatsAppAvailable}>WhatsApp</option>
+                <option value="both" disabled={!whatsAppAvailable}>Email and WhatsApp</option>
               </select>
-              <p className="text-xs text-muted-foreground">WhatsApp reminders remain unavailable until CFA enables an approved provider.</p>
+              {!whatsAppAvailable && (
+                <p id="reminder-preference-hint" className="text-xs text-muted-foreground">
+                  WhatsApp reminders remain unavailable until CFA enables an approved provider.
+                  {whatsAppPaused ? ' You chose WhatsApp before, so for now your reminders are sent by email.' : ''}
+                </p>
+              )}
             </div>
 
             {state.error && (
