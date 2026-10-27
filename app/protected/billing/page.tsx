@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getMembershipPaymentsDue, getPayerBilling } from '@/lib/services/PlatformService'
 import { formatCapeTownLessonDate } from '@/lib/booking-calendar'
 import { CheckoutButton } from '@/components/payments/checkout-button'
-import { listMyRefundablePayments } from '@/lib/services/refund-service'
+import { listMyRefundablePayments, listMyRefundRequests } from '@/lib/services/refund-service'
+import { receiptRefundState } from '@/lib/refund-amounts'
 import { getPayableLessonHolds } from '@/lib/services/LessonBookingService'
 import { formatCapeTownTime } from '@/lib/booking-calendar'
 import { formatRandsWithCents, formatZarWithCents } from '@/lib/money'
@@ -33,13 +34,14 @@ export default async function BillingPage() {
 
   // Receipts only carry a number, so match them to refundable payments by it.
   // A failed lookup just hides the per-receipt links; the Refunds page still works.
-  const [refundable, holdsResult, membershipsDue] = await Promise.all([listMyRefundablePayments(), getPayableLessonHolds(), getMembershipPaymentsDue()])
+  const [refundable, refundRequests, holdsResult, membershipsDue] = await Promise.all([listMyRefundablePayments(), listMyRefundRequests(), getPayableLessonHolds(), getMembershipPaymentsDue()])
   const heldLessons = holdsResult.success ? holdsResult.data : []
-  const refundAttemptByReceipt = new Map<string, string>()
-  if (refundable.ok) {
-    for (const payment of refundable.data) {
-      if (payment.receiptNumber && payment.refundableCents > 0) refundAttemptByReceipt.set(payment.receiptNumber, payment.attemptId)
-    }
+  const paymentByReceipt = new Map((refundable.ok ? refundable.data : []).filter((payment) => payment.receiptNumber).map((payment) => [payment.receiptNumber as string, payment]))
+  // Each receipt gets the refund link, or a short reason when there isn't one.
+  // The reason needs the refund requests; without them only the link shows.
+  const refundStateFor = (receiptNumber: string) => {
+    const state = receiptRefundState(paymentByReceipt.get(receiptNumber), refundRequests.ok ? refundRequests.data : [])
+    return state?.kind === 'note' && !refundRequests.ok ? null : state
   }
 
   return (
@@ -129,7 +131,7 @@ export default async function BillingPage() {
         {billing.invoices.length === 0 ? <p>No invoices yet.</p> : billing.invoices.map((invoice) => <Card key={invoice.id}><CardHeader><CardTitle className="flex justify-between"><span>{invoice.invoice_number}</span><Badge>{invoice.status}</Badge></CardTitle></CardHeader><CardContent><p>{formatRandsWithCents(invoice.total)}</p><ul className="mt-3 space-y-1 text-sm text-muted-foreground">{invoice.lines?.map((line) => <li key={line.id}>{line.participant?.full_name || 'Participant'} - {line.description}: {formatRandsWithCents(line.amount)}</li>)}</ul>{billing.providerAvailable && invoice.status !== 'paid' && <CheckoutButton invoiceId={invoice.id} />}</CardContent></Card>)}
       </section>
 
-      <section className="space-y-3"><h2 className="text-xl font-semibold">Receipts</h2>{billing.receipts.length === 0 ? <p>No receipts yet.</p> : billing.receipts.map((receipt) => { const refundAttempt = refundAttemptByReceipt.get(receipt.receipt_number); return <Card key={receipt.id}><CardHeader><CardTitle>{receipt.receipt_number}</CardTitle></CardHeader><CardContent className="flex flex-wrap items-center justify-between gap-2"><span>{formatRandsWithCents(receipt.amount)}</span>{refundAttempt && <Link className="text-sm underline underline-offset-4" href={`/protected/refunds/new?attempt=${encodeURIComponent(refundAttempt)}`}>Request refund<span className="sr-only"> for receipt {receipt.receipt_number}</span></Link>}</CardContent></Card> })}</section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Receipts</h2>{billing.receipts.length === 0 ? <p>No receipts yet.</p> : billing.receipts.map((receipt) => { const refundState = refundStateFor(receipt.receipt_number); return <Card key={receipt.id}><CardHeader><CardTitle>{receipt.receipt_number}</CardTitle></CardHeader><CardContent className="flex flex-wrap items-center justify-between gap-2"><span>{formatRandsWithCents(receipt.amount)}</span>{refundState?.kind === 'link' && <Link className="text-sm underline underline-offset-4" href={`/protected/refunds/new?attempt=${encodeURIComponent(refundState.attemptId)}`}>Request refund<span className="sr-only"> for receipt {receipt.receipt_number}</span></Link>}{refundState?.kind === 'note' && <span className="text-sm text-muted-foreground">{refundState.text}</span>}</CardContent></Card> })}</section>
 
       <section className="space-y-2" aria-labelledby="refunds-heading"><h2 id="refunds-heading" className="text-xl font-semibold">Refunds</h2><p className="text-sm text-muted-foreground">Request a refund on a settled payment and follow the progress of your requests.</p><Link className="inline-block text-sm font-medium underline underline-offset-4" href="/protected/refunds">View refunds</Link></section>
     </div>

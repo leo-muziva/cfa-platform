@@ -93,7 +93,7 @@ export default async function NewRefundPage({
               <div>
                 <dt className="inline text-muted-foreground">Paid on: </dt>
                 <dd className="inline">
-                  {new Date(payment.completedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}
+                  {new Date(payment.completedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Johannesburg" })}
                 </dd>
               </div>
             ) : null}

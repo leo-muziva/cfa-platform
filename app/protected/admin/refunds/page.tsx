@@ -12,6 +12,7 @@ import {
 import { listRefundQueue, providerRefundsEnabled } from "@/lib/services/refund-service";
 import type { PaymentKind, RefundRequest, RefundStatus } from "@/types/domain";
 import { formatZarWithCents } from "@/lib/money";
+import { refundableBeforeDecision } from "@/lib/refund-amounts";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +108,6 @@ function DecisionForms({ refund, providerAvailable }: { refund: RefundRequest; p
               step="0.01"
               min="0.01"
               max={requestedRands}
-              placeholder={requestedRands}
               aria-describedby={`approve-${id}-amount-hint`}
             />
             <p id={`approve-${id}-amount-hint`} className="text-xs text-muted-foreground">
@@ -249,7 +249,7 @@ function RefundCard({ refund }: { refund: RefundRequest }) {
           <div><dt className="inline text-muted-foreground">Payment for: </dt><dd className="inline">{KIND_LABELS[refund.kind]}</dd></div>
           <div><dt className="inline text-muted-foreground">Payment amount: </dt><dd className="inline">{formatZarWithCents(refund.paymentAmountCents)}</dd></div>
           <div><dt className="inline text-muted-foreground">Requested amount: </dt><dd className="inline font-semibold">{formatZarWithCents(refund.amountCents)}</dd></div>
-          <div><dt className="inline text-muted-foreground">Still refundable: </dt><dd className="inline">{formatZarWithCents(refund.refundableCents)}</dd></div>
+          <div><dt className="inline text-muted-foreground">Still refundable: </dt><dd className="inline">{formatZarWithCents(refundableBeforeDecision(refund))}</dd></div>
           <div><dt className="inline text-muted-foreground">Raised: </dt><dd className="inline">{formatDateTime(refund.createdAt)}</dd></div>
           {refund.method ? (
             <div>
