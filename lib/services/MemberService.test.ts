@@ -53,6 +53,14 @@ describe('deriveCapabilities', () => {
     expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').isDependent).toBe(true)
     expect(deriveCapabilities(admin, { household_role: 'dependent' } as HouseholdMember, 'payer-id').canSeeHouseholdMoney).toBe(false)
   })
+  it('grants the equipment register to both staff types but nobody else', () => {
+    const coach = { ...profile, id: 'coach-id', is_staff: true, staff_type: 'coach' } as Profile
+    const admin = { ...profile, id: 'admin-id', is_staff: true, staff_type: 'admin' } as Profile
+    const household = { household_role: 'payer' } as HouseholdMember
+    expect(deriveCapabilities(coach, household, 'coach-id').canManageEquipment).toBe(true)
+    expect(deriveCapabilities(admin, household, 'admin-id').canManageEquipment).toBe(true)
+    expect(deriveCapabilities(profile, household, 'payer-id').canManageEquipment).toBe(false)
+  })
   it('uses effective billing responsibility instead of a stale household role', () => {
     const linked = { ...profile, id: 'linked-dependent' } as Profile
     const capabilities = deriveCapabilities(linked, { household_role: 'payer' } as HouseholdMember, 'guardian-id')
