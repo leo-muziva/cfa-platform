@@ -62,12 +62,19 @@ export function lessonBillingCopy({
   participantCount?: number;
 }): string {
   if (!canSeeQuote) return "Your payer will be billed";
-  if (participantCount === 2) return "Shared lesson for two fencers";
+  // the quote comes from the server, so the shared lesson shows its real total too
+  if (participantCount === 2) {
+    return quote
+      ? formatLessonQuote(quote) + " for this shared lesson (two fencers)"
+      : "Shared lesson for two fencers";
+  }
   return quote ? formatLessonQuote(quote) + " for this lesson" : "Choose a payment option";
 }
 
-export function lessonBillingDetailCopy(canSeeQuote: boolean, paymentsAvailable = true): string | null {
+export function lessonBillingDetailCopy(canSeeQuote: boolean, paymentsAvailable = true, guestPaysNow = false): string | null {
   if (!canSeeQuote) return null;
+  // guests can't use pay later; the panel already says they pay when booking
+  if (guestPaysNow) return null;
   return paymentsAvailable
     ? "Pay later on your monthly invoice, or pay now with secure checkout."
     : "Lessons are added to your monthly invoice.";

@@ -275,8 +275,8 @@ export function CoachBookingCalendar({
         )}
         <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-4">
           <p className="text-sm font-medium">{lessonBillingCopy({ canSeeQuote, quote: canSeeQuote ? quote : null, participantCount: selectedParticipants.length })}</p>
-          {lessonBillingDetailCopy(canSeeQuote, paymentsAvailable) && (
-            <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable)}</p>
+          {lessonBillingDetailCopy(canSeeQuote, paymentsAvailable, requiresPayNow) && (
+            <p className="mt-1 text-xs text-white/65">{lessonBillingDetailCopy(canSeeQuote, paymentsAvailable, requiresPayNow)}</p>
           )}
           {requiresPayNow && dropInFeeCopy(dropInFeeCents) && (
             <p className="mt-1 text-xs text-white/65">{dropInFeeCopy(dropInFeeCents)}</p>

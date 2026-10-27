@@ -74,6 +74,18 @@ describe("lesson booking UI helpers", () => {
     expect(lessonBillingDetailCopy(true)).toMatch(/invoice/i);
     expect(lessonBillingDetailCopy(true, true)).toMatch(/pay now/i);
     expect(lessonBillingDetailCopy(true, false)).not.toMatch(/pay now/i);
+    // guests always pay now, so no "pay later" line for them
+    expect(lessonBillingDetailCopy(true, true, true)).toBeNull();
+  });
+
+  it("shows the server quote for one and two fencers", () => {
+    const one = { participantCount: 1 as const, totalCents: "30000", currency: "ZAR" as const };
+    const two = { participantCount: 2 as const, totalCents: "60000", currency: "ZAR" as const };
+    expect(lessonBillingCopy({ canSeeQuote: true, quote: one, participantCount: 1 })).toBe("R300 for this lesson");
+    expect(lessonBillingCopy({ canSeeQuote: true, quote: two, participantCount: 2 })).toBe("R600 for this shared lesson (two fencers)");
+    // no quote loaded yet for two fencers
+    expect(lessonBillingCopy({ canSeeQuote: true, quote: null, participantCount: 2 })).toBe("Shared lesson for two fencers");
+    expect(lessonBillingCopy({ canSeeQuote: false, quote: two, participantCount: 2 })).toBe("Your payer will be billed");
   });
 
   it("keeps a lesson awaiting payment in upcoming until it is released", () => {
