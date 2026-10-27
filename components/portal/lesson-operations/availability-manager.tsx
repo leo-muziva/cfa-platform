@@ -91,7 +91,7 @@ export function AvailabilityManager({
             <CardDescription>Times use the club&apos;s Cape Town timezone.</CardDescription>
           </CardHeader>
           <CardContent>
-            <OperationForm action={createRuleAction} submitLabel="Add recurring hours">
+            <OperationForm action={createRuleAction} submitLabel="Add weekly range">
               <input type="hidden" name="coachId" value={coachId} />
               <div className="space-y-2">
                 <Label htmlFor="isoWeekday">Weekday</Label>

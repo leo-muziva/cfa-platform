@@ -34,7 +34,7 @@ export function LessonSettingsForm({ settings, action }: {
   action: (state: LessonOperationState, formData: FormData) => Promise<LessonOperationState>;
 }) {
   return <div className="space-y-8">
-    <div><h1 className="text-3xl font-bold tracking-tight">Lesson settings</h1><p className="mt-2 max-w-3xl text-sm text-muted-foreground">This singleton is the authoritative policy and pricing source for lesson booking. Changes apply to new decisions made after saving.</p></div>
+    <div><h1 className="text-3xl font-bold tracking-tight">Lesson settings</h1><p className="mt-2 max-w-3xl text-sm text-muted-foreground">These settings control lesson booking rules and pricing. Changes apply to new bookings and decisions made after saving.</p></div>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <Card className="border-indigo-200 dark:border-white/15"><CardHeader><CardTitle>Editable policy</CardTitle><CardDescription>Validated server-side before the settings record is updated.</CardDescription></CardHeader><CardContent>
         <OperationForm action={action} submitLabel="Save lesson settings" pendingLabel="Saving settings...">

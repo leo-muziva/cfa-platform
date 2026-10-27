@@ -96,7 +96,7 @@ export function MembershipPlans({
         Join the club
       </h1>
       <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-        New to fencing? Start with the beginner package, then join when you are ready to train regularly.
+        Choose a beginner package or a membership plan.
       </p>
 
       {beginner && (
