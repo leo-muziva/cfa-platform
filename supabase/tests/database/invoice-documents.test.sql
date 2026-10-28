@@ -17,6 +17,10 @@ values('98000000-0000-4000-8000-000000000001','98000000-0000-4000-8000-000000000
 select ok(public.generate_monthly_invoices(current_date)>=1,'a staff run bills the payer');
 select is((select generated_by from public.invoices where payer_id='98000000-0000-4000-8000-000000000001' and sequence=1),
   'staff','a run without a source is recorded as staff');
+select ok((select id from public.invoices where payer_id='98000000-0000-4000-8000-000000000001' and sequence=1)
+  not in (select * from public.list_unsent_scheduled_invoices()),'a staff invoice is never emailed by the cron');
+-- Sending locks the staff invoice, so the next charge needs a new invoice.
+select public.complete_invoice_email((select id from public.invoices where payer_id='98000000-0000-4000-8000-000000000001' and sequence=1));
 
 insert into public.charges(fencer_id,payer_id,type,amount,status,period,description,lifecycle_state)
 values('98000000-0000-4000-8000-000000000001','98000000-0000-4000-8000-000000000001',
@@ -32,8 +36,6 @@ select throws_ok($$select public.generate_monthly_invoices(current_date,'robot')
 -- ============================================================
 select ok((select id from public.invoices where payer_id='98000000-0000-4000-8000-000000000001' and sequence=2)
   in (select * from public.list_unsent_scheduled_invoices()),'the unsent scheduled invoice is listed for the cron');
-select ok((select id from public.invoices where payer_id='98000000-0000-4000-8000-000000000001' and sequence=1)
-  not in (select * from public.list_unsent_scheduled_invoices()),'a staff invoice is never emailed by the cron');
 
 create temp table doc_invoice as select id from public.invoices
   where payer_id='98000000-0000-4000-8000-000000000001' and sequence=2;
