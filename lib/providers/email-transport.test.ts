@@ -45,6 +45,15 @@ describe("sendEmail", () => {
     expect(sendMail).toHaveBeenCalledWith({ from: smtpEnv.EMAIL_FROM, ...email });
   });
 
+  it("passes attachments to the SMTP sender", async () => {
+    const sendMail = vi.fn().mockResolvedValue({});
+    const content = new Uint8Array([37, 80, 68, 70]);
+    await sendEmail(smtp, { ...email, attachments: [{ filename: "CFA-000001.pdf", content, contentType: "application/pdf" }] }, () => ({ sendMail }));
+    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      attachments: [{ filename: "CFA-000001.pdf", content: Buffer.from(content), contentType: "application/pdf" }],
+    }));
+  });
+
   it("reports an SMTP refusal without the server's message", async () => {
     const sendMail = vi.fn().mockRejectedValue(Object.assign(new Error("550 member@example.test unknown"), { responseCode: 550 }));
     const result = await sendEmail(smtp, email, () => ({ sendMail }));

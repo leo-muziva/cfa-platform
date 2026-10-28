@@ -27,10 +27,10 @@ export interface PaymentProvider {
   }>
 }
 
-// Emails the platform sends about invoices, receipts and memberships.
+// Emails the platform sends about receipts and memberships. Invoice emails
+// carry a PDF and go through lib/services/invoice-document-service.ts.
 export interface EmailProvider {
   readonly name: string
-  sendInvoice(input: { to: string; invoiceNumber: string; amount: number; paymentLink: string | null }): Promise<void>
   sendReceipt(input: { to: string; receiptNumber: string; amount: number }): Promise<void>
   sendMembershipPaymentRequest(input: MembershipPaymentEmail): Promise<SendEmailResult>
 }
@@ -62,10 +62,6 @@ export function getEmailProvider(): EmailProvider | null {
   }
   return {
     name: transport.kind,
-    sendInvoice: ({ to, invoiceNumber, amount, paymentLink }) => send(to, `CFA invoice ${invoiceNumber}`, [
-      `Your Cape Fencing Academy invoice ${invoiceNumber} for ${formatRandsWithCents(amount)} is ready.`,
-      ...(paymentLink ? [`Pay here: ${paymentLink}`] : []),
-    ]),
     sendReceipt: ({ to, receiptNumber, amount }) => send(to, `CFA receipt ${receiptNumber}`, [
       `Thank you. Cape Fencing Academy received your payment of ${formatRandsWithCents(amount)} (receipt ${receiptNumber}).`,
     ]),

@@ -10,6 +10,7 @@ import {
   answerFamilyLink, endActiveFamilyLink, recordManualMembershipPaymentForAdmin,
   resendMembershipPaymentEmail, withdrawMembershipApprovalForAdmin,
 } from '@/lib/services/PlatformService'
+import { sendInvoicesForStaff, updateClubBillingSettingsForStaff } from '@/lib/services/invoice-document-service'
 import { bookingErrorMessage } from '@/lib/booking-errors'
 import { failureState } from '@/lib/validations/form-errors'
 import type { FormFieldState, MembershipPaymentEmailStatus } from '@/types/domain'
@@ -164,4 +165,27 @@ export async function recordManualPaymentAction(_: ActionState, formData: FormDa
   revalidatePath('/protected/admin/invoicing')
   revalidatePath('/protected/admin/payments')
   return { success: 'Manual payment recorded.' }
+}
+
+/** Staff email (or re-email) one invoice to its payer. */
+export async function sendInvoiceAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const result = await sendInvoicesForStaff({ scope: 'one', invoice_id: formData.get('invoice_id') })
+  revalidatePath('/protected/admin/invoicing')
+  return 'error' in result ? { error: result.error } : { success: result.success }
+}
+
+/** Staff email every unpaid invoice that has not been sent yet. */
+export async function sendAllUnsentInvoicesAction(): Promise<ActionState> {
+  const result = await sendInvoicesForStaff({ scope: 'all_unsent' })
+  revalidatePath('/protected/admin/invoicing')
+  return 'error' in result ? { error: result.error } : { success: result.success }
+}
+
+/** Staff update the club contact and bank details printed on invoices. */
+export async function updateClubBillingSettingsAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const fields = ['club_name', 'address', 'email', 'bank_name', 'account_name', 'account_number', 'branch_code'] as const
+  const result = await updateClubBillingSettingsForStaff(Object.fromEntries(fields.map((name) => [name, String(formData.get(name) ?? '')])))
+  if ('error' in result) return failureState(result)
+  revalidatePath('/protected/admin/invoicing')
+  return { success: 'Billing details saved.' }
 }

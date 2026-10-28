@@ -294,8 +294,22 @@ export interface Invoice {
   payment_link: string | null
   issued_at: string
   paid_at: string | null
+  // 'schedule' invoices are emailed automatically; 'staff' ones wait for Send.
+  generated_by: 'staff' | 'schedule'
+  sent_at: string | null
   lines?: InvoiceLine[]
   payer?: Pick<Profile, 'full_name' | 'email'> | null
+}
+
+// The club's contact and EFT details printed on every invoice PDF.
+export interface ClubBillingSettings {
+  club_name: string
+  address: string
+  email: string
+  bank_name: string
+  account_name: string
+  account_number: string
+  branch_code: string
 }
 
 export interface Receipt {
