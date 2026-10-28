@@ -26,12 +26,20 @@ export interface MembershipPaymentEmail {
   payUrl: string;
 }
 
+// A file sent with an email, such as an invoice PDF.
+export interface EmailAttachment {
+  filename: string;
+  content: Uint8Array;
+  contentType: string;
+}
+
 // A ready-to-send email with plain-text and HTML bodies.
 export interface OutgoingEmail {
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
 /** Resend settings, or null when the API key or From address is missing. */
@@ -183,6 +191,45 @@ export function paymentReceiptEmail(input: PaymentReceiptEmail): OutgoingEmail {
   return { to: input.to, subject, text: lines.join("\n\n"), html };
 }
 
+export interface InvoiceEmail {
+  to: string;
+  recipientName: string;
+  invoiceNumber: string;
+  periodLabel: string;
+  amountCents: string;
+  // Opens this invoice on the site, ready to pay its total in one payment.
+  payUrl: string | null;
+  pdf: Uint8Array;
+}
+
+/** The invoice email, with the invoice PDF attached. */
+export function invoiceEmail(input: InvoiceEmail): OutgoingEmail {
+  const amount = formatZarWithCents(input.amountCents);
+  const ready = `Your Cape Fencing Academy invoice ${input.invoiceNumber} for ${input.periodLabel} is attached. The amount due is ${amount}.`;
+  const howToPay = "You can pay the full amount online in one payment, or by EFT using the bank details on the invoice with the invoice number as the reference.";
+  const lines = [
+    `Hi ${input.recipientName},`,
+    ready,
+    howToPay,
+    ...(input.payUrl ? [`Pay ${amount} online: ${input.payUrl}`] : []),
+    "Cape Fencing Academy",
+  ];
+  const html = [
+    `<p>Hi ${escapeHtml(input.recipientName)},</p>`,
+    `<p>${escapeHtml(ready)}</p>`,
+    `<p>${escapeHtml(howToPay)}</p>`,
+    ...(input.payUrl ? [`<p><a href="${escapeHtml(input.payUrl)}">Pay ${escapeHtml(amount)} online</a></p>`] : []),
+    "<p>Cape Fencing Academy</p>",
+  ].join("\n");
+  return {
+    to: input.to,
+    subject: `CFA invoice ${input.invoiceNumber} - ${amount} due`,
+    text: lines.join("\n\n"),
+    html,
+    attachments: [{ filename: `${input.invoiceNumber}.pdf`, content: input.pdf, contentType: "application/pdf" }],
+  };
+}
+
 export type SendEmailResult = { ok: true } | { ok: false; error: string };
 
 /** Sends through Resend's REST API. `fetchImpl` can be replaced in tests. */
@@ -191,7 +238,13 @@ export async function sendWithResend(config: ResendConfig, email: OutgoingEmail,
     const response = await fetchImpl(RESEND_ENDPOINT, {
       method: "POST",
       headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: config.from, to: [email.to], subject: email.subject, text: email.text, html: email.html }),
+      body: JSON.stringify({
+        from: config.from, to: [email.to], subject: email.subject, text: email.text, html: email.html,
+        // Resend takes attachment content as base64.
+        ...(email.attachments?.length ? { attachments: email.attachments.map((file) => ({
+          filename: file.filename, content: Buffer.from(file.content).toString("base64"), content_type: file.contentType,
+        })) } : {}),
+      }),
       signal: AbortSignal.timeout(15_000),
     });
     // Resend's error body can echo request details, so only the status is kept.

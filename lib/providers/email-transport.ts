@@ -28,6 +28,7 @@ interface MailMessage {
   subject: string;
   text: string;
   html: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
 }
 
 // Makes an SMTP sender. Tests pass a fake so no real mail is sent.
@@ -81,6 +82,9 @@ export async function sendEmail(
       subject: email.subject,
       text: email.text,
       html: email.html,
+      ...(email.attachments?.length ? { attachments: email.attachments.map((file) => ({
+        filename: file.filename, content: Buffer.from(file.content), contentType: file.contentType,
+      })) } : {}),
     });
     return { ok: true };
   } catch (error) {

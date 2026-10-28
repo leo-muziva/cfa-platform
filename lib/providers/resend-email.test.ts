@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { getResendConfig, membershipPaymentEmail, sendWithResend, shopOrderConfirmationEmail } from "./resend-email";
+import { getResendConfig, invoiceEmail, membershipPaymentEmail, sendWithResend, shopOrderConfirmationEmail } from "./resend-email";
 
 const input = {
   to: "payer@example.test",
@@ -55,6 +55,21 @@ describe("sendWithResend", () => {
     expect(JSON.parse(String(init.body))).toMatchObject({ from: config.from, to: ["payer@example.test"], subject: email.subject });
   });
 
+  it("sends attachments as base64", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    const withPdf = { ...email, attachments: [{ filename: "CFA-000001.pdf", content: new Uint8Array([37, 80, 68, 70]), contentType: "application/pdf" }] };
+    await sendWithResend(config, withPdf, fetchImpl as unknown as typeof fetch);
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).attachments).toEqual([{ filename: "CFA-000001.pdf", content: "JVBERg==", content_type: "application/pdf" }]);
+  });
+
+  it("leaves attachments out when there are none", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    await sendWithResend(config, email, fetchImpl as unknown as typeof fetch);
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).not.toHaveProperty("attachments");
+  });
+
   it("reports a rejected send by status only", async () => {
     const fetchImpl = vi.fn(async () => new Response("{\"message\":\"payer@example.test is invalid\"}", { status: 422 }));
     expect(await sendWithResend(config, email, fetchImpl as unknown as typeof fetch))
@@ -65,6 +80,33 @@ describe("sendWithResend", () => {
     const fetchImpl = vi.fn(async () => { throw new Error("offline"); });
     expect(await sendWithResend(config, email, fetchImpl as unknown as typeof fetch))
       .toEqual({ ok: false, error: "Could not reach Resend." });
+  });
+});
+
+describe("invoiceEmail", () => {
+  const pdf = new Uint8Array([37, 80, 68, 70]);
+
+  it("states the amount, links straight to paying the invoice and attaches the PDF", () => {
+    const payUrl = "https://cfa.example/protected/billing/invoices/inv-1";
+    const email = invoiceEmail({
+      to: "payer@example.test", recipientName: "George <Guardian>", invoiceNumber: "CFA-000042",
+      periodLabel: "October 2026", amountCents: "55000", payUrl, pdf,
+    });
+    expect(email.subject).toBe("CFA invoice CFA-000042 - R550.00 due");
+    expect(email.text).toContain("invoice CFA-000042 for October 2026 is attached. The amount due is R550.00.");
+    expect(email.text).toContain(`Pay R550.00 online: ${payUrl}`);
+    expect(email.html).toContain(`<a href="${payUrl}">Pay R550.00 online</a>`);
+    expect(email.html).toContain("George &lt;Guardian&gt;");
+    expect(email.attachments).toEqual([{ filename: "CFA-000042.pdf", content: pdf, contentType: "application/pdf" }]);
+  });
+
+  it("leaves out the pay link when no public address is configured", () => {
+    const email = invoiceEmail({
+      to: "payer@example.test", recipientName: "George", invoiceNumber: "CFA-000042",
+      periodLabel: "October 2026", amountCents: "55000", payUrl: null, pdf,
+    });
+    expect(email.text).not.toContain("online:");
+    expect(email.html).not.toContain("<a ");
   });
 });
 
