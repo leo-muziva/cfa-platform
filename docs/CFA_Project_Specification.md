@@ -57,7 +57,6 @@ These are fixed. Do not re-open them without Leo explicitly revisiting.
 **Engineering**
 - Extend the existing codebase. The guardian-dependent account model and the billing ledger already exist — new work extends them rather than building parallel systems.
 - The public site's **hero section and top navigation already exist and must not be rebuilt**.
-- Coding agents receive behaviour specs and definitions of done, not architecture.
 
 **Explicitly forbidden until Jeremy confirms**
 - **Junior / Senior / Social class categories must not appear anywhere in the system** — not in the database, not in seed data, not in the UI, not in a dropdown. These are unconfirmed.
@@ -403,7 +402,6 @@ Everything we need from Jeremy. Each has an ID referenced in `config/pending-dec
 - **Extend, don't rebuild.** The guardian-dependent model and billing ledger exist. New work extends them.
 - **Don't rebuild the hero or top nav.**
 - **Assumptions are explicit, never blocking.** If Jeremy hasn't answered, pick a sensible default, put it in `pending-decisions.ts`, flag it, and keep moving.
-- **Coding agents get behaviour specs and a definition of done**, not architecture or schemas.
 - **ClickUp is the authoritative record** of technical decisions. WhatsApp is for coordination only — if a decision happens on WhatsApp, it gets written into ClickUp the same day.
 - **Nothing ships to `main` without the RLS tests passing.**
 

@@ -1,7 +1,6 @@
 # CFA Bug Review Board
 
-This folder contains real-user QA evidence generated with the
-`running-bug-review-board` skill. Markdown is the source of truth.
+This folder contains real-user QA evidence. Markdown is the source of truth.
 
 ## Current pass
 

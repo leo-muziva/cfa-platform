@@ -128,9 +128,7 @@ Manual EFT statement reconciliation, recurring auto-charged membership, automati
 
 Extend existing systems; do not create parallel ledgers or replace current products with guessed categories. Use behavior contracts plus verifiable acceptance criteria, preserving useful architecture/security conventions. Document technical decisions in ClickUp as the original working agreement; use existing GitHub issues/PRs for code delivery where applicable. WhatsApp coordination must not be the only decision record. This review did not verify external tracker configuration or post messages.
 
-The following are explicitly superseded wherever they conflict with this document: the original specification; [older account/membership/family specification](<spec update/CFA_Platform_Account_Membership_Family_Billing_Specification.md>); scope/status statements in README and `docs/md files/` setup/demo/sponsor notes; historical QA readiness claims; and `.claude/agents/{cfa-reviewer,nextjs-page-builder,supabase-engineer}.md`. Examples include exclusive roles, admin-only finances, invoice-only as final scope, Next.js 15, nested repository paths and two-table schema descriptions. Their useful non-conflicting instructions remain applicable. Cleanup is follow-up work, not silently performed here.
-
-Local AGENTS.md is shared operational guidance; CLAUDE.md is its entry point, not a competing source of authority. Preserve all pre-existing uncommitted changes and secret/attribution restrictions.
+The following are explicitly superseded wherever they conflict with this document: the original specification; the older account/membership/family specification; scope/status statements in README and earlier setup/demo/sponsor notes; and historical QA readiness claims. Examples include exclusive roles, admin-only finances, invoice-only as final scope, Next.js 15, nested repository paths and two-table schema descriptions. Their useful non-conflicting instructions remain applicable. Cleanup is follow-up work, not silently performed here.
 
 ## 9. Acceptance and verification
 
