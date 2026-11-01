@@ -1,6 +1,6 @@
 # CFA Platform - Class Diagram Brief (Milestone 3)
 
-Give this whole file to the diagramming tool or LLM. It describes the UML class diagram for the Expanded Class Diagram section of the INF3003W Milestone 3 report. It is generated from `docs/m3/erd/erd_spec.py`, the same source as the ERD and the data dictionary, so the three documents stay consistent.
+This file describes the UML class diagram for the Expanded Class Diagram section of the INF3003W Milestone 3 report. It is generated from `docs/m3/erd/erd_spec.py`, the same source as the ERD and the data dictionary, so the three documents stay consistent.
 
 ## Your task
 

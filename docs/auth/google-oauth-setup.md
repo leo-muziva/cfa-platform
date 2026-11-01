@@ -127,7 +127,7 @@ Both values go through `env(...)` so nothing secret is committed. They must be
 present in the environment when **`npx supabase start`** runs (not when
 `npm run dev:local` runs - `scripts/dev-local.mjs` only shells out to
 `supabase status`). Put them in the repo-root `.env`, which `.gitignore:35`
-already ignores. Per AGENTS.md these values cannot be read from `.env` during
+already ignores. These values must not be read from `.env` during
 implementation, so the two keys must be confirmed set by hand;
 `npx supabase stop && npx supabase start` picks them up.
 
@@ -247,7 +247,7 @@ design, and the email/password and confirmation flows.
 5. **Hosted end-to-end**: same click-through against `npm run dev:hosted` or the
    deployed origin, confirming the redirect allow list accepts the origin.
 6. Capture screenshots of the consent screen and the signed-in `/protected` page
-   for the PR, per AGENTS.md's rule for visible UI changes.
+   for the PR, as required for visible UI changes.
 7. `npm run build` before requesting review.
 
 ## Troubleshooting
@@ -262,9 +262,6 @@ design, and the email/password and confirmation flows.
 
 ## Notes and constraints
 
-- AGENTS.md's "documentation edits only" clause was scoped to the earlier spec
-  reconciliation. This task involves code and possibly one migration - flagged
-  explicitly rather than assuming the older restriction is lifted.
 - Only the basic `openid`/`email`/`profile` scopes are requested, so no Google
   verification review and no `access_type=offline` / refresh-token handling is
   needed - the app never calls Google APIs on the user's behalf.

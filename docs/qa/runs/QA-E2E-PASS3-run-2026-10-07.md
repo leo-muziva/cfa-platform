@@ -8,7 +8,7 @@ work end to end and close the issues from manual test pass 2.
 - Local Supabase (Docker) with every migration through 0042 applied by `npx supabase db reset`,
   plus `npm run dev` against it. Seeded personas (`*@cfa.test`), a fresh account
   `quinn+qa3@example.com`, and `scripts/seed-demo-activity.mjs`.
-- Browser steps were driven with Playwright MCP. Database effects were checked with `psql`
+- Browser steps were driven with Playwright. Database effects were checked with `psql`
   in the local container.
 - Local limits: no HTTPS `PAYMENT_PUBLIC_ORIGIN`, so PayFast checkout reports
   "unavailable"; no Resend key, so approval reports "Email not configured". Both are
