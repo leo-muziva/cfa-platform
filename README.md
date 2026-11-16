@@ -4,7 +4,7 @@ A full-stack member platform for **Cape Fencing Academy**, a fencing club in Ron
 
 **Live demo:** https://cfa-platform-pi.vercel.app
 
-![Cape Fencing Academy platform](app/opengraph-image.png)
+![Cape Fencing Academy crest with the text Member Platform](app/opengraph-image.png)
 
 Built with Next.js 16, React 19, TypeScript, Supabase (Postgres, Auth and row level security), Tailwind CSS, Zod and Vitest.
 
@@ -99,19 +99,9 @@ npm run dev               # http://localhost:3000
 
 `npm run dev` reads the local Supabase settings automatically, so you don't need an environment file. Use `npm run dev:hosted` only when you've configured a hosted Supabase project in `.env.local` (start from `.env.sample`).
 
-### Local demo accounts
+### Local demo data
 
-`npx supabase db reset` creates these accounts on your machine only. All of them use the password `Test1234!`:
-
-| Email | Persona | Portal |
-| --- | --- | --- |
-| `fencer@cfa.test` | Fiona Fencer | Member (dependent) |
-| `guardian@cfa.test` | George Guardian, pays for Fiona | Member and family payer |
-| `coach@cfa.test` | Dr. Misha Galukhin | Coach |
-| `jacques@cfa.test`, `jeremy@cfa.test` | Additional coaches | Coach |
-| `admin@cfa.test` | Alice Admin | Admin |
-
-The demo data includes a guardian and dependent household, coach availability, a blocked time, a club closure, scheduled lessons and provisional charges.
+`npx supabase db reset` loads a demo club: member, guardian, coach and admin personas, a guardian and dependent household, coach availability, a blocked time, a club closure, scheduled lessons and provisional charges. The personas are defined in `supabase/seed.sql` and exist only in your local database.
 
 ### Checks
 
