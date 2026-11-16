@@ -1,65 +1,134 @@
-# CFA Platform v1.0
+# Cape Fencing Academy Platform
 
-CFA Platform is the Cape Fencing Academy member portal. It supports account and membership workflows, household and payer relationships, private 30-minute lesson booking, coach availability management, lesson operations, and invoice-only lesson charging.
+A full-stack member platform for **Cape Fencing Academy**, a fencing club in Rondebosch, Cape Town. Members, parents, coaches and club staff use it to handle memberships, families, private lessons, invoices, payments and kit orders.
+
+**Live demo:** https://cfa-platform-pi.vercel.app
+
+![Cape Fencing Academy platform](app/opengraph-image.png)
+
+Built with Next.js 16, React 19, TypeScript, Supabase (Postgres, Auth and row level security), Tailwind CSS, Zod and Vitest.
+
+---
+
+## Try it
+
+Anyone can create an account and explore the member side of the platform for free.
+
+1. Open https://cfa-platform-pi.vercel.app and click **Sign up** (or **Log in** if you already have an account).
+2. Click **Continue with Google**, or sign up with an email address and password and confirm your email.
+3. Complete your profile when asked.
+
+Things to try as a new member:
+
+| Area | Where | What to look at |
+| --- | --- | --- |
+| Public site | Home, About, Classes, Membership, Contact | Cinematic video hero, responsive layout, light and dark themes |
+| Membership | Top bar, then **Membership** | Apply for a membership and follow its status |
+| Lessons | Top bar, then **Book** | Pick a coach and a 30-minute slot on the live availability calendar |
+| My lessons | Member Portal, then **Lessons** | Cancel or reschedule, with the cancellation rules enforced on the server |
+| Family | Member Portal, then **Family** | Link a dependent (under 18) or a guardian who pays for them |
+| Billing | Member Portal, then **Billing** | Invoices, receipts and payment status in rands (ZAR) |
+| Shop | Top bar, then **Shop** | Order club kit by size and handedness |
+
+Coach and admin portals aren't open to the public. A new account is always an ordinary member, and staff roles can only be granted by club staff.
+
+> Payments run in **PayFast sandbox** mode, so no real money moves. Use PayFast's test card details if you go through a checkout.
+
+---
+
+## What it does
+
+- **Accounts and profiles:** email/password sign-up with email confirmation, Google sign-in, password reset, and profile completion with emergency contacts.
+- **Memberships:** applications, approval by staff, lifecycle status and membership products stored in the database.
+- **Families:** a guardian can link and pay for dependents. Dependents can book lessons but never see money. Unlinking or transferring needs staff approval.
+- **Lesson booking:** coaches publish standing weekly availability plus one-off extra times, blocks and club closures. Members see every offered 30-minute slot as either bookable or **Unavailable**, without revealing why.
+- **Booking integrity:** booking, rescheduling and cancelling are rechecked atomically inside Postgres, so two people can never take the same slot.
+- **Billing:** charges, monthly invoice runs on the 25th, immutable issued invoices, PDF invoices, receipts, credits and refunds.
+- **Payments:** a provider-neutral checkout and settlement flow with a PayFast sandbox adapter, including pay-now slot holds that expire automatically.
+- **Shop:** kit orders with payment, plus supplier order sheets for staff.
+- **AI supplier check:** a small tool-calling agent (Groq or Gemini free tier) reviews supplier order sheets for mistakes and drafts an email. It only sees product lines, never member data.
+- **Scheduled jobs:** Vercel Cron expires unpaid holds daily and runs the monthly invoice job.
+- **Email:** sign-up, password reset, payment requests and order confirmations are sent through SMTP.
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 16 App Router, React 19, Server Components and Server Actions |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS 3, shadcn/ui-style primitives, light and dark themes |
+| Database | Supabase Postgres with 60+ forward migrations, RPC functions and row level security |
+| Auth | Supabase Auth: email/password with confirmation, plus Google OAuth |
+| Validation | Zod 4 on every mutation |
+| Payments | PayFast sandbox behind a provider-neutral payment service |
+| AI | Vercel AI SDK with Groq and Google Gemini |
+| Testing | Vitest unit tests and pgTAP database workflow tests |
+| Hosting | Vercel (app and cron) and Supabase (database and auth) |
+
+---
 
 ## Architecture
 
-- Next.js 16 App Router and TypeScript for the web application.
-- Tailwind and shared UI components for the portal.
-- Supabase Auth and Postgres with RLS for identity, authorization, data, and atomic booking workflows.
-- Pages call services in `lib/services/`; services call repositories in `lib/repositories/`. UI components do not query Supabase directly.
-- The current lesson workflow is v2 coach availability. The legacy capacity-slot booking RPC is not a supported public workflow.
+```
+Page / Server Action  ->  Service  ->  Repository  ->  Supabase (Postgres + RLS)
+     app/               lib/services/   lib/repositories/      supabase/migrations/
+```
 
-## Local setup
+- **`app/`** holds routes, layouts and Server Actions. Pages are Server Components by default.
+- **`lib/services/`** holds business rules and authorization checks, e.g. who may book, cancel or pay.
+- **`lib/repositories/`** holds all database access. UI components never query domain tables directly.
+- **`lib/validations/`** holds Zod schemas. Every action returns a typed success or failure result.
+- **`types/domain.ts`** holds the shared contracts between layers.
+- **Security in depth:** permissions are checked in services, again in Postgres RPC functions, and again by row level security policies. Hiding a button is never the only protection.
+- Money is handled in integer cents and formatted as ZAR with `en-ZA` dates.
 
-1. Install dependencies: `npm install`.
-2. Start Docker Desktop, then start Supabase: `npx supabase start`.
-3. Recreate the local database, migrations, and canonical fixtures: `npx supabase db reset`.
-4. Run the app against local Supabase: `npm run dev`. The server announces `http://localhost:3000`.
+---
 
-`npm run dev` is the standard local command. It reads the live local Supabase CLI configuration automatically, so no local credentials need to be copied into an environment file. Use `npm run dev:hosted` only when you intentionally configured a hosted Supabase project in `.env.local`.
+## Run it locally
 
-`supabase/seed.sql` is the automatic source of local demo fixtures. It is deliberately separate from production migrations.
+You'll need Node.js 22 and Docker Desktop.
 
-Run verification with:
+```bash
+npm ci                    # install exact dependency versions
+npx supabase start        # start local Supabase in Docker
+npx supabase db reset     # apply migrations and load demo data
+npm run dev               # http://localhost:3000
+```
 
-`npm test -- --run`
-`npm run test:db-workflows`
-`npm run lint`
-`npm run build`
+`npm run dev` reads the local Supabase settings automatically, so you don't need an environment file. Use `npm run dev:hosted` only when you've configured a hosted Supabase project in `.env.local` (start from `.env.sample`).
 
-## Lesson booking
+### Local demo accounts
 
-Coaches publish standing availability and optional extra intervals. The booking calendar shows every 30-minute offered occurrence in the booking horizon. A time can be selectable or shown as **Unavailable**. The UI never says whether an unavailable time is blocked, closed, or already booked. Dates with scheduled times but no selectable time are disabled, while remaining visible.
+`npx supabase db reset` creates these accounts on your machine only. All of them use the password `Test1234!`:
 
-Booking and rescheduling are rechecked atomically in Postgres. Cancellation and rescheduling enforce ownership and start-time rules server-side; lesson charges retain their lifecycle state for the corresponding cancellation or reschedule result.
+| Email | Persona | Portal |
+| --- | --- | --- |
+| `fencer@cfa.test` | Fiona Fencer | Member (dependent) |
+| `guardian@cfa.test` | George Guardian, pays for Fiona | Member and family payer |
+| `coach@cfa.test` | Dr. Misha Galukhin | Coach |
+| `jacques@cfa.test`, `jeremy@cfa.test` | Additional coaches | Coach |
+| `admin@cfa.test` | Alice Admin | Admin |
 
-## Demo personas
+The demo data includes a guardian and dependent household, coach availability, a blocked time, a club closure, scheduled lessons and provisional charges.
 
-Local reset creates these accounts, all using password `Test1234!`:
+### Checks
 
-- `admin@cfa.test` - Alice Admin
-- `coach@cfa.test` - Dr. Misha Galukhin
-- `fencer@cfa.test` - Fiona Fencer
-- `guardian@cfa.test` - George Guardian, payer for Fiona
-- `jacques@cfa.test` and `jeremy@cfa.test` - additional coaches
+```bash
+npm test -- --run         # Vitest unit tests
+npm run test:db-workflows # pgTAP database workflow tests (local Supabase)
+npm run lint              # ESLint
+npx tsc --noEmit          # TypeScript
+npm run build             # production build
+```
 
-The fixtures include the guardian/dependent household, coach offerings and rules, a blocked interval, club closure, scheduled lessons, participants, and provisional charges.
+---
 
-## Hosted staging demo data
+## Project status
 
-Never run demo seeding against production. The guarded hosted seeder is manual only:
+This is a student project built for Cape Fencing Academy as part of INF3003W at the University of Cape Town. Payments use the PayFast sandbox only. Production payments (Peach Payments), saved cards and some notification types are planned but not live.
 
-`npm run seed:staging`
+## Privacy
 
-It requires these non-secret configuration keys in `.env.local` (start from `.env.sample`):
-
-`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `CFA_STAGING_SEED_CONFIRM=I_UNDERSTAND_THIS_IS_STAGING`.
-
-The script rejects localhost and production-looking project URLs, requires the exact confirmation value, and is idempotent. It provisions the same canonical personas and related CFA demonstration data as the local fixture. Do not put service keys in source control.
-
-## Inspecting hosted data
-
-In the Supabase dashboard, use **Authentication → Users** to inspect demo accounts. Use **Table Editor** for `profiles`, `coach_availability_rules`, `coach_availability_exceptions`, `club_closures`, `bookings`, `booking_participants`, and `charges`.
-
-The application reads these Supabase rows at runtime. “Hard-coded” means a value embedded in UI or code. “Pre-populated” means repeatable records inserted into the database fixture or explicit staging seed.
+See the [privacy policy](https://cfa-platform-pi.vercel.app/privacy) for how the platform handles personal information.
