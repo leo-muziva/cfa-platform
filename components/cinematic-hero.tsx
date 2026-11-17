@@ -1,16 +1,14 @@
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
+import { AutoplayVideo } from "@/components/ui/autoplay-video";
 
 // Fills the screen under the main bar.
 export function CinematicHero() {
   return (
     <div className="relative flex h-[calc(100dvh-var(--site-nav-height))] flex-col overflow-hidden bg-black text-white">
-      <video
+      <AutoplayVideo
         className="absolute inset-0 z-0 h-full w-full object-cover"
-        autoPlay
         loop
-        muted
-        playsInline
         aria-hidden="true"
         src="/media/video/hero-video.mp4"
       />
