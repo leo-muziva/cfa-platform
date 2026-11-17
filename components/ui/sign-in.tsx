@@ -7,7 +7,7 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer
 import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { SupabaseConfigError } from "@/lib/supabase/config";
-import { emailConfirmRedirect } from "@/lib/auth-next";
+import { emailConfirmRedirect, loginReasonFor } from "@/lib/auth-next";
 import {
   AuthModal,
   type AuthModalState,
@@ -16,6 +16,7 @@ import {
   GlassButton,
   GlassField,
   GoogleIcon,
+  LoginNotice,
 } from "@/components/ui/glass-auth";
 
 // The login form asks for the email first, then the password.
@@ -139,8 +140,12 @@ export function SignInFlow({
       };
   const stepTransition = { duration: reduceMotion ? 0 : 0.3, ease: [0.25, 1, 0.5, 1] as const };
 
+  // Only explain the redirect when there is one; a just-confirmed account
+  // already gets its own message.
+  const reason = accountConfirmed ? null : loginReasonFor(next);
+
   return (
-    <GlassAuthShell>
+    <GlassAuthShell notice={reason ? <LoginNotice reason={reason} next={next} /> : undefined}>
       <AuthModal state={modal} onClose={closeModal} />
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm">

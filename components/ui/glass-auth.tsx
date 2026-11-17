@@ -11,6 +11,7 @@
 
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import Link from "next/link";
 import React, {
   Children,
   forwardRef,
@@ -28,6 +29,7 @@ import {
   Eye,
   EyeOff,
   Loader,
+  Lock,
   PartyPopper,
   X,
 } from "lucide-react";
@@ -364,12 +366,25 @@ export const GradientBackground = () => (
 // GlassAuthShell — full-viewport layout shared by the sign-in and sign-up
 // pages: animated backdrop, fixed brand chip, centered content slot.
 // ---------------------------------------------------------------------------
-export function GlassAuthShell({ children }: { children: React.ReactNode }) {
+export function GlassAuthShell({
+  children,
+  notice,
+}: {
+  children: React.ReactNode;
+  /** Optional message pinned to the top centre, above the crest. */
+  notice?: React.ReactNode;
+}) {
   return (
     <div className="min-h-[calc(100svh-var(--site-nav-height))] w-full flex flex-col bg-background relative overflow-hidden">
       <div className="absolute inset-0 z-0">
         <GradientBackground />
       </div>
+
+      {/* In the flow (not absolute) so it never covers the crest on short
+          screens. */}
+      {notice && (
+        <div className="relative z-10 flex justify-center px-4 pt-6">{notice}</div>
+      )}
 
       {/* The crest sits in the flow above the form. A fixed chip used to hide
           under the sticky main bar. */}
@@ -385,6 +400,31 @@ export function GlassAuthShell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     </div>
+  );
+}
+
+/**
+ * Small pill telling a logged-out visitor why they landed on the login page,
+ * e.g. "Log in or create an account to book a lesson".
+ */
+export function LoginNotice({ reason, next }: { reason: string; next: string }) {
+  return (
+    <p
+      role="status"
+      className="flex max-w-full items-center gap-2 rounded-full border border-border/60 bg-background/60 px-4 py-2 text-center text-sm text-muted-foreground shadow-sm backdrop-blur-md"
+    >
+      <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <span>
+        <span className="font-medium text-foreground">Log in</span> or{" "}
+        <Link
+          href={`/auth/sign-up?next=${encodeURIComponent(next)}`}
+          className="font-medium text-foreground underline underline-offset-4"
+        >
+          create an account
+        </Link>{" "}
+        to {reason}
+      </span>
+    </p>
   );
 }
 
